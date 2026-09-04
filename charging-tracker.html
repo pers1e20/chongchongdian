@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>冲充电</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#050508">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="冲充电">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <style>
+    /* ============================================================
+     * 清冷科幻 · 深空配色（设计规范 v1.0，统一深色，无明暗切换）
+     * ============================================================ */
+    :root {
+      /* ---- 设计规范令牌 ---- */
+      --bg-void: #000000;
+      --bg-base: #050508;
+      --bg-surface: #0C0C12;
+      --bg-elevated: #181820;
+      --accent-frost: #5B8FA8;
+      --accent-steel: #3D4F6B;
+      --accent-mist: #5A4A6B;
+      --text-primary: #D8DDE4;
+      --text-secondary: #5A6470;
+      --text-muted: #3A4450;
+      --border-default: #181820;
+      --border-subtle: #0C0C12;
+      --success: #4A7A6B;
+      --warning: #8A6A3A;
+      --error: #8A3A4A;
+      --action-primary: #D8DDE4;
+      --action-primary-hover: #E8ECF0;
+      --action-primary-text: #000000;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Roboto Mono', monospace;
+      --space-1: 4px; --space-2: 8px; --space-3: 12px;
+      --space-4: 16px; --space-5: 20px; --space-6: 24px;
+      --space-8: 32px; --space-10: 40px;
+      --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+      --radius-xl: 20px; --radius-full: 9999px;
+      --shadow-surface: 0 2px 8px rgba(0, 0, 0, 0.5);
+      --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.03);
+      --shadow-dialog: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.04);
+
+      /* ---- 旧变量映射到新规范（保持组件兼容） ---- */
+      --primary: var(--accent-frost);
+      --primary-light: #73A0B9;
+      --primary-dark: #9FC5D6;
+      --primary-bg: rgba(91, 143, 168, 0.12);
+      --green: var(--success);
+      --green-bg: rgba(74, 122, 107, 0.12);
+      --amber: var(--warning);
+      --amber-bg: rgba(138, 106, 58, 0.12);
+      --red: var(--error);
+      --red-bg: rgba(138, 58, 74, 0.12);
+      --purple: var(--accent-mist);
+      --purple-bg: rgba(90, 74, 107, 0.14);
+      --bg: var(--bg-base);
+      --card: var(--bg-surface);
+      --text: var(--text-primary);
+      --text-sub: #8190A0;
+      --text-light: var(--text-secondary);
+      --border: var(--border-default);
+      --border-light: var(--border-subtle);
+      --radius: var(--radius-lg);
+      --radius-sm: var(--radius-md);
+      --shadow: var(--shadow-surface);
+      --shadow-md: var(--shadow-elevated);
+      --shadow-lg: var(--shadow-dialog);
+      --gradient-primary: linear-gradient(135deg, #0C0C12 0%, #14181F 100%);
+      --gradient-green: linear-gradient(135deg, #2C3B36 0%, #1E2B27 100%);
+      --gradient-purple: linear-gradient(135deg, #2C2740 0%, #1C1A2E 100%);
+      --gradient-amber: linear-gradient(135deg, #3A3226 0%, #26211A 100%);
+      --gradient-hero: linear-gradient(135deg, #0C0C12 0%, #10151D 55%, #101A22 100%);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html { font-size: 16px; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 76px;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ===== 顶部导航 ===== */
+    .header {
+      background: var(--gradient-primary);
+      color: #fff;
+      padding: 14px 16px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(59,130,246,.3);
+    }
+    .header-row { display: flex; align-items: center; justify-content: space-between; }
+    .header-brand { display: flex; align-items: center; gap: 8px; }
+    .header-brand svg { width: 28px; height: 28px; flex-shrink: 0; }
+    .header h1 { font-size: 18px; font-weight: 700; letter-spacing: .3px; }
+    .vehicle-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.18);
+      border-radius: 20px;
+      padding: 5px 14px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .vehicle-pill:active { background: rgba(255,255,255,.28); }
+    .vehicle-pill svg { width: 16px; height: 16px; opacity: .9; }
+    .vehicle-pill span { font-size: 13px; font-weight: 500; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ===== 底部导航 ===== */
+    .tab-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--card);
+      display: flex;
+      border-top: 1px solid var(--border-light);
+      z-index: 100;
+      max-width: 600px;
+      margin: 0 auto;
+      box-shadow: 0 -2px 12px rgba(0,0,0,.04);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 8px 2px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      color: var(--text-light);
+      font-size: 10px;
+      transition: color .2s;
+      position: relative;
+    }
+    .tab-btn svg { width: 24px; height: 24px; transition: all .2s; }
+    .tab-btn.active { color: var(--primary); font-weight: 600; }
+    .tab-btn.active svg { transform: translateY(-1px); }
+    .tab-btn.active::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      width: 24px;
+      height: 3px;
+      border-radius: 0 0 3px 3px;
+      background: var(--primary);
+    }
+
+    /* ===== FAB 悬浮按钮 ===== */
+    .fab {
+      position: fixed;
+      bottom: 88px;
+      right: 50%;
+      transform: translateX(200px);
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--gradient-primary);
+      border: none;
+      box-shadow: 0 4px 16px rgba(59,130,246,.4);
+      cursor: pointer;
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .fab:active { transform: translateX(200px) scale(.9); }
+    .fab svg { width: 26px; height: 26px; color: #fff; }
+
+    /* ===== 主内容 ===== */
+    .main { max-width: 600px; margin: 0 auto; padding: 14px 14px 20px; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn .25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ===== 卡片 ===== */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+    }
+    .card h3 { font-size: 15px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+    .card h3 svg { width: 18px; height: 18px; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .card-head h3 { margin-bottom: 0; }
+
+    /* ===== 图表卡片：卡片尺寸与其他卡保持一致，仅将图表展示区稍微拉宽 ===== */
+    .card-chart .chart-fixed { margin-left: -8px; margin-right: -8px; }
+
+    /* ===== 统计卡片 ===== */
+    .stat-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .stat-card {
+      border-radius: var(--radius-lg);
+      padding: 14px 14px 12px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border-default);
+    }
+    .stat-card::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; }
+    .stat-card.blue { background: var(--primary-bg); } .stat-card.blue::after { background: var(--accent-frost); }
+    .stat-card.green { background: var(--green-bg); } .stat-card.green::after { background: var(--success); }
+    .stat-card.amber { background: var(--amber-bg); } .stat-card.amber::after { background: var(--warning); }
+    .stat-card.purple { background: var(--purple-bg); } .stat-card.purple::after { background: var(--accent-mist); }
+    .stat-card.blue .stat-title, .stat-card.blue .stat-ic { color: var(--accent-frost); }
+    .stat-card.green .stat-title, .stat-card.green .stat-ic { color: var(--success); }
+    .stat-card.amber .stat-title, .stat-card.amber .stat-ic { color: var(--warning); }
+    .stat-card.purple .stat-title, .stat-card.purple .stat-ic { color: var(--accent-mist); }
+    .stat-head { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
+    .stat-ic { width: 15px; height: 15px; flex-shrink: 0; }
+    .stat-ic svg { width: 15px; height: 15px; }
+    .stat-title { font-size: 12px; font-weight: 600; }
+    .stat-value { font-size: 22px; font-weight: 800; color: var(--text-primary); letter-spacing: -.5px; font-family: var(--font-mono); }
+    .stat-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+    .trend-up { color: var(--red); }
+    .trend-down { color: var(--green); }
+
+    /* ===== 图表 ===== */
+    .chart { width: 100%; height: 200px; display: block; }
+    .chart-fixed { display: flex; align-items: stretch; }
+    .chart-yaxis { position: relative; flex-shrink: 0; width: 58px; height: 200px; }
+    .chart-yaxis-label { position: absolute; right: 8px; transform: translateY(-50%); font-size: 10px; color: var(--text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .chart-body { flex: 1; min-width: 0; }
+    .chart-body .chart-scroll { width: 100%; }
+    .chart-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+    .chart-scroll::-webkit-scrollbar { height: 6px; }
+    .chart-scroll::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 3px; }
+    .chart-scroll .chart { min-width: 100%; }
+    .chart.donut { height: 160px; max-width: 200px; margin: 0 auto; }
+    .donut-wrap { display: flex; justify-content: center; align-items: center; gap: 20px; }
+    .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 4px; }
+
+    /* ===== 年度筛选 ===== */
+    .year-filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; -webkit-overflow-scrolling: touch; }
+    .year-filter-bar::-webkit-scrollbar { height: 0; }
+    .year-chip {
+      flex-shrink: 0; padding: 7px 16px; border-radius: var(--radius-full);
+      border: 1px solid var(--border-default); background: var(--bg-surface);
+      color: var(--text-secondary); font-size: 13px; cursor: pointer; transition: all .18s;
+    }
+    .year-chip.active { background: var(--bg-elevated); border-color: var(--accent-frost); color: var(--accent-frost); font-weight: 600; }
+
+    /* ===== 表格 ===== */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th {
+      text-align: left; padding: 8px 10px; color: var(--text-sub);
+      font-weight: 500; border-bottom: 2px solid var(--border); white-space: nowrap;
+    }
+    .data-table td { padding: 10px 10px; border-bottom: 1px solid var(--border-light); white-space: nowrap; }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+    .data-table tbody tr { transition: background .15s; }
+    .data-table tbody tr:active { background: var(--border-light); }
+
+    /* ===== 徽章 ===== */
+    .badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    }
+    .badge svg { width: 12px; height: 12px; }
+    .badge.slow { background: var(--primary-bg); color: var(--primary-dark); }
+    .badge.fast { background: var(--amber-bg); color: #92400e; }
+
+    /* ===== 按钮 ===== */
+    .btn {
+      padding: 10px 18px; border-radius: 10px; border: none; font-size: 14px;
+      font-weight: 600; cursor: pointer; transition: all .2s;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .btn:active { transform: scale(.95); }
+    .btn svg { width: 16px; height: 16px; }
+    .btn-primary { background: var(--gradient-primary); color: #fff; box-shadow: 0 2px 8px rgba(59,130,246,.3); }
+    .btn-outline { background: transparent; border: 1.5px solid var(--primary); color: var(--primary); }
+    .btn-green { background: var(--gradient-green); color: #fff; box-shadow: 0 2px 8px rgba(16,185,129,.3); }
+    .btn-mini {
+      padding: 5px 12px; border-radius: 7px; border: 1px solid var(--border);
+      background: var(--card); font-size: 12px; color: var(--text-sub); cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-mini:active { background: var(--border-light); }
+    .btn-mini.danger { color: var(--red); border-color: #fecaca; }
+    .btn-block { width: 100%; justify-content: center; }
+    .btn-sm { padding: 7px 12px; font-size: 13px; border-radius: 8px; }
+    .btn-sm svg { width: 14px; height: 14px; }
+
+    /* ===== 空状态 ===== */
+    .empty-state {
+      text-align: center;
+      padding: 36px 20px;
+    }
+    .empty-state svg { width: 64px; height: 64px; color: var(--text-light); margin-bottom: 12px; }
+    .empty-state p { color: var(--text-light); font-size: 14px; margin-bottom: 16px; }
+    .empty-state .empty-sub { color: var(--text-light); font-size: 12px; opacity: .72; margin: -8px auto 16px; }
+    .empty-state-illustration {
+      width: 100%; max-width: 320px; margin: 0 auto 16px; border-radius: var(--radius-lg);
+      display: block;
+    }
+    .empty-state-illustration + p { margin-top: 8px; }
+
+    /* ===== 品牌头部 ===== */
+    .brand-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 8px 4px 20px;
+    }
+    .header-logo { height: 30px; width: auto; max-width: 44px; object-fit: contain; flex-shrink: 0; display: block; }
+    .brand-logo { height: 56px; width: auto; max-width: 92px; object-fit: contain; flex-shrink: 0; border-radius: var(--radius-md); }
+    .brand-name { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+    .brand-slogan { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ===== 车型卡片 ===== */
+    .vehicle-list { display: flex; flex-direction: column; gap: 10px; }
+    .vehicle-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px; border: 1px solid var(--border-light); border-radius: var(--radius-sm);
+      transition: border-color .2s;
+    }
+    .vehicle-card:active { border-color: var(--primary-light); }
+    .vehicle-avatar {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--gradient-primary);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .vehicle-avatar svg { width: 24px; height: 24px; color: #fff; }
+    .vehicle-info { flex: 1; min-width: 0; }
+    .vehicle-name { font-size: 15px; font-weight: 700; }
+    .vehicle-meta { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+    .vehicle-specs { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+    .vehicle-spec { font-size: 11px; color: var(--text-sub); background: var(--bg); padding: 2px 8px; border-radius: 5px; display: flex; align-items: center; gap: 3px; }
+    .vehicle-spec svg { width: 11px; height: 11px; }
+    .vehicle-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    /* ===== 分段切换器 ===== */
+    .segment-bar {
+      display: flex;
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 14px;
+    }
+    .segment-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .segment-btn svg { width: 15px; height: 15px; }
+    .segment-btn.active {
+      background: var(--card);
+      color: var(--primary);
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+
+    /* ===== 电池健康 ===== */
+    /* 容量分析卡片 */
+    .capacity-card {}
+    .capacity-main { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: 4px; }
+    .capacity-num { display: flex; align-items: baseline; gap: 6px; }
+    .cap-value { font-size: 34px; font-weight: 800; font-family: var(--font-mono); color: var(--accent-frost); letter-spacing: -1px; }
+    .cap-unit { font-size: 13px; color: var(--text-secondary); }
+    .capacity-retention { font-size: 12px; font-weight: 600; color: var(--success); background: var(--green-bg); padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+    .capacity-retention.warn { color: var(--warning); background: var(--amber-bg); }
+    .cap-nominal { display: block; font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .capacity-note { font-size: 12px; color: var(--text-muted); margin-top: 12px; line-height: 1.5; }
+    .capacity-note b { color: var(--text-secondary); font-weight: 600; }
+
+    /* 综合健康度（降权：内联小徽标 + 说明，替代大环形） */
+    .health-summary { display: flex; align-items: center; gap: 12px; padding: 6px 2px 14px; border-bottom: 1px solid var(--border-subtle); }
+    .health-score-badge {
+      width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+      background: var(--primary-bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; font-family: var(--font-mono);
+    }
+    .health-summary-info { flex: 1; min-width: 0; }
+    .health-state { font-size: 16px; font-weight: 700; }
+    .health-expl { font-size: 12px; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; }
+    .health-advice { font-size: 13px; color: var(--text-secondary); margin-top: 12px; line-height: 1.6; padding: 10px 12px; background: var(--bg-elevated); border-radius: var(--radius-md); }
+    .health-habit-head { display: flex; align-items: center; gap: 6px; margin: 16px 0 4px; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+    .health-habit-head svg { width: 16px; height: 16px; color: var(--accent-frost); }
+
+    .health-bar-wrap { margin-top: 10px; }
+    .health-bar-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+    .health-bar-label .cap-nominal { margin: 0; }
+    .health-bar { height: 12px; background: var(--border-subtle); border-radius: 6px; overflow: hidden; }
+    .health-bar-fill { height: 100%; border-radius: 6px; transition: width .8s ease; }
+    .warn-text { color: var(--warning); font-size: 12px; margin-top: 8px; }
+    .text-warn { color: var(--warning); font-weight: 600; }
+    .text-ok { color: var(--success); font-weight: 600; }
+
+    /* ===== 推荐提示 ===== */
+    .tips-list { display: flex; flex-direction: column; gap: 10px; }
+    .tip { display: flex; gap: 12px; padding: 14px; border-radius: var(--radius-sm); }
+    .tip-warn { background: var(--amber-bg); border: 1px solid #fde68a; }
+    .tip-ok { background: var(--green-bg); border: 1px solid #a7f3d0; }
+    .tip-info { background: var(--primary-bg); border: 1px solid #bfdbfe; }
+    .tip-icon { flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+    .tip-icon svg { width: 18px; height: 18px; }
+    .tip-warn .tip-icon { background: #fde68a; color: #92400e; }
+    .tip-ok .tip-icon { background: #a7f3d0; color: #065f46; }
+    .tip-info .tip-icon { background: #bfdbfe; color: #1e40af; }
+    .tip-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+    .tip-text { font-size: 13px; color: var(--text-sub); line-height: 1.6; }
+
+    /* ===== 模态框 ===== */
+    .modal {
+      position: fixed; inset: 0; z-index: 200;
+      display: none; align-items: flex-end; justify-content: center;
+    }
+    .modal.show { display: flex; animation: fadeIn .2s; }
+    .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
+    .modal-content {
+      position: relative; background: var(--card); width: 100%; max-width: 600px;
+      max-height: 90vh; overflow-y: auto; border-radius: 20px 20px 0 0;
+      padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+      animation: slideUp .3s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .modal-header h2 { font-size: 17px; font-weight: 700; }
+    .modal-close {
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: var(--bg); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-close svg { width: 18px; height: 18px; color: var(--text-sub); }
+
+    /* ===== 表单 ===== */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-group label { display: block; font-size: 13px; color: var(--text-sub); margin-bottom: 6px; font-weight: 600; }
+    .input-wrap { position: relative; }
+    .input-wrap .input-suffix {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      font-size: 13px; color: var(--text-light); pointer-events: none;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+      border-radius: 10px; font-size: 15px; font-family: inherit; outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+    }
+    .form-group input.with-suffix { padding-right: 48px; }
+    .form-group textarea { resize: vertical; min-height: 60px; }
+    .checkbox-group { display: flex; align-items: center; gap: 8px; }
+    .checkbox-group input { width: 18px; height: 18px; }
+    .checkbox-group label { margin-bottom: 0; }
+    .form-section-toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; background: var(--bg); border-radius: 10px;
+      cursor: pointer; margin-bottom: 12px; font-size: 14px; font-weight: 600; color: var(--text-sub);
+    }
+    .form-section-toggle svg { width: 16px; height: 16px; transition: transform .2s; }
+    .form-section-toggle.open svg { transform: rotate(180deg); }
+    .form-section-collapse { display: none; }
+    .form-section-collapse.open { display: block; }
+    .form-submit { margin-top: 16px; }
+    .form-submit .btn { width: 100%; padding: 13px; font-size: 16px; justify-content: center; }
+
+    /* ===== 设置列表 ===== */
+    .settings-list { display: flex; flex-direction: column; gap: 8px; }
+    .settings-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px; background: var(--card); border-radius: var(--radius-sm); box-shadow: var(--shadow);
+    }
+    .settings-item-left { display: flex; align-items: center; gap: 12px; }
+    .settings-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .settings-icon svg { width: 20px; height: 20px; }
+    .settings-icon.blue { background: var(--primary-bg); color: var(--primary); }
+    .settings-icon.green { background: var(--green-bg); color: var(--green); }
+    .settings-icon.amber { background: var(--amber-bg); color: var(--amber); }
+    .settings-icon.red { background: var(--red-bg); color: var(--red); }
+    .settings-item-info .si-title { font-size: 14px; font-weight: 600; }
+    .settings-item-info .si-desc { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+    .migration-note {
+      background: var(--primary-bg); border: 1px solid #bfdbfe; border-radius: var(--radius-sm);
+      padding: 14px; font-size: 13px; color: var(--text-sub); line-height: 1.7;
+    }
+    .migration-note strong { color: var(--text); }
+    .migration-note code { background: #dbeafe; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+    /* ===== Toast ===== */
+    .toast {
+      position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: rgba(31,41,55,.92); color: #fff; padding: 10px 22px; border-radius: 24px;
+      font-size: 14px; z-index: 300; opacity: 0; transition: all .3s; white-space: nowrap;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .toast svg { width: 16px; height: 16px; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ===== 图表提示气泡 ===== */
+    .chart-tooltip {
+      position: fixed; background: rgba(31,41,55,.9); color: #fff;
+      padding: 6px 10px; border-radius: 8px; font-size: 12px; white-space: nowrap;
+      pointer-events: none; z-index: 350; opacity: 0; transition: opacity .15s;
+      transform: translate(-50%, -100%); margin-top: -8px;
+    }
+    .chart-tooltip.show { opacity: 1; }
+
+    /* ===== 英雄概览卡 ===== */
+    .hero-card {
+      background: var(--gradient-hero);
+      border-radius: var(--radius);
+      padding: 24px 20px 20px;
+      margin-bottom: 14px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(59,130,246,.25);
+    }
+    .hero-card::after { display: none; }
+    .hero-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; position: relative; z-index: 1; }
+    .hero-label { font-size: 13px; opacity: .8; margin-bottom: 4px; }
+    .hero-amount { font-size: 36px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; }
+    .hero-amount-sub { font-size: 13px; opacity: .8; margin-top: 4px; }
+    .hero-stats { display: flex; gap: 12px; position: relative; z-index: 1; }
+    .hero-stat-item { flex: 1; }
+    .hero-stat-item .hs-label { font-size: 11px; opacity: .7; margin-bottom: 2px; }
+    .hero-stat-item .hs-value { font-size: 18px; font-weight: 700; }
+    .hero-actions { display: flex; gap: 10px; margin-top: 16px; position: relative; z-index: 1; }
+    .hero-btn {
+      flex: 1; padding: 10px; border-radius: 10px; border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      transition: all .2s;
+    }
+    .hero-btn:active { transform: scale(.95); }
+    .hero-btn svg { width: 16px; height: 16px; }
+    .hero-btn-primary { background: #fff; color: var(--primary-dark); }
+    .hero-btn-ghost { background: rgba(255,255,255,.2); color: #fff; border: 1px solid rgba(255,255,255,.3); }
+
+    /* ===== 快捷入口卡 ===== */
+    .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .quick-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .quick-card:active { transform: scale(.97); }
+    .quick-icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .quick-icon svg { width: 22px; height: 22px; }
+    .quick-icon.purple { background: var(--purple-bg); color: var(--purple); }
+    .quick-icon.green { background: var(--green-bg); color: var(--green); }
+    .quick-info .qi-title { font-size: 14px; font-weight: 700; }
+    .quick-info .qi-desc { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+
+    /* ===== 充电记录卡片列表 ===== */
+    .search-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card); border-radius: var(--radius-sm);
+      padding: 10px 14px; margin-bottom: 12px; box-shadow: var(--shadow);
+    }
+    .search-bar svg { width: 18px; height: 18px; color: var(--text-light); flex-shrink: 0; }
+    .search-bar input {
+      flex: 1; border: none; background: none; outline: none;
+      font-size: 14px; color: var(--text); font-family: inherit;
+    }
+    .search-bar input::placeholder { color: var(--text-light); }
+    .filter-chips {
+      display: inline-flex; gap: 3px; background: var(--bg-elevated);
+      border: 1px solid var(--border-default); border-radius: 10px;
+      padding: 3px; margin-bottom: 14px;
+    }
+    .filter-chip {
+      flex: 1; padding: 7px 18px; border: none; border-radius: 8px;
+      background: transparent; font-size: 13px; font-weight: 600;
+      color: var(--text-secondary); cursor: pointer; white-space: nowrap;
+      transition: all .18s;
+    }
+    .filter-chip.active { background: var(--accent-frost); color: #fff; }
+
+    .charge-list { display: flex; flex-direction: column; gap: 10px; }
+    .charge-card {
+      background: var(--card); border-radius: var(--radius); padding: 14px;
+      box-shadow: var(--shadow); cursor: pointer; transition: all .2s;
+      position: relative; overflow: hidden;
+    }
+    .charge-card:active { transform: scale(.98); }
+    .charge-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+      width: 4px; border-radius: 0 4px 4px 0;
+    }
+    .charge-card.slow::before { background: var(--primary); }
+    .charge-card.fast::before { background: var(--amber); }
+    .charge-card-main { display: flex; align-items: center; gap: 12px; }
+    .charge-card-icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .charge-card.slow .charge-card-icon { background: var(--primary-bg); color: var(--primary); }
+    .charge-card.fast .charge-card-icon { background: var(--amber-bg); color: var(--amber); }
+    .charge-card-icon svg { width: 22px; height: 22px; }
+    .charge-card-body { flex: 1; min-width: 0; }
+    .charge-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .charge-card-date { font-size: 14px; font-weight: 700; }
+    .charge-card-amount { font-size: 16px; font-weight: 800; color: var(--primary-dark); }
+    .charge-card-meta { display: flex; gap: 10px; margin-top: 4px; flex-wrap: wrap; }
+    .charge-card-meta span { font-size: 12px; color: var(--text-sub); display: flex; align-items: center; gap: 3px; }
+    .charge-card-meta svg { width: 12px; height: 12px; }
+    .charge-card-detail { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light); }
+    .charge-card.expanded .charge-card-detail { display: block; animation: fadeIn .2s ease; }
+    .charge-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+    .charge-detail-item .cd-label { font-size: 11px; color: var(--text-light); }
+    .charge-detail-item .cd-value { font-size: 14px; font-weight: 600; margin-top: 2px; }
+    .charge-card-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+    /* ===== 自定义确认面板 ===== */
+    .confirm-modal {
+      position: fixed; inset: 0; z-index: 250;
+      display: none; align-items: flex-end; justify-content: center;
+    }
+    .confirm-modal.show { display: flex; animation: fadeIn .2s; }
+    .confirm-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.5); }
+    .confirm-panel {
+      position: relative; background: var(--card); width: 100%; max-width: 600px;
+      border-radius: 20px 20px 0 0; padding: 28px 20px calc(24px + env(safe-area-inset-bottom));
+      animation: slideUp .3s ease;
+    }
+    .confirm-icon {
+      width: 56px; height: 56px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .confirm-icon.danger { background: var(--red-bg); color: var(--red); }
+    .confirm-icon svg { width: 28px; height: 28px; }
+    .confirm-title { text-align: center; font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .confirm-text { text-align: center; font-size: 14px; color: var(--text-sub); line-height: 1.6; margin-bottom: 20px; }
+    .confirm-actions { display: flex; gap: 12px; }
+    .confirm-actions .btn { flex: 1; justify-content: center; padding: 13px; }
+    .btn-danger { background: var(--red); color: #fff; }
+
+    /* ===== 表单分段按钮 ===== */
+    .form-segment {
+      display: flex; gap: 8px;
+    }
+    .form-segment-btn {
+      flex: 1; padding: 11px; border-radius: 10px;
+      border: 1.5px solid var(--border); background: var(--card);
+      font-size: 14px; font-weight: 600; color: var(--text-sub);
+      cursor: pointer; transition: all .2s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .form-segment-btn svg { width: 16px; height: 16px; }
+    .form-segment-btn.active {
+      border-color: var(--primary); background: var(--primary-bg);
+      color: var(--primary-dark);
+    }
+
+    /* ===== Toast 变体 ===== */
+    .toast.success { background: rgba(16,185,129,.92); }
+    .toast.warn { background: rgba(245,158,11,.92); }
+    .toast.error { background: rgba(239,68,68,.92); }
+
+    /* ===== 骨架屏 ===== */
+    .skeleton {
+      background: linear-gradient(90deg, var(--border-light) 25%, var(--border) 50%, var(--border-light) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* ===== 图表入场动画 ===== */
+    @keyframes barRise {
+      from { transform: scaleY(0); }
+      to { transform: scaleY(1); }
+    }
+    @keyframes lineDraw {
+      from { stroke-dashoffset: var(--len, 1000); }
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* ===== 响应式 ===== */
+    @media (min-width: 600px) {
+      .stat-cards { grid-template-columns: repeat(4, 1fr); }
+      .header { padding: 16px 20px 14px; }
+      .main { padding: 16px 20px 24px; }
+      .fab { right: 50%; transform: translateX(270px); }
+      .fab:active { transform: translateX(270px) scale(.9); }
+    }
+
+    /* ===== 充电表单独立页面 ===== */
+    .page-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: var(--bg);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .page-overlay.show { display: block; animation: slideInRight .25s ease; }
+    @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    .page-header {
+      background: var(--gradient-primary);
+      color: #fff;
+      padding: 14px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 12px rgba(59,130,246,.3);
+    }
+    .page-back-btn {
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,.18); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s;
+    }
+    .page-back-btn:active { background: rgba(255,255,255,.28); }
+    .page-back-btn svg { width: 20px; height: 20px; color: #fff; }
+    .page-header h2 { font-size: 17px; font-weight: 700; }
+    .page-body { max-width: 600px; margin: 0 auto; padding: 16px 14px calc(20px + env(safe-area-inset-bottom)); }
+
+    /* ===== 表单分段标题 ===== */
+    .form-section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin: 18px 0 10px;
+      padding-left: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .form-section-title svg { width: 16px; height: 16px; }
+    .form-section-title:first-child { margin-top: 0; }
+    .form-section-title .fst-tag {
+      font-size: 10px;
+      font-weight: 600;
+      background: var(--primary-bg);
+      color: var(--primary);
+      padding: 2px 8px;
+      border-radius: 10px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    /* ===== 自动计算提示 ===== */
+    .auto-calc-hint {
+      font-size: 11px;
+      color: var(--green);
+      margin-top: 4px;
+      padding-left: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .auto-calc-hint svg { width: 12px; height: 12px; }
+
+    /* ===== 月度汇总分组 ===== */
+    .month-group { margin-bottom: 16px; }
+    .month-group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--card);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      box-shadow: var(--shadow);
+      border-left: 4px solid var(--primary);
+    }
+    .month-group-title { font-size: 14px; font-weight: 700; }
+    .month-group-summary { display: flex; gap: 12px; font-size: 12px; color: var(--text-sub); }
+    .month-group-summary span { display: flex; align-items: center; gap: 3px; }
+    .month-group-summary svg { width: 12px; height: 12px; }
+
+    /* ===== 日期筛选 ===== */
+    .date-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      border-radius: 10px;
+      padding: 4px 6px;
+      margin-bottom: 12px;
+      box-shadow: none !important;
+    }
+    .date-filter-bar svg { width: 17px; height: 17px; color: var(--text-secondary); flex-shrink: 0; margin-left: 6px; }
+    .date-filter-bar select {
+      flex: 1;
+      border: none;
+      background: none;
+      outline: none;
+      font-size: 13px;
+      color: var(--text-primary);
+      font-family: inherit;
+      padding: 8px 8px;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .date-filter-bar select + select { border-left: 1px solid var(--border-default); }
+    .date-filter-bar .filter-reset {
+      font-size: 12px;
+      color: var(--accent-frost);
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: var(--primary-bg);
+      border: none;
+    }
+
+    /* ===== 图表数据标签 ===== */
+    .chart-bar-label {
+      position: absolute;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-sub);
+      pointer-events: none;
+      transform: translateX(-50%);
+    }
+
+    /* ===== 图表年份标题 ===== */
+    .chart-year-tag {
+      font-size: 11px;
+      color: var(--text-light);
+      font-weight: 600;
+      margin-left: 6px;
+    }
+
+    /* ============================================================
+     * 设计规范覆盖层（清冷科幻 · 深色）
+     * ============================================================ */
+    /* 顶部导航：扁平深底，摒弃发光渐变 */
+    .header {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-default);
+      box-shadow: none;
+    }
+    .header h1 { color: var(--text-primary); letter-spacing: .5px; }
+    .header-brand svg { width: 28px; height: 28px; }
+    .vehicle-pill {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      color: var(--text-primary);
+    }
+    .vehicle-pill svg { color: var(--accent-frost); }
+    .vehicle-pill:active { background: #20202A; }
+
+    /* 底部导航 */
+    .tab-bar { background: var(--bg-surface); border-top: 1px solid var(--border-default); box-shadow: 0 -1px 0 rgba(0,0,0,.4); }
+    .tab-btn { color: var(--text-secondary); }
+    .tab-btn.active { color: var(--accent-frost); }
+    .tab-btn.active::before {
+      background: var(--accent-frost);
+      box-shadow: 0 0 0 0 transparent;
+    }
+
+    /* FAB：高对比主操作（浅底深图标，无发光） */
+    .fab {
+      background: var(--action-primary);
+      box-shadow: var(--shadow-elevated);
+      border: 1px solid rgba(0,0,0,.2);
+    }
+    .fab svg { color: var(--action-primary-text); }
+    .fab:active { box-shadow: var(--shadow-surface); }
+
+    /* 卡片：表面色 + 细分隔线 + 顶部微光分界线 */
+    .card, .quick-card, .charge-card, .settings-item, .month-group-header, .search-bar {
+      border: 1px solid var(--border-default) !important;
+      box-shadow: var(--shadow-surface);
+    }
+    .card { position: relative; }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 20px; right: 20px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(91, 143, 168, 0.16), transparent);
+      pointer-events: none;
+    }
+    .card h3 { color: var(--text-primary); font-size: 15px; }
+    .card h3 svg { color: var(--accent-frost); }
+
+    /* 统计卡片 */
+    .stat-title { color: var(--text-secondary); }
+    .stat-value { font-family: var(--font-mono); color: var(--text-primary); }
+    .stat-sub { color: var(--text-secondary); }
+
+    /* 按钮 */
+    .btn-primary { background: var(--action-primary); color: var(--action-primary-text); box-shadow: none; }
+    .btn-primary:hover { background: var(--action-primary-hover); }
+    .btn-primary:active { transform: scale(.98); }
+    .btn-primary svg { color: var(--action-primary-text); }
+    .btn-outline { background: transparent; border: 1px solid rgba(91, 143, 168, 0.4); color: var(--accent-frost); }
+    .btn-outline:hover { background: rgba(91, 143, 168, 0.08); border-color: rgba(91, 143, 168, 0.55); }
+    .btn-green { background: var(--success); color: #fff; box-shadow: none; }
+    .btn-mini { background: var(--bg-elevated); border: 1px solid var(--border-default); color: var(--text-primary); }
+    .btn-mini svg { color: var(--text-primary); }
+    .btn-mini.danger { color: var(--error); border-color: rgba(138, 58, 74, 0.35); }
+    .btn-mini.danger svg { color: var(--error); }
+    .btn-danger { background: var(--error); color: #fff; }
+
+    /* 输入框 */
+    .form-group input, .form-group select, .form-group textarea, .date-filter-bar select {
+      background: var(--bg-base);
+      border: 1px solid var(--border-default);
+      color: var(--text-primary);
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--accent-frost);
+      box-shadow: 0 0 0 3px rgba(91, 143, 168, 0.12);
+    }
+    .form-group input::placeholder, .form-group textarea::placeholder { color: var(--text-muted); }
+    .form-group label { color: var(--text-secondary); }
+    .input-wrap .input-suffix { color: var(--text-muted); font-family: var(--font-mono); }
+
+    /* 徽章 */
+    .badge.slow { background: var(--primary-bg); color: var(--accent-frost); }
+    .badge.fast { background: var(--amber-bg); color: var(--warning); }
+
+    /* 分段切换器 */
+    .segment-bar { background: var(--bg-base); border: 1px solid var(--border-subtle); }
+    .segment-btn { color: var(--text-secondary); }
+    .segment-btn.active { background: var(--bg-elevated); color: var(--accent-frost); box-shadow: none; border: 1px solid rgba(91,143,168,0.22); }
+    .form-segment-btn { background: var(--bg-base); border: 1px solid var(--border-default); color: var(--text-secondary); }
+    .form-segment-btn.active { border-color: var(--accent-frost); background: var(--primary-bg); color: var(--accent-frost); }
+
+    /* 充电卡片 */
+    .charge-card.slow::before { background: var(--accent-frost); }
+    .charge-card.fast::before { background: var(--warning); }
+    .charge-card.slow .charge-card-icon { background: var(--primary-bg); color: var(--accent-frost); }
+    .charge-card.fast .charge-card-icon { background: var(--amber-bg); color: var(--warning); }
+    .charge-card-date { color: var(--text-primary); }
+    .charge-card-amount { font-family: var(--font-mono); color: var(--accent-frost); }
+    .charge-card-meta span { color: var(--text-secondary); }
+    .charge-detail-item .cd-label { color: var(--text-muted); }
+    .charge-detail-item .cd-value { font-family: var(--font-mono); color: var(--text-primary); }
+
+    /* 搜索/筛选栏 */
+    .filter-chip { background: transparent; }
+    .filter-chip.active { background: var(--accent-frost); color: #fff; }
+    .date-filter-bar { background: var(--bg-elevated); }
+    .date-filter-bar .filter-reset { color: var(--accent-frost); background: var(--primary-bg); }
+
+    /* 月度汇总 */
+    .month-group-header { border-left: 4px solid var(--accent-frost); }
+    .month-group-title { color: var(--text-primary); }
+    .month-group-summary { color: var(--text-secondary); font-family: var(--font-mono); }
+
+    /* 车辆卡片与操作按钮（符号/emoji 重绘） */
+    .vehicle-card { background: var(--bg-surface); border: 1px solid var(--border-default); }
+    .vehicle-card:active { border-color: rgba(91, 143, 168, 0.5); }
+    .vehicle-avatar { background: var(--primary-bg); color: var(--accent-frost); }
+    .vehicle-avatar svg { color: var(--accent-frost); }
+    .vehicle-name { color: var(--text-primary); }
+    .vehicle-meta { color: var(--text-secondary); }
+    .vehicle-spec { background: var(--bg-base); color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+    .vehicle-actions { display: flex; gap: 10px; flex-shrink: 0; }
+    .vehicle-action-btn {
+      width: 34px; height: 34px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: var(--radius-md);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      font-size: 16px; line-height: 1;
+      cursor: pointer; transition: all .18s;
+      color: var(--text-primary);
+    }
+    .vehicle-action-btn:hover { background: #22222C; }
+    .vehicle-action-btn:active { transform: scale(.92); }
+    .vehicle-action-btn.edit { color: var(--accent-frost); border-color: rgba(91,143,168,0.35); }
+    .vehicle-action-btn.del { color: var(--error); border-color: rgba(138,58,74,0.35); }
+
+    /* 数据等宽字体（金额/电量/百分比） */
+    .hero-amount, .hero-stat-item .hs-value, .health-ring-num, .health-bar-label b, .tip-text b, .donut-legend
+    { font-family: var(--font-mono); }
+    .data-table td, .data-table th { color: var(--text-primary); }
+    .data-table td { font-family: var(--font-mono); }
+
+    /* 提示气泡与 Toast */
+    .chart-tooltip { background: var(--bg-elevated); border: 1px solid var(--border-default); color: var(--text-primary); box-shadow: var(--shadow-elevated); }
+    .toast { background: var(--bg-elevated); border: 1px solid var(--border-default); color: var(--text-primary); box-shadow: var(--shadow-elevated); }
+    .toast.success { background: var(--success); border-color: transparent; color: #fff; }
+    .toast.warn { background: var(--warning); border-color: transparent; color: #fff; }
+    .toast.error { background: var(--error); border-color: transparent; color: #fff; }
+
+    /* 空状态 */
+    .empty-state svg { color: var(--text-muted); }
+    .empty-state p { color: var(--text-secondary); }
+
+    /* 推荐提示卡 */
+    .tip { border: 1px solid var(--border-default); }
+    .tip-warn, .tip-info, .tip-ok { background: var(--bg-surface); border-color: transparent; }
+    .tip-warn { border-left: 3px solid var(--warning); }
+    .tip-info { border-left: 3px solid var(--accent-frost); }
+    .tip-ok { border-left: 3px solid var(--success); }
+    .tip-warn .tip-icon { background: var(--amber-bg); color: var(--warning); }
+    .tip-info .tip-icon { background: var(--primary-bg); color: var(--accent-frost); }
+    .tip-ok .tip-icon { background: var(--green-bg); color: var(--success); }
+    .tip-title { color: var(--text-primary); }
+    .tip-text { color: var(--text-secondary); }
+
+    /* 模态框 / 确认面板 */
+    .modal-content, .confirm-panel { background: var(--bg-surface); border: 1px solid var(--border-default); box-shadow: var(--shadow-dialog); }
+    .modal-header h2, .confirm-title { color: var(--text-primary); }
+    .confirm-text { color: var(--text-secondary); }
+    .modal-close { background: var(--bg-elevated); }
+    .modal-close svg { color: var(--text-primary); }
+    .confirm-icon.danger { background: var(--red-bg); color: var(--error); }
+
+    /* 迁移说明 / 表单折叠 */
+    .form-section-toggle { background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-primary); }
+    .migration-note { background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-secondary); }
+    .migration-note code { background: var(--bg-elevated); color: var(--accent-frost); }
+
+    /* 自动计算提示 */
+    .auto-calc-hint { color: var(--success); }
+
+    /* 表单分段标题 */
+    .form-section-title { color: var(--text-secondary); }
+    .form-section-title svg { color: var(--accent-frost); }
+    .form-section-title .fst-tag { background: var(--primary-bg); color: var(--accent-frost); }
+
+    /* 表单独立页 */
+    .page-overlay { background: var(--bg-base); }
+    .page-header { background: var(--bg-base); border-bottom: 1px solid var(--border-default); box-shadow: none; }
+    .page-back-btn { background: var(--bg-elevated); border: 1px solid var(--border-default); }
+    .page-back-btn svg { color: var(--text-primary); }
+    .page-header h2 { color: var(--text-primary); }
+
+    /* 编辑记录样式微调 */
+    .warn-text { color: var(--warning); }
+    .text-warn { color: var(--warning); }
+    .text-ok { color: var(--success); }
+    .trend-down { color: var(--success); }
+    .trend-up { color: var(--error); }
+    .health-score-badge { background: var(--primary-bg); }
+    .health-advice { color: var(--text-secondary); }
+    .hero-label, .hero-amount-sub { color: var(--text-secondary); }
+    .hero-btn-primary { background: var(--action-primary); color: var(--action-primary-text); }
+    .hero-btn-ghost { background: rgba(91,143,168,0.1); color: var(--accent-frost); border: 1px solid rgba(91,143,168,0.35); }
+    /* 滚动条 */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+  </style>
+</head>
+<body>
+  <!-- 顶部导航 -->
+  <header class="header">
+    <div class="header-row">
+      <div class="header-brand">
+        <img src="assets/logo.png" alt="冲充电" class="header-logo">
+        <h1>冲充电</h1>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="vehicle-pill" id="vehiclePill" onclick="App.openVehiclePicker()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11M5 11h14M5 11v6a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-6" stroke-linecap="round"/><circle cx="8" cy="14" r="1" fill="currentColor"/><circle cx="16" cy="14" r="1" fill="currentColor"/></svg>
+          <span id="vehiclePillName">未选择</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容 -->
+  <main class="main">
+    <section class="tab-panel active" id="panel-home"></section>
+    <section class="tab-panel" id="panel-records"></section>
+    <section class="tab-panel" id="panel-analysis">
+      <div class="segment-bar" id="analysisSegment">
+        <button class="segment-btn active" data-sub="stats">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 14l3-3 3 3 5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          统计
+        </button>
+        <button class="segment-btn" data-sub="health">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="16" height="10" rx="2"/><line x1="22" y1="11" x2="22" y2="13"/><rect x="4" y="9" width="10" height="6" rx="1" fill="currentColor" opacity=".3"/></svg>
+          电池健康
+        </button>
+        <button class="segment-btn" data-sub="recommend">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 21h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          充电建议
+        </button>
+      </div>
+      <div id="analysis-content"></div>
+    </section>
+    <section class="tab-panel" id="panel-profile"></section>
+  </main>
+
+  <!-- FAB 悬浮按钮 -->
+  <button class="fab" id="fabAddCharge" onclick="App.openChargeModal()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke-linecap="round"/></svg>
+  </button>
+
+  <!-- 底部导航 -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      首页
+    </button>
+    <button class="tab-btn" data-tab="records">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M8 13h8 M8 17h5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      记录
+    </button>
+    <button class="tab-btn" data-tab="analysis">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 14l3-3 3 3 5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      分析
+    </button>
+    <button class="tab-btn" data-tab="profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1" stroke-linecap="round"/></svg>
+      我的
+    </button>
+  </nav>
+
+  <!-- 充电记录表单独立页面 -->
+  <div class="page-overlay" id="chargeFormPage">
+    <div class="page-header">
+      <button class="page-back-btn" onclick="App.closeChargePage()" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h2 id="chargeFormPageTitle">添加充电记录</h2>
+    </div>
+    <div class="page-body">
+      <form id="chargeFormPage-form">
+        <input type="hidden" id="cf_vehicleId">
+        <input type="hidden" id="cf_chargeType" value="slow">
+
+        <!-- 段1: 基本信息（充电类型置顶单独一行） -->
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          基本信息
+        </div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label for="cf_chargeType">充电类型</label>
+            <div class="form-segment" id="cf_chargeTypeSegment">
+              <button type="button" class="form-segment-btn active" data-val="slow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0 M12 2v10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                慢充
+              </button>
+              <button type="button" class="form-segment-btn" data-val="fast">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                快充
+              </button>
+            </div>
+          </div>
+          <div class="form-group full">
+            <label for="cf_date">充电日期</label>
+            <input type="date" id="cf_date" required>
+          </div>
+        </div>
+
+        <!-- 段2: 充电数据 -->
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          充电数据
+          <span class="fst-tag">度数·单价·费用互算</span>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="cf_kWh">充电度数</label>
+            <div class="input-wrap">
+              <input type="number" class="with-suffix" id="cf_kWh" step="0.1" placeholder="如 45.5" required>
+              <span class="input-suffix">度</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="cf_unitPrice">充电单价</label>
+            <div class="input-wrap">
+              <input type="number" class="with-suffix" id="cf_unitPrice" step="0.01" placeholder="如 1.20">
+              <span class="input-suffix">元/度</span>
+            </div>
+          </div>
+          <div class="form-group full">
+            <label for="cf_totalCost">总费用</label>
+            <div class="input-wrap">
+              <input type="number" class="with-suffix" id="cf_totalCost" step="0.01" placeholder="输入度数和单价自动计算，或直接填写">
+              <span class="input-suffix">¥</span>
+            </div>
+            <div class="auto-calc-hint" id="autoCalcHint" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span id="autoCalcText"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 段3: 车辆状态（选填） -->
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11M5 11h14M5 11v6a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-6" stroke-linecap="round"/><circle cx="8" cy="14" r="1" fill="currentColor"/><circle cx="16" cy="14" r="1" fill="currentColor"/></svg>
+          车辆状态
+          <span class="fst-tag">选填</span>
+        </div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label for="cf_odometer">里程表读数</label>
+            <div class="input-wrap">
+              <input type="number" class="with-suffix" id="cf_odometer" step="0.1" placeholder="如 15200">
+              <span class="input-suffix">km</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="cf_socBefore">充电前电量</label>
+            <div class="input-wrap">
+              <input type="number" class="with-suffix" id="cf_socBefore" min="0" max="100" placeholder="如 20">
+              <span class="input-suffix">%</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="cf_socAfter">充电后电量</label>
+            <div class="input-wrap">
+              <input type="number" class="with-suffix" id="cf_socAfter" min="0" max="100" placeholder="如 80">
+              <span class="input-suffix">%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 段4: 备注 -->
+        <div class="form-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M8 13h8 M8 17h5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          备注
+          <span class="fst-tag">选填</span>
+        </div>
+        <div class="form-group full">
+          <textarea id="cf_note" placeholder="如 充电站名称、地点等"></textarea>
+        </div>
+
+        <div class="form-submit">
+          <button type="submit" class="btn btn-primary btn-block">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 12 10 17 19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            保存记录
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 充电记录模态框（保留但不再使用，由独立页面替代） -->
+  <div class="modal" id="chargeModal" style="display:none;">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="chargeModalTitle">添加充电记录</h2>
+        <button class="modal-close" aria-label="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/><line x1="6" y1="18" x2="18" y2="6" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 车型模态框 -->
+  <div class="modal" id="vehicleModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="vehicleModalTitle">添加车辆</h2>
+        <button class="modal-close" aria-label="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/><line x1="6" y1="18" x2="18" y2="6" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <form id="vehicleForm">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label for="vf_name">车辆名称</label>
+            <input type="text" id="vf_name" placeholder="如 我的小鹏 P7" required>
+          </div>
+          <div class="form-group">
+            <label for="vf_brand">品牌</label>
+            <input type="text" id="vf_brand" placeholder="如 小鹏">
+          </div>
+          <div class="form-group">
+            <label for="vf_model">型号</label>
+            <input type="text" id="vf_model" placeholder="如 P7 后驱长续航">
+          </div>
+          <div class="form-group">
+            <label for="vf_batteryCapacity">电池容量</label>
+            <div class="input-wrap">
+              <input type="number" class="with-suffix" id="vf_batteryCapacity" step="0.1" placeholder="如 70.8" required>
+              <span class="input-suffix">kWh</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="vf_maxChargePower">最大充电功率</label>
+            <div class="input-wrap">
+              <input type="number" class="with-suffix" id="vf_maxChargePower" step="0.1" placeholder="如 90">
+              <span class="input-suffix">kW</span>
+            </div>
+          </div>
+          <div class="form-group full">
+            <div class="checkbox-group">
+              <input type="checkbox" id="vf_supportsFastCharge">
+              <label for="vf_supportsFastCharge">支持快充</label>
+            </div>
+          </div>
+          <div class="form-group full">
+            <label for="vf_note">备注（选填）</label>
+            <textarea id="vf_note" placeholder="如 购车日期、电池类型等"></textarea>
+          </div>
+        </div>
+        <div class="form-submit">
+          <button type="submit" class="btn btn-primary btn-block">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 12 10 17 19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            保存车辆
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 车辆选择下拉模态 -->
+  <div class="modal" id="vehiclePickerModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content" style="max-height: 50vh;">
+      <div class="modal-header">
+        <h2>选择车辆</h2>
+        <button class="modal-close" aria-label="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/><line x1="6" y1="18" x2="18" y2="6" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div id="vehiclePickerList"></div>
+    </div>
+  </div>
+
+  <!-- 自定义确认面板 -->
+  <div class="confirm-modal" id="confirmModal">
+    <div class="confirm-overlay" onclick="App.closeConfirm()"></div>
+    <div class="confirm-panel">
+      <div class="confirm-icon danger" id="confirmIcon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="confirm-title" id="confirmTitle">确认操作</div>
+      <div class="confirm-text" id="confirmText">确定要执行此操作吗？</div>
+      <div class="confirm-actions">
+        <button class="btn btn-outline" onclick="App.closeConfirm()">取消</button>
+        <button class="btn btn-danger" id="confirmOkBtn">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="charging-tracker.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').then(function (reg) {
+          console.log('SW 注册成功', reg.scope);
+        }).catch(function (err) {
+          console.warn('SW 注册失败', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
