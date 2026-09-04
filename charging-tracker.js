@@ -1389,7 +1389,7 @@
       html += '<div class="card"><h3>' + Icons.settings + '数据管理</h3><div class="settings-list">';
       html += this.settingsItem('blue', Icons.download, '导出备份', '将所有数据导出为 JSON 文件', '<button class="btn btn-primary" id="btnExport">导出</button>');
       html += this.settingsItem('green', Icons.upload, '导入备份', '从 JSON 文件恢复数据', '<label class="btn btn-outline" style="cursor:pointer;">导入<input type="file" id="importInput" accept=".json" style="display:none;"></label>');
-      html += this.settingsItem('amber', Icons.play, '加载示例数据', '首次使用可加载演示数据', '<button class="btn btn-outline" id="btnDemo" onclick="App.loadDemoData()">加载</button>');
+      html += this.settingsItem('amber', Icons.play, '我的数据', '载入智己 L6 及近期充电记录', '<button class="btn btn-outline" id="btnMyData" onclick="App.loadMyData()">载入</button>');
       html += this.settingsItem('red', Icons.trash, '清空所有数据', '删除全部数据，不可恢复', '<button class="btn-mini danger" id="btnClear" style="padding:9px 16px;font-size:14px;">清空</button>');
       html += '</div></div>';
 
@@ -1683,31 +1683,49 @@
       setTimeout(function () { t.classList.remove('show'); setTimeout(function () { t.remove(); }, 300); }, 2000);
     },
 
-    loadDemoData: function () {
+    loadMyData: function () {
       var v = VehicleMgr.add({
-        name: '我的特斯拉 Model 3', brand: 'Tesla', model: 'Model 3 标准续航',
-        batteryCapacity: 60, supportsFastCharge: true, maxChargePower: 250
+        name: '智己 L6', brand: '智己', model: 'L6 max 标准版',
+        batteryCapacity: 75, supportsFastCharge: true, maxChargePower: 153
       });
-      var now = new Date();
-      var baseOdo = 10000;
-      var types = ['slow', 'slow', 'fast', 'slow', 'fast', 'slow', 'fast', 'slow'];
-      for (var i = 7; i >= 0; i--) {
-        var d = new Date(now.getFullYear(), now.getMonth() - Math.floor(i / 2), 15 - i * 2);
-        var type = types[7 - i];
-        var socB = 15 + Math.floor(Math.random() * 20);
-        var socA = type === 'fast' ? 80 + Math.floor(Math.random() * 15) : 85 + Math.floor(Math.random() * 10);
-        var kwh = (socA - socB) / 100 * 60 * (0.9 + Math.random() * 0.2);
-        var price = type === 'fast' ? 1.5 + Math.random() * 0.3 : 0.5 + Math.random() * 0.2;
-        baseOdo += 300 + Math.floor(Math.random() * 300);
+      // 价格为 0 的为慢充，其余皆为快充
+      var records = [
+        { d: '5月30日', cost: 63.93, kwh: 56.3, fast: true },
+        { d: '6月2日', cost: 47.57, kwh: 62.1, fast: true },
+        { d: '6月10日', cost: 0, kwh: 44.9, fast: false },
+        { d: '6月13日', cost: 21.6, kwh: 44.1, fast: true },
+        { d: '6月20日', cost: 0, kwh: 50, fast: false },
+        { d: '6月23日', cost: 0, kwh: 19, fast: false },
+        { d: '6月28日', cost: 8.65, kwh: 44.7, fast: true },
+        { d: '7月4日', cost: 1.2, kwh: 12, fast: true },
+        { d: '7月5日', cost: 19, kwh: 27, fast: true },
+        { d: '7月6日', cost: 1.2, kwh: 22, fast: true },
+        { d: '7月6日', cost: 15.5, kwh: 28, fast: true },
+        { d: '7月11日', cost: 18.9, kwh: 35, fast: true },
+        { d: '7月25日', cost: 38.23, kwh: 64.7, fast: true },
+        { d: '8月9日', cost: 23.89, kwh: 48, fast: true },
+        { d: '8月16日', cost: 31, kwh: 52, fast: true },
+        { d: '8月26日', cost: 18.4, kwh: 30, fast: true },
+        { d: '8月30日', cost: 29.3, kwh: 52, fast: true }
+      ];
+      var year = new Date().getFullYear();
+      var months = { '5': '05', '6': '06', '7': '07', '8': '08' };
+      records.forEach(function (r) {
+        var m = /^(\d+)月(\d+)日$/.exec(r.d);
+        if (!m) return;
+        var mm = months[String(parseInt(m[1], 10))] || String(m[1]).padStart(2, '0');
+        var dd = String(parseInt(m[2], 10)).padStart(2, '0');
         ChargeMgr.add({
           vehicleId: v.id,
-          date: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'),
-          odometer: baseOdo, chargeType: type, kWh: kwh.toFixed(1), unitPrice: price.toFixed(2),
-          totalCost: (kwh * price).toFixed(2), socBefore: socB, socAfter: socA
+          date: year + '-' + mm + '-' + dd,
+          odometer: 0, chargeType: r.fast ? 'fast' : 'slow',
+          kWh: r.kwh, totalCost: r.cost,
+          unitPrice: r.cost > 0 ? +(r.cost / r.kwh).toFixed(2) : 0,
+          socBefore: 0, socAfter: 0
         });
-      }
+      });
       this.renderAll();
-      this.toast('已加载示例数据', 'success');
+      this.toast('已载入我的数据：' + v.name, 'success');
     }
   };
 
