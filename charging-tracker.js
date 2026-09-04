@@ -773,7 +773,11 @@
         btn.addEventListener('click', function () { self.switchTab(btn.dataset.tab); });
       });
       var chargeForm = document.getElementById('chargeFormPage-form');
-      if (chargeForm) chargeForm.addEventListener('submit', function (e) { e.preventDefault(); self.saveCharge(); });
+      if (chargeForm) {
+        chargeForm.addEventListener('submit', function (e) { e.preventDefault(); self.saveCharge(); });
+        // 原生必填校验拦截：任一必填字段未填即抖动按钮提示
+        chargeForm.addEventListener('invalid', function () { self.shakeSaveBtn(); }, true);
+      }
       var vehicleForm = document.getElementById('vehicleForm');
       if (vehicleForm) vehicleForm.addEventListener('submit', function (e) { e.preventDefault(); self.saveVehicle(); });
 
@@ -1537,6 +1541,14 @@
       }
     },
 
+    shakeSaveBtn: function () {
+      var btn = document.querySelector('#chargeFormPage-form .btn[type=submit]');
+      if (!btn) return;
+      btn.classList.remove('shake');
+      void btn.offsetWidth; // 重置动画
+      btn.classList.add('shake');
+    },
+
     saveCharge: function () {
       var data = {
         vehicleId: document.getElementById('cf_vehicleId').value,
@@ -1550,8 +1562,8 @@
         socAfter: document.getElementById('cf_socAfter').value,
         note: document.getElementById('cf_note').value
       };
-      if (!data.date) { this.toast('请选择日期', 'warn'); return; }
-      if (!data.kWh) { this.toast('请输入充电度数', 'warn'); return; }
+      if (!data.date) { this.shakeSaveBtn(); this.toast('请选择日期', 'warn'); return; }
+      if (!data.kWh) { this.shakeSaveBtn(); this.toast('请输入充电度数', 'warn'); return; }
       if (this.editingChargeId) ChargeMgr.update(this.editingChargeId, data);
       else ChargeMgr.add(data);
       this.closeChargePage();

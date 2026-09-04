@@ -497,8 +497,25 @@
     .form-section-toggle.open svg { transform: rotate(180deg); }
     .form-section-collapse { display: none; }
     .form-section-collapse.open { display: block; }
-    .form-submit { margin-top: 16px; }
+    .form-submit {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      margin: 0 auto;
+      max-width: 600px;
+      padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(5,5,8,0), var(--bg) 32%);
+      z-index: 20;
+      box-sizing: border-box;
+    }
     .form-submit .btn { width: 100%; padding: 13px; font-size: 16px; justify-content: center; }
+    @keyframes btnShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-9px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    .form-submit .btn.shake { animation: btnShake .45s ease; }
 
     /* ===== 设置列表 ===== */
     .settings-list { display: flex; flex-direction: column; gap: 8px; }
@@ -765,7 +782,7 @@
     .page-back-btn:active { background: rgba(255,255,255,.28); }
     .page-back-btn svg { width: 20px; height: 20px; color: #fff; }
     .page-header h2 { font-size: 17px; font-weight: 700; }
-    .page-body { max-width: 600px; margin: 0 auto; padding: 16px 14px calc(20px + env(safe-area-inset-bottom)); }
+    .page-body { max-width: 600px; margin: 0 auto; padding: 16px 14px calc(112px + env(safe-area-inset-bottom)); }
 
     /* ===== 表单分段标题 ===== */
     .form-section-title {
