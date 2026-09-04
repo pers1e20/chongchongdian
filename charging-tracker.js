@@ -1003,7 +1003,7 @@
       html += '<div>';
       html += '<div class="hero-label">本月充电费用</div>';
       html += '<div class="hero-amount">¥' + Utils.fmtMoney(ov.thisMonthCost) + '</div>';
-      html += '<div class="hero-amount-sub">充入 ' + Utils.fmt(ov.thisMonthKWh, 1) + ' 度 · ' + vehicle.name + '</div>';
+      html += '<div class="hero-amount-sub">充入 ' + Utils.fmt(ov.thisMonthKWh, 1) + ' 度</div>';
       html += '</div>';
       html += '</div>';
       html += '<div class="hero-stats">';
@@ -1015,6 +1015,31 @@
       html += '<button class="hero-btn hero-btn-primary" onclick="App.openChargeModal()">' + Icons.plus + '记一笔充电</button>';
       html += '<button class="hero-btn hero-btn-ghost" onclick="App.switchTab(\'analysis\')">' + Icons.chart + '查看分析</button>';
       html += '</div>';
+      html += '</div>';
+
+      // 分析概览：电池健康 + 百公里电耗 + 快慢充比 + 充电建议（点击可跳转/查看详情）
+      var health = BatteryHealth.healthIndex(vid);
+      var hColor = health.index >= 85 ? '#4A7A6B' : (health.index >= 70 ? '#5B8FA8' : (health.index >= 50 ? '#8A6A3A' : '#8A3A4A'));
+      var effInfo = Stats.avgEfficiency(vid);
+      var ratio = Stats.chargeTypeRatio(vid);
+      var rec = Recommender.generate(vid);
+      var fastPct = Math.round(ratio.fast * 100);
+      var effShow = effInfo.count > 0 ? Utils.fmt(effInfo.avg, 1) + ' 度' : '—';
+      html += '<div class="card"><div class="card-head"><h3>' + Icons.shield + '分析概览</h3>'
+        + '<button class="btn-mini" onclick="App.switchTab(\'analysis\')">查看全部</button></div>';
+      html += '<div class="home-insight">';
+      html += '<div class="hi-cell" onclick="App.switchTab(\'analysis\');App.setAnalysisSub(\'health\')">'
+        + '<div class="hi-score" style="color:' + hColor + '">' + health.index + '</div>'
+        + '<div class="hi-info"><div class="hi-state" style="color:' + hColor + '">' + health.status + '</div><div class="hi-sub">电池健康</div></div></div>';
+      html += '<div class="hi-cell" onclick="App.showStatDetail(\'avgEff\', \'' + vid + '\')">'
+        + '<div class="hi-info"><div class="hi-value">' + effShow + '</div><div class="hi-sub">百公里电耗</div></div></div>';
+      html += '<div class="hi-cell" onclick="App.showStatDetail(\'fastslow\', \'' + vid + '\')">'
+        + '<div class="hi-info"><div class="hi-value">' + fastPct + ':' + (100 - fastPct) + '</div><div class="hi-sub">快慢充比</div></div></div>';
+      html += '</div>';
+      html += '<div class="hi-ratio"><div class="hi-ratio-bar"><i style="width:' + fastPct + '%"></i></div>'
+        + '<div class="hi-ratio-lbl">快充 ' + fastPct + '% · 慢充 ' + (100 - fastPct) + '%</div></div>';
+      html += '<div class="hi-tip" onclick="App.switchTab(\'analysis\');App.setAnalysisSub(\'recommend\')">'
+        + Icons.bulb + '<span>' + rec.summary + '</span></div>';
       html += '</div>';
 
       // 费用趋势（支持横滑查看全部历史）
@@ -1525,12 +1550,6 @@
     renderProfile: function () {
       var vehicles = VehicleMgr.list();
       var html = '';
-
-      // 品牌标识
-      html += '<div class="brand-header">'
-        + '<img src="assets/logo.png" alt="冲充电" class="brand-logo">'
-        + '<div class="brand-text"><div class="brand-name">冲充电</div>'
-        + '<div class="brand-slogan">充电记账 · 电池健康分析</div></div></div>';
 
       // 车辆管理
       html += '<div class="card"><div class="card-head"><h3>' + Icons.car + '我的车辆</h3>'
