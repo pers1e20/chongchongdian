@@ -226,8 +226,26 @@
     .stat-title { font-size: 12px; font-weight: 600; }
     .stat-value { font-size: 22px; font-weight: 800; color: var(--text-primary); letter-spacing: -.5px; font-family: var(--font-mono); }
     .stat-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+    .stat-card { cursor: pointer; }
+    .stat-card:active { transform: scale(.98); }
+    .stat-tap { font-size: 10px; font-weight: 600; color: inherit; opacity: .8; margin-left: 6px; }
     .trend-up { color: var(--red); }
     .trend-down { color: var(--green); }
+
+    /* ===== 统计卡片详情弹窗 ===== */
+    #statDetailModal .confirm-panel { max-height: 84vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .stat-detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+    .stat-detail-head h3 { font-size: 17px; font-weight: 700; flex: 1; }
+    .sd-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .sd-period { font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
+    .sd-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .sd-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg-elevated); border-radius: 10px; }
+    .sd-label { font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
+    .sd-value { font-size: 14px; font-weight: 700; color: var(--text-primary); font-family: var(--font-mono); text-align: right; word-break: break-all; }
+    .sd-sub-head { font-size: 12px; font-weight: 600; color: var(--text-sub); margin: 14px 0 8px; }
+    .sd-note { font-size: 12px; line-height: 1.7; color: var(--text-secondary); background: var(--primary-bg); border-radius: 10px; padding: 12px; margin-top: 14px; }
+    .sd-note b { color: var(--accent-frost); }
+    .sd-empty { font-size: 13px; color: var(--text-secondary); background: var(--bg-elevated); border-radius: 10px; padding: 14px; margin-bottom: 10px; line-height: 1.6; }
 
     /* ===== 图表 ===== */
     .chart { width: 100%; height: 200px; display: block; }
@@ -969,19 +987,53 @@
     .btn-mini.danger svg { color: var(--error); }
     .btn-danger { background: var(--error); color: #fff; }
 
-    /* 输入框 */
+    /* 输入框（提升对比度） */
     .form-group input, .form-group select, .form-group textarea, .date-filter-bar select {
-      background: var(--bg-base);
-      border: 1px solid var(--border-default);
+      background: var(--bg-elevated);
+      border: 1.5px solid rgba(255,255,255,.14);
       color: var(--text-primary);
+      caret-color: var(--accent-frost);
+    }
+    .form-group input:hover, .form-group select:hover, .form-group textarea:hover {
+      border-color: rgba(255,255,255,.26);
     }
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
       border-color: var(--accent-frost);
-      box-shadow: 0 0 0 3px rgba(91, 143, 168, 0.12);
+      box-shadow: 0 0 0 3px rgba(91, 143, 168, 0.18);
+      background: #1B1B26;
     }
-    .form-group input::placeholder, .form-group textarea::placeholder { color: var(--text-muted); }
-    .form-group label { color: var(--text-secondary); }
-    .input-wrap .input-suffix { color: var(--text-muted); font-family: var(--font-mono); }
+    .form-group input::placeholder, .form-group textarea::placeholder { color: #77818F; }
+    .form-group label { color: var(--text-sub); font-size: 13.5px; }
+    .input-wrap .input-suffix { color: #A6B0BE; font-family: var(--font-mono); font-weight: 700; }
+
+    /* 表单分段卡片 */
+    .form-section-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: 16px;
+      padding: 14px 14px 4px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+    }
+    .form-section-card .form-section-title { margin-top: 0; }
+    .fst-bar {
+      width: 4px; height: 16px; border-radius: 2px;
+      background: var(--accent-frost); flex-shrink: 0;
+    }
+    .form-section-title { color: var(--text-sub); }
+    .form-segment-btn { border-color: rgba(255,255,255,.12); color: var(--text-secondary); }
+    .form-segment-btn.active { border-color: var(--accent-frost); background: var(--primary-bg); color: var(--accent-frost); }
+    .auto-calc-hint {
+      background: var(--primary-bg);
+      border: 1px solid rgba(91,143,168,.25);
+      border-radius: 8px;
+      padding: 7px 10px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--accent-frost);
+      line-height: 1.5;
+    }
+    .auto-calc-hint svg { color: var(--success); }
 
     /* 徽章 */
     .badge.slow { background: var(--primary-bg); color: var(--accent-frost); }
@@ -1086,7 +1138,7 @@
     .auto-calc-hint { color: var(--success); }
 
     /* 表单分段标题 */
-    .form-section-title { color: var(--text-secondary); }
+    .form-section-title { color: var(--text-sub); }
     .form-section-title svg { color: var(--accent-frost); }
     .form-section-title .fst-tag { background: var(--primary-bg); color: var(--accent-frost); }
 
@@ -1194,102 +1246,114 @@
         <input type="hidden" id="cf_chargeType" value="slow">
 
         <!-- 段1: 基本信息（充电类型置顶单独一行） -->
-        <div class="form-section-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          基本信息
-        </div>
-        <div class="form-grid">
-          <div class="form-group full">
-            <label for="cf_chargeType">充电类型</label>
-            <div class="form-segment" id="cf_chargeTypeSegment">
-              <button type="button" class="form-segment-btn active" data-val="slow">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0 M12 2v10" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                慢充
-              </button>
-              <button type="button" class="form-segment-btn" data-val="fast">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                快充
-              </button>
-            </div>
+        <div class="form-section-card">
+          <div class="form-section-title">
+            <span class="fst-bar"></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            基本信息
           </div>
-          <div class="form-group full">
-            <label for="cf_date">充电日期</label>
-            <input type="date" id="cf_date" required>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label for="cf_chargeType">充电类型</label>
+              <div class="form-segment" id="cf_chargeTypeSegment">
+                <button type="button" class="form-segment-btn active" data-val="slow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0 M12 2v10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  慢充
+                </button>
+                <button type="button" class="form-segment-btn" data-val="fast">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  快充
+                </button>
+              </div>
+            </div>
+            <div class="form-group full">
+              <label for="cf_date">充电日期</label>
+              <input type="date" id="cf_date" required>
+            </div>
           </div>
         </div>
 
         <!-- 段2: 充电数据 -->
-        <div class="form-section-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          充电数据
-          <span class="fst-tag">度数·单价·费用互算</span>
-        </div>
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="cf_kWh">充电度数</label>
-            <div class="input-wrap">
-              <input type="number" class="with-suffix" id="cf_kWh" step="0.1" placeholder="如 45.5" required>
-              <span class="input-suffix">度</span>
-            </div>
+        <div class="form-section-card">
+          <div class="form-section-title">
+            <span class="fst-bar"></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            充电数据
+            <span class="fst-tag">度数·单价·费用互算</span>
           </div>
-          <div class="form-group">
-            <label for="cf_unitPrice">充电单价</label>
-            <div class="input-wrap">
-              <input type="number" class="with-suffix" id="cf_unitPrice" step="0.01" placeholder="如 1.20">
-              <span class="input-suffix">元/度</span>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="cf_kWh">充电度数</label>
+              <div class="input-wrap">
+                <input type="number" class="with-suffix" id="cf_kWh" step="0.1" placeholder="如 45.5" required>
+                <span class="input-suffix">度</span>
+              </div>
             </div>
-          </div>
-          <div class="form-group full">
-            <label for="cf_totalCost">总费用</label>
-            <div class="input-wrap">
-              <input type="number" class="with-suffix" id="cf_totalCost" step="0.01" placeholder="输入度数和单价自动计算，或直接填写">
-              <span class="input-suffix">¥</span>
+            <div class="form-group">
+              <label for="cf_unitPrice">充电单价</label>
+              <div class="input-wrap">
+                <input type="number" class="with-suffix" id="cf_unitPrice" step="0.01" placeholder="如 1.20">
+                <span class="input-suffix">元/度</span>
+              </div>
             </div>
-            <div class="auto-calc-hint" id="autoCalcHint" style="display:none;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span id="autoCalcText"></span>
+            <div class="form-group full">
+              <label for="cf_totalCost">总费用</label>
+              <div class="input-wrap">
+                <input type="number" class="with-suffix" id="cf_totalCost" step="0.01" placeholder="输入度数和单价自动计算，或直接填写">
+                <span class="input-suffix">¥</span>
+              </div>
+              <div class="auto-calc-hint" id="autoCalcHint" style="display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span id="autoCalcText"></span>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- 段3: 车辆状态（选填） -->
-        <div class="form-section-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11M5 11h14M5 11v6a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-6" stroke-linecap="round"/><circle cx="8" cy="14" r="1" fill="currentColor"/><circle cx="16" cy="14" r="1" fill="currentColor"/></svg>
-          车辆状态
-          <span class="fst-tag">选填</span>
-        </div>
-        <div class="form-grid">
-          <div class="form-group full">
-            <label for="cf_odometer">里程表读数</label>
-            <div class="input-wrap">
-              <input type="number" class="with-suffix" id="cf_odometer" step="0.1" placeholder="如 15200">
-              <span class="input-suffix">km</span>
-            </div>
+        <div class="form-section-card">
+          <div class="form-section-title">
+            <span class="fst-bar"></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11M5 11h14M5 11v6a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-6" stroke-linecap="round"/><circle cx="8" cy="14" r="1" fill="currentColor"/><circle cx="16" cy="14" r="1" fill="currentColor"/></svg>
+            车辆状态
+            <span class="fst-tag">选填</span>
           </div>
-          <div class="form-group">
-            <label for="cf_socBefore">充电前电量</label>
-            <div class="input-wrap">
-              <input type="number" class="with-suffix" id="cf_socBefore" min="0" max="100" placeholder="如 20">
-              <span class="input-suffix">%</span>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label for="cf_odometer">里程表读数</label>
+              <div class="input-wrap">
+                <input type="number" class="with-suffix" id="cf_odometer" step="0.1" placeholder="如 15200">
+                <span class="input-suffix">km</span>
+              </div>
             </div>
-          </div>
-          <div class="form-group">
-            <label for="cf_socAfter">充电后电量</label>
-            <div class="input-wrap">
-              <input type="number" class="with-suffix" id="cf_socAfter" min="0" max="100" placeholder="如 80">
-              <span class="input-suffix">%</span>
+            <div class="form-group">
+              <label for="cf_socBefore">充电前电量</label>
+              <div class="input-wrap">
+                <input type="number" class="with-suffix" id="cf_socBefore" min="0" max="100" placeholder="如 20">
+                <span class="input-suffix">%</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="cf_socAfter">充电后电量</label>
+              <div class="input-wrap">
+                <input type="number" class="with-suffix" id="cf_socAfter" min="0" max="100" placeholder="如 80">
+                <span class="input-suffix">%</span>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- 段4: 备注 -->
-        <div class="form-section-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M8 13h8 M8 17h5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          备注
-          <span class="fst-tag">选填</span>
-        </div>
-        <div class="form-group full">
-          <textarea id="cf_note" placeholder="如 充电站名称、地点等"></textarea>
+        <div class="form-section-card">
+          <div class="form-section-title">
+            <span class="fst-bar"></span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M8 13h8 M8 17h5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            备注
+            <span class="fst-tag">选填</span>
+          </div>
+          <div class="form-group full">
+            <textarea id="cf_note" placeholder="如 充电站名称、地点等"></textarea>
+          </div>
         </div>
 
         <div class="form-submit">
@@ -1419,6 +1483,25 @@
         <button class="btn btn-outline" onclick="App.closeConfirm()">取消</button>
         <button class="btn btn-danger" id="confirmOkBtn">确认</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 统计卡片详情弹窗 -->
+  <div class="confirm-modal" id="statDetailModal">
+    <div class="confirm-overlay" onclick="App.closeStatDetail()"></div>
+    <div class="confirm-panel">
+      <div class="stat-detail-head">
+        <span class="sd-dot" id="statDetailIcon"></span>
+        <h3 id="statDetailTitle">统计详情</h3>
+        <button type="button" class="modal-close" onclick="App.closeStatDetail()" aria-label="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/><line x1="6" y1="18" x2="18" y2="6" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div id="statDetailBody"></div>
+      <button class="btn btn-primary btn-block" onclick="App.closeStatDetail()" style="margin-top:18px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        知道了
+      </button>
     </div>
   </div>
 

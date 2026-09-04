@@ -271,6 +271,29 @@
       }
       return results;
     },
+    // 电耗有效样本（可计算：相邻记录里程差 > 0），可按年份过滤
+    effSamples: function (vid, year) {
+      var eff = this.kWhPer100km(this.sortedCharges(vid));
+      if (year) eff = eff.filter(function (e) { return e.date.slice(0, 4) === String(year); });
+      return eff;
+    },
+    // 稳健均值：剔除超过 3 倍标准差的离群点后求平均，样本过少时直接取均值
+    robustMean: function (values) {
+      if (!values.length) return 0;
+      if (values.length < 3) return values.reduce(function (s, v) { return s + v; }, 0) / values.length;
+      var mean = values.reduce(function (s, v) { return s + v; }, 0) / values.length;
+      var sq = 0;
+      values.forEach(function (v) { var d = v - mean; sq += d * d; });
+      var sd = Math.sqrt(sq / values.length);
+      var kept = values.filter(function (v) { return Math.abs(v - mean) <= 3 * sd; });
+      if (!kept.length) kept = values;
+      return kept.reduce(function (s, v) { return s + v; }, 0) / kept.length;
+    },
+    // 平均电耗：返回稳健均值、有效样本数与样本明细
+    avgEfficiency: function (vid, year) {
+      var samples = this.effSamples(vid, year);
+      return { avg: this.robustMean(samples.map(function (e) { return e.value; })), count: samples.length, samples: samples };
+    },
     overview: function (vid, year) {
       var charges = vid ? Store.data.charges.filter(function (c) { return c.vehicleId === vid; }) : Store.data.charges;
       if (year) {
@@ -284,11 +307,9 @@
         if (c.chargeType === CHARGE_TYPE.FAST) fastCount++; else slowCount++;
         if (Utils.monthKey(c.date) === thisMonth) { thisMonthCost += c.totalCost || 0; thisMonthKWh += c.kWh || 0; }
       });
-      var sorted = vid ? this.sortedCharges(vid) : [];
-      var eff = this.kWhPer100km(sorted);
-      var avgEff = eff.length ? eff.reduce(function (s, e) { return s + e.value; }, 0) / eff.length : 0;
+      var effInfo = this.avgEfficiency(vid, year);
       var avgPrice = totalKWh > 0 ? totalCost / totalKWh : 0;
-      return { totalCost: totalCost, totalKWh: totalKWh, chargeCount: count, fastCount: fastCount, slowCount: slowCount, thisMonthCost: thisMonthCost, thisMonthKWh: thisMonthKWh, avgEff: avgEff, avgPrice: avgPrice };
+      return { totalCost: totalCost, totalKWh: totalKWh, chargeCount: count, fastCount: fastCount, slowCount: slowCount, thisMonthCost: thisMonthCost, thisMonthKWh: thisMonthKWh, avgEff: effInfo.avg, effCount: effInfo.count, avgPrice: avgPrice };
     },
     monthlyCost: function (vid, months) {
       if (!months) months = Utils.recentMonths(6);
@@ -762,9 +783,59 @@
 
     init: function () {
       Store.load();
+      // 首次启动：无任何数据时自动写入默认车辆与充电记录（作为默认数据展示）
+      if (Store.data.vehicles.length === 0 && Store.data.charges.length === 0) {
+        this.seedDefaultData();
+      }
       this.bindEvents();
       this.bindAnalysisSegments();
       this.renderAll();
+    },
+
+    /* ---- 默认数据：首次启动自动写入（智己 L6 及充电记录） ---- */
+    seedDefaultData: function () {
+      var v = VehicleMgr.add({
+        name: '智己 L6', brand: '智己', model: 'L6 max 标准版',
+        batteryCapacity: 75, supportsFastCharge: true, maxChargePower: 153
+      });
+      // 价格为 0 的为慢充，其余皆为快充
+      var records = [
+        { d: '5月30日', cost: 63.93, kwh: 56.3, fast: true },
+        { d: '6月2日', cost: 47.57, kwh: 62.1, fast: true },
+        { d: '6月10日', cost: 0, kwh: 44.9, fast: false },
+        { d: '6月13日', cost: 21.6, kwh: 44.1, fast: true },
+        { d: '6月20日', cost: 0, kwh: 50, fast: false },
+        { d: '6月23日', cost: 0, kwh: 19, fast: false },
+        { d: '6月28日', cost: 8.65, kwh: 44.7, fast: true },
+        { d: '7月4日', cost: 1.2, kwh: 12, fast: true },
+        { d: '7月5日', cost: 19, kwh: 27, fast: true },
+        { d: '7月6日', cost: 1.2, kwh: 22, fast: true },
+        { d: '7月6日', cost: 15.5, kwh: 28, fast: true },
+        { d: '7月11日', cost: 18.9, kwh: 35, fast: true },
+        { d: '7月25日', cost: 38.23, kwh: 64.7, fast: true },
+        { d: '8月9日', cost: 23.89, kwh: 48, fast: true },
+        { d: '8月16日', cost: 31, kwh: 52, fast: true },
+        { d: '8月26日', cost: 18.4, kwh: 30, fast: true },
+        { d: '8月30日', cost: 29.3, kwh: 52, fast: true }
+      ];
+      var year = new Date().getFullYear();
+      var months = { '5': '05', '6': '06', '7': '07', '8': '08' };
+      var self = this;
+      records.forEach(function (r) {
+        var m = /^(\d+)月(\d+)日$/.exec(r.d);
+        if (!m) return;
+        var mm = months[String(parseInt(m[1], 10))] || String(m[1]).padStart(2, '0');
+        var dd = String(parseInt(m[2], 10)).padStart(2, '0');
+        ChargeMgr.add({
+          vehicleId: v.id,
+          date: year + '-' + mm + '-' + dd,
+          odometer: 0, chargeType: r.fast ? 'fast' : 'slow',
+          kWh: r.kwh, totalCost: r.cost,
+          unitPrice: r.cost > 0 ? +(r.cost / r.kwh).toFixed(2) : 0,
+          socBefore: 0, socAfter: 0
+        });
+      });
+      setTimeout(function () { self.toast('已载入默认数据：' + v.name, 'success'); }, 400);
     },
 
     bindEvents: function () {
@@ -987,11 +1058,107 @@
       });
     },
 
-    statCard: function (color, icon, title, value, sub) {
-      return '<div class="stat-card ' + color + '">'
+    statCard: function (color, icon, title, value, sub, key, vid) {
+      return '<div class="stat-card ' + color + '" onclick="App.showStatDetail(\'' + key + '\', \'' + (vid || '') + '\')">'
         + '<div class="stat-head"><span class="stat-ic">' + icon + '</span><span class="stat-title">' + title + '</span></div>'
         + '<div class="stat-value">' + value + '</div>'
-        + '<div class="stat-sub">' + sub + '</div></div>';
+        + '<div class="stat-sub">' + sub + ' <span class="stat-tap">查看详情</span></div></div>';
+    },
+
+    /* ---- 统计卡片详情弹窗 ---- */
+    _sdRow: function (label, value) {
+      return '<div class="sd-row"><span class="sd-label">' + label + '</span><span class="sd-value">' + value + '</span></div>';
+    },
+    showStatDetail: function (key, vid) {
+      vid = vid || Store.data.vehicles[0] && Store.data.vehicles[0].id;
+      var year = this.statsYear ? String(this.statsYear) : null;
+      var charges = vid ? Store.data.charges.filter(function (c) { return c.vehicleId === vid; }) : Store.data.charges;
+      if (year) charges = charges.filter(function (c) { return c.date.slice(0, 4) === year; });
+
+      var ov = Stats.overview(vid, this.statsYear);
+      var ratio = Stats.chargeTypeRatio(vid, this.statsYear);
+      var fastCount = 0, slowCount = 0, fastKWh = 0, slowKWh = 0;
+      charges.forEach(function (c) {
+        if (c.chargeType === CHARGE_TYPE.FAST) { fastCount++; fastKWh += c.kWh || 0; }
+        else { slowCount++; slowKWh += c.kWh || 0; }
+      });
+      var costs = charges.map(function (c) { return c.totalCost || 0; }).filter(function (v) { return v > 0; });
+      var maxC = costs.length ? Math.max.apply(null, costs) : 0;
+      var minC = costs.length ? Math.min.apply(null, costs) : 0;
+      var avgCost = charges.length ? ov.totalCost / charges.length : 0;
+      var fastPct = charges.length ? Math.round(fastCount / charges.length * 100) : 0;
+
+      // 电耗有效样本（仅纳入可计算数据，采用稳健均值口径）
+      var effInfo = Stats.avgEfficiency(vid, year);
+      var eff = effInfo.samples;
+      var effVal = effInfo.avg;
+
+      var period = year ? year + '年' : '全部记录';
+      var title = '', body = '', color = 'blue';
+      var self = this;
+
+      if (key === 'totalCost') {
+        color = 'blue';
+        title = '总费用';
+        body = '<div class="sd-period">数据范围：' + period + '</div><div class="sd-grid">'
+          + this._sdRow('总费用', '¥' + Utils.fmtMoney(ov.totalCost))
+          + this._sdRow('充电次数', ov.chargeCount + ' 次')
+          + this._sdRow('平均每次', '¥' + Utils.fmtMoney(avgCost))
+          + this._sdRow('单次最高', '¥' + Utils.fmtMoney(maxC))
+          + this._sdRow('单次最低', '¥' + Utils.fmtMoney(minC))
+          + this._sdRow('本月费用', '¥' + Utils.fmtMoney(ov.thisMonthCost))
+          + '</div><div class="sd-note"><b>说明：</b>统计' + period + '内全部充电记录的总支出（快充 + 慢充），按每次充电的「总费用」累加；均价 = 总费用 ÷ 总度数。</div>';
+      } else if (key === 'totalKWh') {
+        color = 'green';
+        title = '总度数';
+        body = '<div class="sd-period">数据范围：' + period + '</div><div class="sd-grid">'
+          + this._sdRow('总度数', Utils.fmt(ov.totalKWh, 1) + ' 度')
+          + this._sdRow('平均单价', '¥' + Utils.fmtMoney(ov.avgPrice) + '/度')
+          + this._sdRow('充电次数', ov.chargeCount + ' 次')
+          + this._sdRow('快充度数', Utils.fmt(fastKWh, 1) + ' 度 · ' + fastCount + ' 次')
+          + this._sdRow('慢充度数', Utils.fmt(slowKWh, 1) + ' 度 · ' + slowCount + ' 次')
+          + this._sdRow('本月度数', Utils.fmt(ov.thisMonthKWh, 1) + ' 度')
+          + '</div><div class="sd-note"><b>说明：</b>统计' + period + '内充入电池的总电量，按每次充电「度数」累加；并按快充 / 慢充分别汇总。</div>';
+      } else if (key === 'avgEff') {
+        color = 'amber';
+        title = '平均电耗';
+        var effList = '';
+        if (eff.length) {
+          var rows = eff.map(function (e) {
+            return '<div class="sd-row"><span class="sd-label">' + e.date + '</span><span class="sd-value">' + Utils.fmt(e.value, 1) + ' 度/100km（行驶 ' + Math.round(e.distance) + 'km）</span></div>';
+          }).join('');
+          effList = '<div class="sd-sub-head">有效样本明细（' + eff.length + ' 组）：</div><div class="sd-grid">' + rows + '</div>';
+        } else {
+          effList = '<div class="sd-empty">暂无有效样本：需要两次以上记录且有有效里程差方可计算电耗。</div>';
+        }
+        body = '<div class="sd-period">数据范围：' + period + '</div><div class="sd-grid">'
+          + this._sdRow('平均电耗', Utils.fmt(effVal, 1) + ' 度/100km')
+          + this._sdRow('有效样本', eff.length + ' 组')
+          + '</div>' + effList
+          + '<div class="sd-note"><b>说明：</b>电耗 = 相邻两次充电间「充入度数 ÷ 行驶里程 × 100」。仅纳入里程表有效（相邻记录里程差 &gt; 0）的相邻数据；为排除单次异常，先剔除超过 3 倍标准差的离群样本，再对剩余有效样本求平均。缺里程或数据不足（少于 2 次有效）时显示「—」。</div>';
+      } else if (key === 'fastslow') {
+        color = 'purple';
+        title = '快慢充比';
+        body = '<div class="sd-period">数据范围：' + period + '</div><div class="sd-grid">'
+          + this._sdRow('快充', fastCount + ' 次 · ' + fastPct + '%')
+          + this._sdRow('慢充', slowCount + ' 次 · ' + (100 - fastPct) + '%')
+          + this._sdRow('快充度数', Utils.fmt(fastKWh, 1) + ' 度')
+          + this._sdRow('慢充度数', Utils.fmt(slowKWh, 1) + ' 度')
+          + '</div><div class="sd-note"><b>说明：</b>展示充电方式的选择偏好。快充便捷但长期高频对电池损耗略大，建议在电量 20%–80% 区间快慢结合，日常以慢充为主、长途应急用快充。</div>';
+      } else {
+        return;
+      }
+
+      var dot = document.getElementById('statDetailIcon');
+      var iconColors = { blue: '#5B8FA8', green: '#4A7A6B', amber: '#8A6A3A', purple: '#7A6AA6' };
+      if (dot) dot.style.background = iconColors[color] || '#5B8FA8';
+      document.getElementById('statDetailTitle').textContent = title;
+      document.getElementById('statDetailBody').innerHTML = body;
+      document.getElementById('statDetailModal').classList.add('show');
+    },
+    closeStatDetail: function () {
+      var m = document.getElementById('statDetailModal');
+      if (m) m.classList.remove('show');
     },
 
     /* ---- 趋势图容器（左侧固定Y轴 + 右侧可横滑图表） ---- */
@@ -1220,10 +1387,10 @@
       }
 
       html += '<div class="stat-cards">';
-      html += this.statCard('blue', Icons.coin, '总费用', '¥' + Utils.fmtMoney(ov.totalCost), ov.chargeCount + ' 次');
-      html += this.statCard('green', Icons.zap, '总度数', Utils.fmt(ov.totalKWh, 1) + ' 度', '均价 ¥' + Utils.fmtMoney(ov.avgPrice) + '/度');
-      html += this.statCard('amber', Icons.gauge, '平均电耗', Utils.fmt(ov.avgEff, 1) + ' 度', 'kWh/100km');
-      html += this.statCard('purple', Icons.infinity, '快慢充比', Math.round(ratio.fast * 100) + ':' + Math.round(ratio.slow * 100), '快' + ov.fastCount + ' / 慢' + ov.slowCount);
+      html += this.statCard('blue', Icons.coin, '总费用', '¥' + Utils.fmtMoney(ov.totalCost), ov.chargeCount + ' 次', 'totalCost', vid);
+      html += this.statCard('green', Icons.zap, '总度数', Utils.fmt(ov.totalKWh, 1) + ' 度', '均价 ¥' + Utils.fmtMoney(ov.avgPrice) + '/度', 'totalKWh', vid);
+      html += this.statCard('amber', Icons.gauge, '平均电耗', ov.effCount > 0 ? Utils.fmt(ov.avgEff, 1) + ' 度' : '—', ov.effCount > 0 ? 'kWh/100km · 基于 ' + ov.effCount + ' 组' : '暂无有效数据', 'avgEff', vid);
+      html += this.statCard('purple', Icons.infinity, '快慢充比', Math.round(ratio.fast * 100) + ':' + Math.round(ratio.slow * 100), '快' + ov.fastCount + ' / 慢' + ov.slowCount, 'fastslow', vid);
       html += '</div>';
 
       // 趋势月份：指定年份显示整年（当年截至当前月），否则展示全部历史（可横滑）
@@ -1393,7 +1560,6 @@
       html += '<div class="card"><h3>' + Icons.settings + '数据管理</h3><div class="settings-list">';
       html += this.settingsItem('blue', Icons.download, '导出备份', '将所有数据导出为 JSON 文件', '<button class="btn btn-primary" id="btnExport">导出</button>');
       html += this.settingsItem('green', Icons.upload, '导入备份', '从 JSON 文件恢复数据', '<label class="btn btn-outline" style="cursor:pointer;">导入<input type="file" id="importInput" accept=".json" style="display:none;"></label>');
-      html += this.settingsItem('amber', Icons.play, '我的数据', '载入智己 L6 及近期充电记录', '<button class="btn btn-outline" id="btnMyData" onclick="App.loadMyData()">载入</button>');
       html += this.settingsItem('red', Icons.trash, '清空所有数据', '删除全部数据，不可恢复', '<button class="btn-mini danger" id="btnClear" style="padding:9px 16px;font-size:14px;">清空</button>');
       html += '</div></div>';
 
@@ -1693,51 +1859,6 @@
       document.body.appendChild(t);
       setTimeout(function () { t.classList.add('show'); }, 10);
       setTimeout(function () { t.classList.remove('show'); setTimeout(function () { t.remove(); }, 300); }, 2000);
-    },
-
-    loadMyData: function () {
-      var v = VehicleMgr.add({
-        name: '智己 L6', brand: '智己', model: 'L6 max 标准版',
-        batteryCapacity: 75, supportsFastCharge: true, maxChargePower: 153
-      });
-      // 价格为 0 的为慢充，其余皆为快充
-      var records = [
-        { d: '5月30日', cost: 63.93, kwh: 56.3, fast: true },
-        { d: '6月2日', cost: 47.57, kwh: 62.1, fast: true },
-        { d: '6月10日', cost: 0, kwh: 44.9, fast: false },
-        { d: '6月13日', cost: 21.6, kwh: 44.1, fast: true },
-        { d: '6月20日', cost: 0, kwh: 50, fast: false },
-        { d: '6月23日', cost: 0, kwh: 19, fast: false },
-        { d: '6月28日', cost: 8.65, kwh: 44.7, fast: true },
-        { d: '7月4日', cost: 1.2, kwh: 12, fast: true },
-        { d: '7月5日', cost: 19, kwh: 27, fast: true },
-        { d: '7月6日', cost: 1.2, kwh: 22, fast: true },
-        { d: '7月6日', cost: 15.5, kwh: 28, fast: true },
-        { d: '7月11日', cost: 18.9, kwh: 35, fast: true },
-        { d: '7月25日', cost: 38.23, kwh: 64.7, fast: true },
-        { d: '8月9日', cost: 23.89, kwh: 48, fast: true },
-        { d: '8月16日', cost: 31, kwh: 52, fast: true },
-        { d: '8月26日', cost: 18.4, kwh: 30, fast: true },
-        { d: '8月30日', cost: 29.3, kwh: 52, fast: true }
-      ];
-      var year = new Date().getFullYear();
-      var months = { '5': '05', '6': '06', '7': '07', '8': '08' };
-      records.forEach(function (r) {
-        var m = /^(\d+)月(\d+)日$/.exec(r.d);
-        if (!m) return;
-        var mm = months[String(parseInt(m[1], 10))] || String(m[1]).padStart(2, '0');
-        var dd = String(parseInt(m[2], 10)).padStart(2, '0');
-        ChargeMgr.add({
-          vehicleId: v.id,
-          date: year + '-' + mm + '-' + dd,
-          odometer: 0, chargeType: r.fast ? 'fast' : 'slow',
-          kWh: r.kwh, totalCost: r.cost,
-          unitPrice: r.cost > 0 ? +(r.cost / r.kwh).toFixed(2) : 0,
-          socBefore: 0, socAfter: 0
-        });
-      });
-      this.renderAll();
-      this.toast('已载入我的数据：' + v.name, 'success');
     }
   };
 
