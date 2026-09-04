@@ -566,8 +566,9 @@
       // 填充左侧固定 Y 轴（刻度 + 单位）
       this._renderYAxis(opts, maxV, H, padT, ch);
 
+      var lastI = data.length - 1;
       var pts = data.map(function (d, i) {
-        var x = padL + (cw * (i + 0.5) / data.length);
+        var x = padL + (data.length === 1 ? cw / 2 : cw * i / lastI);
         var y = noData ? padT + ch : padT + ch - (ch * d.value / maxV);
         return { x: x, y: y, px: x, py: y, d: d, i: i };
       });
@@ -603,12 +604,15 @@
         ctx.stroke();
         // 数据点 + 横轴月份标签
         ctx.textAlign = 'center'; ctx.font = '10px sans-serif';
-        pts.forEach(function (p) {
+        pts.forEach(function (p, idx) {
           ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
           ctx.fillStyle = '#fff'; ctx.fill();
           ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
           ctx.fillStyle = '#64738a';
-          ctx.fillText(p.d.label, p.x, padT + ch + 18);
+          // 首尾标签向内对齐，避免贴近边缘时溢出
+          ctx.textAlign = (idx === 0) ? 'left' : (idx === pts.length - 1 ? 'right' : 'center');
+          var labelX = (idx === 0) ? Math.max(p.x + 4, padL) : (idx === pts.length - 1 ? Math.min(p.x - 4, W - padR) : p.x);
+          ctx.fillText(p.d.label, labelX, padT + ch + 18);
         });
         // 选中点的数据标签（默认隐藏，点击该点展示，点击其他区域隐藏）
         if (opts.labelFormat && selected >= 0 && pts[selected] && pts[selected].d.value > 0) {
@@ -683,9 +687,11 @@
       }
 
       var barW = cw / data.length * 0.5;
+      var lastI = data.length - 1;
       var pts = [];
       data.forEach(function (d, i) {
-        var x = padL + (cw * (i + 0.5) / data.length) - barW / 2;
+        var ccenter = padL + (data.length === 1 ? cw / 2 : cw * i / lastI);
+        var x = ccenter - barW / 2;
         var barH = ch * d.value / maxV;
         var y = padT + ch - barH;
         var grad = ctx.createLinearGradient(0, y, 0, y + barH);
@@ -703,8 +709,11 @@
           ctx.fillText(labelText, x + barW / 2, y - 6);
         }
         // x轴标签
-        ctx.fillStyle = '#64738a'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(d.label, x + barW / 2, padT + ch + 18);
+        ctx.fillStyle = '#64738a'; ctx.font = '10px sans-serif';
+        ctx.textAlign = (i === 0) ? 'left' : (i === lastI ? 'right' : 'center');
+        var lx = x + barW / 2;
+        lx = (i === 0) ? Math.max(lx + 4, padL) : (i === lastI ? Math.min(lx - 4, W - padR) : lx);
+        ctx.fillText(d.label, lx, padT + ch + 18);
       });
       this._attachTouch(canvas, pts, opts);
     },
@@ -1363,20 +1372,14 @@
       } else {
         html += '<div class="vehicle-list">';
         vehicles.forEach(function (v) {
-          html += '<div class="vehicle-card">'
+          html += '<div class="vehicle-card" onclick="App.detailVehicle(\'' + v.id + '\')">'
             + '<div class="vehicle-avatar">' + Icons.car + '</div>'
             + '<div class="vehicle-info">'
             + '<div class="vehicle-name">' + v.name + '</div>'
             + '<div class="vehicle-meta">' + (v.brand || '') + ' ' + (v.model || '') + '</div>'
-            + '<div class="vehicle-specs">'
-            + '<span class="vehicle-spec">' + Icons.battery + v.batteryCapacity + ' kWh</span>'
-            + '<span class="vehicle-spec">' + (v.supportsFastCharge ? Icons.zap + '支持快充' : Icons.power + '仅慢充') + '</span>'
-            + (v.maxChargePower ? '<span class="vehicle-spec">' + Icons.zap + v.maxChargePower + ' kW</span>' : '')
-            + '</div></div>'
-            + '<div class="vehicle-actions">'
-            + '<button class="vehicle-action-btn edit" title="编辑车辆" onclick="App.editVehicle(\'' + v.id + '\')">✏️</button>'
-            + '<button class="vehicle-action-btn del" title="删除车辆" onclick="App.deleteVehicle(\'' + v.id + '\')">🗑️</button>'
-            + '</div></div>';
+            + '</div>'
+            + '<div class="vehicle-chevron">›</div>'
+            + '</div>';
         });
         html += '</div>';
       }
@@ -1563,6 +1566,23 @@
         App.renderAll();
         App.toast('已删除', 'success');
       });
+    },
+
+    detailVehicle: function (id) {
+      var v = VehicleMgr.get(id);
+      if (!v) return;
+      var body = '<div class="vehicle-detail-head">'
+        + '<div class="vehicle-avatar large">' + Icons.car + '</div>'
+        + '<div><div class="vehicle-name" style="font-size:18px;">' + v.name + '</div>'
+        + '<div class="vehicle-meta" style="margin-top:4px;">' + (v.brand || '') + ' ' + (v.model || '') + '</div></div>'
+        + '</div>';
+      if (v.note) {
+        body += '<div class="vehicle-detail-note">' + Icons.info + ' <span>' + v.note + '</span></div>';
+      }
+      document.getElementById('vehicleDetailBody').innerHTML = body;
+      document.getElementById('vdEdit').onclick = function () { App.closeModals(); App.editVehicle(id); };
+      document.getElementById('vdDelete').onclick = function () { App.closeModals(); App.deleteVehicle(id); };
+      document.getElementById('vehicleDetailModal').classList.add('show');
     },
 
     openVehicleModal: function (id) {

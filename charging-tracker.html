@@ -345,6 +345,19 @@
     .vehicle-spec { font-size: 11px; color: var(--text-sub); background: var(--bg); padding: 2px 8px; border-radius: 5px; display: flex; align-items: center; gap: 3px; }
     .vehicle-spec svg { width: 11px; height: 11px; }
     .vehicle-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .vehicle-card { cursor: pointer; }
+    .vehicle-chevron { flex-shrink: 0; color: var(--text-light); font-size: 22px; line-height: 1; margin-left: 2px; }
+    .vehicle-avatar.large { width: 52px; height: 52px; border-radius: 14px; }
+    .vehicle-avatar.large svg { width: 28px; height: 28px; }
+    .vehicle-detail-head { display: flex; align-items: center; gap: 14px; padding: 6px 2px 14px; }
+    .vehicle-detail-note {
+      display: flex; align-items: flex-start; gap: 6px;
+      background: var(--bg); padding: 10px 12px; border-radius: 10px;
+      font-size: 13px; color: var(--text-sub); line-height: 1.5; margin-bottom: 16px;
+    }
+    .vehicle-detail-note svg { width: 15px; height: 15px; color: var(--accent-frost); flex-shrink: 0; margin-top: 2px; }
+    .vehicle-detail-actions { display: flex; gap: 10px; padding-top: 16px; border-top: 1px solid var(--border-light); }
+    .vehicle-detail-actions .btn { flex: 1; justify-content: center; padding: 13px; }
 
     /* ===== 分段切换器 ===== */
     .segment-bar {
@@ -1355,6 +1368,24 @@
         </button>
       </div>
       <div id="vehiclePickerList"></div>
+    </div>
+  </div>
+
+  <!-- 车辆详情（半屏） -->
+  <div class="modal" id="vehicleDetailModal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content" style="max-height:46vh;">
+      <div class="modal-header">
+        <h2>车辆详情</h2>
+        <button class="modal-close" aria-label="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/><line x1="6" y1="18" x2="18" y2="6" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+      <div id="vehicleDetailBody"></div>
+      <div class="vehicle-detail-actions">
+        <button class="btn btn-outline" id="vdEdit">✏️ 编辑车辆</button>
+        <button class="btn btn-danger" id="vdDelete">🗑️ 删除车辆</button>
+      </div>
     </div>
   </div>
 
