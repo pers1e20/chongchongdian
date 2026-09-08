@@ -608,9 +608,9 @@
 
     /* ===== Hero 核心卡（Apple 玻璃 · 半透明磨砂） ===== */
     .hero-card {
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02) 45%, rgba(91,143,168,.05));
-      -webkit-backdrop-filter: blur(20px) saturate(150%);
-      backdrop-filter: blur(20px) saturate(150%);
+      background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01) 45%, rgba(91,143,168,.04));
+      -webkit-backdrop-filter: blur(12px) saturate(140%);
+      backdrop-filter: blur(12px) saturate(140%);
       border: 1px solid rgba(255,255,255,.10);
       border-radius: var(--radius-xl);
       padding: 34px 22px 26px;
@@ -618,7 +618,7 @@
       color: var(--text-primary);
       position: relative;
       overflow: hidden;
-      box-shadow: 0 14px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.10);
+      box-shadow: 0 14px 40px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.10);
     }
     .hero-card::before {
       content: ''; position: absolute; inset: 0; pointer-events: none;
@@ -1083,14 +1083,16 @@
     .form-group label { color: var(--text-sub); font-size: 13.5px; }
     .input-wrap .input-suffix { color: #A6B0BE; font-family: var(--font-mono); font-weight: 700; }
 
-    /* 表单分段卡片 */
+    /* 表单分段卡片（Apple 玻璃） */
     .form-section-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-default);
+      background: rgba(255,255,255,.045);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      backdrop-filter: blur(18px) saturate(150%);
+      border: 1px solid rgba(255,255,255,.09);
       border-radius: 16px;
       padding: 14px 14px 4px;
       margin-bottom: 14px;
-      box-shadow: var(--shadow);
+      box-shadow: 0 10px 30px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.06);
     }
     .form-section-card .form-section-title { margin-top: 0; }
     .fst-bar {
@@ -1198,8 +1200,14 @@
     .tip-title { color: var(--text-primary); }
     .tip-text { color: var(--text-secondary); }
 
-    /* 模态框 / 确认面板 */
-    .modal-content, .confirm-panel { background: var(--bg-surface); border: 1px solid var(--border-default); box-shadow: var(--shadow-dialog); }
+    /* 模态框 / 确认面板（Apple 玻璃） */
+    .modal-content, .confirm-panel {
+      background: rgba(255,255,255,.05);
+      -webkit-backdrop-filter: blur(22px) saturate(160%);
+      backdrop-filter: blur(22px) saturate(160%);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 -16px 48px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08);
+    }
     .modal-header h2, .confirm-title { color: var(--text-primary); }
     .confirm-text { color: var(--text-secondary); }
     .modal-close { background: var(--bg-elevated); }
@@ -1207,7 +1215,7 @@
     .confirm-icon.danger { background: var(--red-bg); color: var(--error); }
 
     /* 迁移说明 / 表单折叠 */
-    .form-section-toggle { background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-primary); }
+    .form-section-toggle { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09); color: var(--text-primary); backdrop-filter: blur(12px) saturate(150%); -webkit-backdrop-filter: blur(12px) saturate(150%); }
     .migration-note { background: var(--bg-surface); border: 1px solid var(--border-default); color: var(--text-secondary); }
     .migration-note code { background: var(--bg-elevated); color: var(--accent-frost); }
 
