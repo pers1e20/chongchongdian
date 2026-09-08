@@ -3,13 +3,15 @@
  * 缓存核心资源实现离线可用
  */
 
-var CACHE_NAME = 'ev-charging-v22';
+var CACHE_NAME = 'ev-charging-v29';
 var CORE_ASSETS = [
   'charging-tracker.html',
   'charging-tracker.js',
   'manifest.json',
   'icon-192.png',
   'icon-512.png',
+  'icon-maskable-192.png',
+  'icon-maskable-512.png',
   'assets/logo.png',
   'assets/hero-empty.png',
   'assets/stats-empty.png',
