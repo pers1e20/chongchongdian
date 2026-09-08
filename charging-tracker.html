@@ -226,13 +226,22 @@
       padding: 14px 14px 12px;
       position: relative;
       overflow: hidden;
-      border: 1px solid var(--border-default);
+      border: 1px solid rgba(91, 143, 168, 0.18);
+      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      background-image:
+        radial-gradient(150% 130% at 100% -25%, rgba(91, 143, 168, 0.14), transparent 58%),
+        radial-gradient(120% 120% at -10% 112%, rgba(90, 74, 107, 0.10), transparent 60%),
+        linear-gradient(180deg, rgba(91, 143, 168, 0.05), rgba(0, 0, 0, 0.22));
+    }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 16px; right: 16px; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(163, 209, 233, 0.5), transparent);
     }
     .stat-card::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; }
-    .stat-card.blue { background: var(--primary-bg); } .stat-card.blue::after { background: var(--accent-frost); }
-    .stat-card.green { background: var(--green-bg); } .stat-card.green::after { background: var(--success); }
-    .stat-card.amber { background: var(--amber-bg); } .stat-card.amber::after { background: var(--warning); }
-    .stat-card.purple { background: var(--purple-bg); } .stat-card.purple::after { background: var(--accent-mist); }
+    .stat-card.blue::after { background: var(--accent-frost); }
+    .stat-card.green::after { background: var(--success); }
+    .stat-card.amber::after { background: var(--warning); }
+    .stat-card.purple::after { background: var(--accent-mist); }
     .stat-card.blue .stat-title, .stat-card.blue .stat-ic { color: var(--accent-frost); }
     .stat-card.green .stat-title, .stat-card.green .stat-ic { color: var(--success); }
     .stat-card.amber .stat-title, .stat-card.amber .stat-ic { color: var(--warning); }
@@ -1007,18 +1016,27 @@
 
     /* FAB 已移除（仅保留首页 Hero 顶部主按钮作为唯一新增入口） */
 
-    /* 卡片：表面色 + 细分隔线 + 顶部微光分界线 */
-    .card, .quick-card, .charge-card, .settings-item, .month-group-header, .search-bar {
-      border: 1px solid var(--border-default) !important;
+    /* 卡片：统一为 Hero/KPI 科技光晕风格（深色渐变 + 青色描边 + 顶部微光 + 辉光） */
+    .card, .quick-card, .charge-card, .settings-item, .month-group-header {
+      border: 1px solid rgba(91, 143, 168, 0.18) !important;
+      box-shadow: 0 8px 26px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      background-image:
+        radial-gradient(150% 130% at 100% -25%, rgba(91, 143, 168, 0.14), transparent 58%),
+        radial-gradient(120% 120% at -10% 112%, rgba(90, 74, 107, 0.10), transparent 60%),
+        linear-gradient(180deg, rgba(91, 143, 168, 0.06), rgba(0, 0, 0, 0.22));
+    }
+    .search-bar {
+      border: 1px solid var(--border-default);
+      background: var(--bg-surface);
       box-shadow: var(--shadow-surface);
     }
     .card { position: relative; }
     .card::before {
       content: '';
       position: absolute;
-      top: 0; left: 20px; right: 20px;
+      top: 0; left: 16px; right: 16px;
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(91, 143, 168, 0.16), transparent);
+      background: linear-gradient(90deg, transparent, rgba(163, 209, 233, 0.55), transparent);
       pointer-events: none;
     }
     .card h3 { color: var(--text-primary); font-size: 15px; }
