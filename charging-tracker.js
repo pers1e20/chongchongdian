@@ -725,6 +725,9 @@
       canvas.addEventListener('touchmove', handle, { passive: true });
       canvas.addEventListener('mousemove', handle);
       canvas.addEventListener('mouseleave', function () { tip.classList.remove('show'); });
+      // 手动触碰抬起或拖动取消时，气泡自动消失
+      canvas.addEventListener('touchend', function () { tip.classList.remove('show'); });
+      canvas.addEventListener('touchcancel', function () { tip.classList.remove('show'); });
     },
 
     _renderYAxis: function (opts, maxV, H, padT, ch) {
@@ -750,7 +753,7 @@
       var baseW = canvas.clientWidth || 300;
       var H = canvas.clientHeight || 200;
       // y 轴刻度与单位已抽离到左侧固定列，画布内不再保留左轴数值
-      var padL = 8, padR = 12, padT = 22, padB = 36;
+      var padL = 8, padR = 8, padT = 22, padB = 36;
       var minSpan = opts.minSpan || 58;
       var renderW = opts.width || Math.max(baseW, padL + padR + data.length * minSpan);
       canvas.style.width = renderW + 'px';
@@ -876,6 +879,15 @@
         paint();
       });
 
+      // 拖动/滚动图表时自动清除点选的数据标签并隐藏气泡
+      var scrollerEl = canvas.closest ? canvas.closest('.chart-scroll') : null;
+      if (scrollerEl) {
+        scrollerEl.addEventListener('scroll', function () {
+          if (selected >= 0) { selected = -1; paint(); }
+          Charts._hideTip();
+        }, { passive: true });
+      }
+
       this._attachTouch(canvas, pts, opts);
     },
 
@@ -886,7 +898,7 @@
       var baseW = canvas.clientWidth || 300;
       var H = canvas.clientHeight || 200;
       // y 轴刻度与单位已抽离到左侧固定列，画布内不再保留左轴数值
-      var padL = 8, padR = 12, padT = 26, padB = 36;
+      var padL = 8, padR = 8, padT = 26, padB = 36;
       var minSpan = opts.minSpan || 52;
       var renderW = opts.width || Math.max(baseW, padL + padR + data.length * minSpan);
       canvas.style.width = renderW + 'px';
@@ -1247,20 +1259,21 @@
       // 近 6 个月费用趋势
       html += '<div class="card card-chart"><h3>' + Icons.trend + '充电费用趋势<span class="chart-year-tag">近 6 个月</span></h3>' + this.chartWrap('homeCostChart') + '</div>';
 
-      // 最近充电（最多 3 条；右上仅一个「查看全部」）
+      // 最近充电（信息流态 · 取消卡片化 · 最底「查看全部」）
       var recent = ChargeMgr.list(vid).slice(0, 3);
-      html += '<div class="card"><div class="card-head"><h3>' + Icons.clock + '最近充电</h3>'
-        + '<button class="btn-mini" onclick="App.switchTab(\'records\')">查看全部</button></div>';
+      html += '<div class="home-feed">';
+      html += '<div class="feed-head"><h3>' + Icons.clock + '最近充电</h3><span class="feed-count">共 ' + ov.chargeCount + ' 条 · 流量 ' + Utils.fmt(ov.totalKWh, 1) + ' 度</span></div>';
       if (recent.length === 0) {
         html += '<div class="empty-state" style="padding:18px;">' + Icons.bolt + '<p>暂无充电记录</p></div>';
       } else {
-        html += '<div class="charge-list">';
+        html += '<div class="charge-list feed-list">';
         var self2 = this;
         recent.forEach(function (c) {
           html += self2.chargeCardHTML(c, false);
         });
         html += '</div>';
       }
+      html += '<button class="feed-view-all" onclick="App.switchTab(\'records\')"><span>查看全部</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></button>';
       html += '</div>';
 
       document.getElementById('panel-home').innerHTML = html;

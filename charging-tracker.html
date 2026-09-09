@@ -161,41 +161,25 @@
       box-shadow: 0 0 10px rgba(91,143,168,.65);
     }
 
-    /* ===== 底部中央突出添加按钮（更大 · 光晕渐变 · 呼吸环） ===== */
+    /* ===== 底部中央添加按钮（半透明玻璃 · 圆形 · 无脉动光晕） ===== */
+    .tab-add {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      margin-top: -20px; flex-shrink: 0; z-index: 2;
+    }
     .tab-add-btn {
-      background:
-        radial-gradient(140% 140% at 26% 16%, #ffffff 0%, #d8eef8 52%, #a8cfe3 100%);
-      border: none;
-      width: 58px; height: 58px;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      position: relative;
-      margin-top: -24px;
-      box-shadow:
-        0 6px 22px rgba(0,0,0,.5),
-        0 0 0 5px var(--bg-surface),
-        0 0 24px rgba(91,143,168,.55);
-      transition: transform .15s, box-shadow .2s;
-      flex-shrink: 0;
-      z-index: 2;
+      width: 58px; height: 58px; border-radius: 50%;
+      background: rgba(255,255,255,.10);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      backdrop-filter: blur(18px) saturate(150%);
+      border: 1px solid rgba(255,255,255,.16);
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      color: var(--primary-light);
+      box-shadow: 0 6px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.22);
+      transition: transform .15s;
     }
-    .tab-add-btn svg { width: 28px; height: 28px; color: #14455c; filter: drop-shadow(0 1px 1px rgba(255,255,255,.5)); }
-    .tab-add-btn:active {
-      transform: scale(.9);
-      box-shadow: 0 3px 10px rgba(0,0,0,.5), 0 0 0 5px var(--bg-surface), 0 0 14px rgba(91,143,168,.4);
-    }
-    .tab-add-btn::before {
-      content: ''; position: absolute; inset: -9px; border-radius: 50%;
-      border: 2px solid rgba(91,143,168,.45);
-      animation: addPulse 2.4s ease-out infinite;
-      pointer-events: none;
-    }
-    @keyframes addPulse {
-      0%   { transform: scale(.8); opacity: .9; }
-      70%  { transform: scale(1.3); opacity: 0; }
-      100% { transform: scale(1.3); opacity: 0; }
-    }
+    .tab-add-btn svg { width: 26px; height: 26px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.2)); }
+    .tab-add-btn:active { transform: scale(.94); }
+    .tab-add-label { font-size: 10px; color: var(--text-secondary); white-space: nowrap; }
 
     /* ===== 主内容 ===== */
     .main { max-width: 600px; margin: 0 auto; padding: 14px 14px 20px; }
@@ -275,13 +259,13 @@
     /* ===== 图表 ===== */
     .chart { width: 100%; height: 200px; display: block; }
     .chart-fixed { display: flex; align-items: stretch; }
-    .chart-yaxis { position: relative; flex-shrink: 0; width: 58px; height: 200px; }
+    .chart-yaxis { position: relative; flex-shrink: 0; width: 38px; height: 200px; }
     .chart-yaxis-unit {
-      position: absolute; right: 16px; top: 0; line-height: 12px;
+      position: absolute; right: 12px; top: 0; line-height: 12px;
       font-size: 11px; font-weight: 700; color: var(--text-secondary);
     }
-    .chart-yaxis-label { position: absolute; right: 16px; transform: translateY(-50%); font-size: 10px; color: var(--text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .chart-body { flex: 1; min-width: 0; }
+    .chart-yaxis-label { position: absolute; right: 12px; transform: translateY(-50%); font-size: 10px; color: var(--text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .chart-body { flex: 1; min-width: 0; padding-right: 38px; }
     .chart-body .chart-scroll { width: 100%; }
     .chart-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
     .chart-scroll::-webkit-scrollbar { height: 6px; }
@@ -1228,7 +1212,14 @@
     .form-section-title .fst-tag { background: var(--primary-bg); color: var(--accent-frost); }
 
     /* 表单独立页 */
-    .page-overlay { background: var(--bg-base); }
+    .page-overlay {
+      background:
+        radial-gradient(80% 44% at 100% -10%, rgba(91,143,168,.20), transparent 62%),
+        radial-gradient(72% 42% at 0% 112%, rgba(90,74,107,.18), transparent 62%),
+        rgba(9,12,18,.84);
+      -webkit-backdrop-filter: blur(26px) saturate(160%);
+      backdrop-filter: blur(26px) saturate(160%);
+    }
     .page-header { background: var(--bg-base); border-bottom: 1px solid var(--border-default); box-shadow: none; }
     .page-back-btn { background: var(--bg-elevated); border: 1px solid var(--border-default); }
     .page-back-btn svg { color: var(--text-primary); }
@@ -1263,6 +1254,139 @@
     .hi-tip:active { opacity: .85; }
     .hi-tip svg { flex-shrink: 0; color: #C08A3E; width: 18px; height: 18px; }
     .hi-tip span { word-break: break-all; }
+
+    /* ===== 首页最近充电：信息流态（取消卡片化 · 加底色 · 底部查看全部） ===== */
+    .home-feed {
+      background: rgba(255,255,255,.03);
+      border-radius: var(--radius-lg);
+      margin: 0 -14px;
+      padding: 2px 14px 6px;
+      overflow: hidden;
+    }
+    .feed-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 2px 4px; }
+    .feed-head h3 { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; color: var(--text-primary); }
+    .feed-head h3 svg { width: 18px; height: 18px; color: var(--accent-frost); }
+    .feed-count { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+    .home-feed .charge-list { gap: 0; }
+    .home-feed .charge-card {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 0;
+      padding: 13px 2px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      overflow: visible;
+    }
+    .home-feed .charge-card:last-child { border-bottom: none; }
+    .home-feed .charge-card::before { display: none !important; }
+    .home-feed .charge-card:active { transform: none; }
+    .feed-view-all {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; margin-top: 6px; padding: 13px;
+      background: transparent; border: none; border-top: 1px solid rgba(255,255,255,.07);
+      color: var(--accent-frost); font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .feed-view-all svg { width: 16px; height: 16px; }
+    .feed-view-all:active { opacity: .65; }
+
+    /* ===== 玻璃光晕差异化：同类卡片不同区域光晕各异，部分不显示 ===== */
+    .hero-card::before {
+      background:
+        radial-gradient(520px 190px at 12% -12%, rgba(91,143,168,.16), transparent 60%),
+        radial-gradient(420px 180px at 96% 115%, rgba(90,74,107,.10), transparent 62%);
+    }
+    /* 4 张信息卡：光效差异化（位置/形态/色温各不相同） */
+    .kpi-chip:nth-child(1)::after {
+      top: 0; left: 8%; right: 60%; height: 2px;
+      background: linear-gradient(90deg, rgba(91,143,168,.85), rgba(91,143,168,0));
+      box-shadow: 0 0 8px rgba(91,143,168,.6);
+    }
+    .kpi-chip:nth-child(2)::after {
+      top: auto; bottom: 0; left: 22%; right: 22%; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(190,218,238,.55), transparent);
+      box-shadow: 0 -1px 10px rgba(120,170,205,.4);
+    }
+    .kpi-chip:nth-child(3)::after {
+      top: 0; right: 6%; bottom: 0; left: auto; width: 3px; height: auto;
+      background: linear-gradient(180deg, rgba(91,143,168,.9), rgba(120,170,205,.1));
+      box-shadow: 0 0 10px rgba(110,165,200,.55);
+    }
+    .kpi-chip:nth-child(4)::after {
+      display: none;
+    }
+    .kpi-chip:nth-child(4)::before {
+      content: ''; position: absolute; top: 50%; left: 50%; width: 52px; height: 52px;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(91,143,168,.22), transparent 68%);
+      filter: blur(2px); pointer-events: none;
+    }
+    .home-stat:nth-child(2)::before { top: auto; bottom: 0; }
+    .home-stat:nth-child(3)::before { display: none; }
+    .home-stat:nth-child(4)::before { top: 0; left: 32%; right: 32%; }
+    .stat-card:nth-child(2)::before { top: auto; bottom: 0; }
+    .stat-card:nth-child(3)::before { display: none; }
+    .stat-card:nth-child(4)::before { top: 0; left: 34%; right: 8%; }
+
+    /* ===== 添加/编辑记录页：全要素类玻璃材质 + 光效（与首页统一，同类元素一致） ===== */
+    .page-overlay::before {
+      content: ''; position: absolute; top: 0; left: -60%; width: 55%; height: 420px;
+      background: radial-gradient(560px 300px at 28% 0%, rgba(91,143,168,.14), transparent 62%);
+      pointer-events: none; z-index: 0;
+    }
+    .page-header {
+      background: rgba(16,20,28,.55);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      backdrop-filter: blur(20px) saturate(160%);
+      border-bottom: 1px solid rgba(255,255,255,.09);
+      box-shadow: 0 6px 24px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.07);
+    }
+    .page-header h2 { color: var(--text-primary); }
+    .page-back-btn {
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
+    }
+    .page-back-btn svg { color: var(--accent-frost); }
+    .form-section-card {
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,.24), 0 0 34px rgba(91,143,168,.07), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .form-section-card::before {
+      content: ''; position: absolute; top: 0; left: 14px; right: 14px; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+      pointer-events: none;
+    }
+    .form-group input, .form-group select, .form-group textarea, .date-filter-bar select {
+      background: rgba(255,255,255,.05);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      backdrop-filter: blur(14px) saturate(140%);
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      color: var(--text-primary);
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--accent-frost);
+      box-shadow: 0 0 0 3px rgba(91,143,168,.20), inset 0 1px 0 rgba(255,255,255,.06);
+      background: rgba(30,38,52,.55);
+    }
+    .form-section-toggle {
+      background: rgba(255,255,255,.05);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      backdrop-filter: blur(14px) saturate(140%);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .form-segment-btn {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    .form-segment-btn.active {
+      background: rgba(91,143,168,.20);
+      border-color: var(--accent-frost);
+      color: var(--accent-frost);
+      box-shadow: 0 0 14px rgba(91,143,168,.28), inset 0 1px 0 rgba(255,255,255,.10);
+    }
 
     /* 滚动条 */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -1308,9 +1432,12 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M8 13h8 M8 17h5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
       记录
     </button>
-    <button class="tab-add-btn" onclick="App.openChargeModal()" aria-label="添加充电记录">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19" stroke-linecap="round"></line><line x1="5" y1="12" x2="19" y2="12" stroke-linecap="round"></line></svg>
-    </button>
+    <div class="tab-add">
+      <button class="tab-add-btn" onclick="App.openChargeModal()" aria-label="记一笔">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19" stroke-linecap="round"></line><line x1="5" y1="12" x2="19" y2="12" stroke-linecap="round"></line></svg>
+      </button>
+      <span class="tab-add-label">记一笔</span>
+    </div>
     <button class="tab-btn" data-tab="analysis">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 14l3-3 3 3 5-5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
       分析
