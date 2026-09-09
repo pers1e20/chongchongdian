@@ -51,7 +51,10 @@
     clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6" stroke-linecap="round"/><line x1="8" y1="2" x2="8" y2="6" stroke-linecap="round"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
     power: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0 M12 2v10" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    infinity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.178 8c5.384 0 5.384 8 0 8-5.384 0-7.356-8-12.74-8-5.384 0-5.384 8 0 8 5.384 0 7.356-8 12.74-8z" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    infinity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.178 8c5.384 0 5.384 8 0 8-5.384 0-7.356-8-12.74-8-5.384 0-5.384 8 0 8 5.384 0 7.356-8 12.74-8z" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    cloud: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19a4.5 4.5 0 0 0 .42-8.98 5.5 5.5 0 0 0-10.6 1.76A4 4 0 0 0 7 19h10.5z" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    syncIcon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    keyIcon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15 8 18 11 21 8l-3-3" stroke-linecap="round" stroke-linejoin="round"/></svg>'
   };
 
   /* ============================================================
@@ -73,7 +76,13 @@
       return this.data;
     },
 
-    save: function () { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); },
+    save: function () {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+      if (typeof Sync !== 'undefined' && Sync.markLocalChange) Sync.markLocalChange();
+    },
+
+    /* 静默保存：仅落盘，不触发同步水印（用于拉取云端后应用，避免误回推） */
+    saveSilently: function () { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); },
 
     exportJSON: function () {
       var blob = new Blob([JSON.stringify(this.data, null, 2)], { type: 'application/json' });
@@ -106,6 +115,150 @@
       this.save();
     }
   };
+
+  /* ============================================================
+   * 云同步（私有 Gist 自动备份）
+   * localStorage 仍为主库；每次保存节流推送到私有 Gist；
+   * 启动/手动同步时按「后写覆盖」拉取。令牌独立存储，不随数据导出。
+   * ============================================================ */
+  var Sync = {
+    CFG_KEY: 'ev_sync_cfg_v1',
+    FILE: 'ev-charging-backup.json',
+    cfg: null,
+    pushTimer: null,
+    pulling: false,
+
+    loadCfg: function () {
+      if (this.cfg) return this.cfg;
+      this.cfg = { enabled: false, token: '', gistId: '', lastPushedMs: 0, lastLocalMs: 0,
+                   lastPullMs: 0, lastSyncAt: 0, lastErr: '', device: (navigator.userAgent || '').slice(0, 50) };
+      try {
+        var raw = localStorage.getItem(this.CFG_KEY);
+        if (raw) { var c = JSON.parse(raw); for (var k in this.cfg) if (c[k] !== undefined) this.cfg[k] = c[k]; }
+      } catch (e) {}
+      return this.cfg;
+    },
+    saveCfg: function () { try { localStorage.setItem(this.CFG_KEY, JSON.stringify(this.cfg)); } catch (e) {} },
+    headers: function () {
+      return {
+        'Authorization': 'Bearer ' + this.cfg.token,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      };
+    },
+    _api: function (method, url, body) {
+      return fetch('https://api.github.com' + url, {
+        method: method, headers: this.headers(), body: body ? JSON.stringify(body) : undefined
+      }).then(function (r) {
+        if (!r.ok) {
+          return r.json().then(function (j) {
+            var msg = (j && (j.message || j.errors && j.errors[0] && j.errors[0].message)) || ('HTTP ' + r.status);
+            throw new Error(String(msg));
+          });
+        }
+        return r.json();
+      });
+    },
+
+    endpoint: function () { return 'https://api.github.com/gists' + (this.cfg.gistId ? '/' + this.cfg.gistId : ''); },
+
+    /* 每次本地保存时标记并节流推送 */
+    markLocalChange: function () {
+      var c = this.loadCfg();
+      if (!c.enabled || !c.token) return;
+      c.lastLocalMs = Date.now();
+      this.saveCfg();
+      if (this.pulling) return;
+      var self = this;
+      if (this.pushTimer) clearTimeout(this.pushTimer);
+      this.pushTimer = setTimeout(function () { self.pushTimer = null; self.push(); }, 1500);
+    },
+
+    push: function () {
+      var self = this, c = this.loadCfg();
+      if (!c.enabled || !c.token) return Promise.resolve();
+      var content = this.snapshot();
+      if (!c.gistId) {
+        return this._api('POST', '/gists', { description: '冲充电 · EV 充电账单同步备份', 'public': false, files: (function () { var o = {}; o[self.FILE] = { content: content }; return o; })() })
+          .then(function (g) {
+            c.gistId = g.id; c.lastPushedMs = Date.now(); c.lastErr = ''; self.saveCfg();
+            self.toast('数据已备份到私有 Gist', 'success');
+          })
+          .catch(function (e) { self.fail(e); });
+      }
+      var patch = { files: {} };
+      patch.files[this.FILE] = { content: content };
+      return this._api('PATCH', '/gists/' + c.gistId, patch)
+        .then(function () { c.lastPushedMs = Date.now(); c.lastErr = ''; self.saveCfg(); })
+        .catch(function (e) { self.fail(e); });
+    },
+
+    pull: function () {
+      var self = this, c = this.loadCfg();
+      return new Promise(function (resolve) {
+        if (!c.enabled || !c.token || !c.gistId || self.pulling) { resolve(); return; }
+        self.pulling = true;
+        self._api('GET', '/gists/' + c.gistId).then(function (g) {
+            var file = g.files && g.files[self.FILE];
+            var serverMs = Date.parse(g.updated_at) || 0;
+            if (file && serverMs > c.lastPushedMs && serverMs > c.lastLocalMs) {
+              try {
+                var remote = JSON.parse(file.content || '{}');
+                if (remote && remote.vehicles && remote.charges) {
+                  Store.data = remote;
+                  if (!Store.data.settings) Store.data.settings = { currentVehicleId: null };
+                  Store.saveSilently();
+                  c.lastLocalMs = serverMs;
+                  if (App && App.renderAll) App.renderAll();
+                  self.toast('已从云端同步数据', 'success');
+                }
+              } catch (e) {}
+            }
+            c.lastPullMs = Date.now(); c.lastSyncAt = Date.now(); self.saveCfg();
+            self.pulling = false; resolve();
+          })
+          .catch(function (e) { self.pulling = false; self.fail(e); resolve(); });
+      });
+    },
+
+    syncNow: function () {
+      var self = this;
+      this.pull().then(function () {
+        var c = self.loadCfg();
+        if (c.lastLocalMs > c.lastPushedMs) { self.push(); }
+        else { self.toast('已同步，数据一致', 'success'); }
+      });
+    },
+
+    snapshot: function () { return JSON.stringify(Store.data); },
+
+    fail: function (e) {
+      var c = this.loadCfg();
+      c.lastErr = String((e && (e.message || e)) || '未知错误');
+      this.saveCfg();
+      this.toast('同步失败：' + c.lastErr, 'error');
+    },
+    toast: function (msg, type) { if (App && App.toast) App.toast(msg, type); return; },
+
+    /* 启动时：若已启用则拉取 */
+    startup: function () { this.loadCfg(); if (this.cfg.enabled && this.cfg.token) this.pull(); },
+
+    statusLine: function () {
+      var c = this.loadCfg();
+      if (!c.enabled) return '未启用';
+      if (c.lastErr) return '最近出错：' + c.lastErr;
+      var parts = [];
+      if (c.gistId) parts.push('已备份到 Gist #' + c.gistId.slice(0, 7));
+      if (c.lastSyncAt) parts.push('上次同步 ' + new Date(c.lastSyncAt).toLocaleTimeString());
+      return parts.join(' · ') || '等待首次备份';
+    }
+  };
+
+  /* 刷新「我的」页同步状态栏（设置区渲染后调用） */
+  function SyncStatusUI(app) {
+    var el = document.getElementById('syncStatus');
+    if (el) el.textContent = Sync.statusLine();
+  }
 
   /* ============================================================
    * 工具函数
@@ -846,6 +999,8 @@
       this.bindEvents();
       this.bindAnalysisSegments();
       this.renderAll();
+      // 启动时拉取云端同步（若已启用）
+      Sync.startup();
     },
 
     /* ---- 默认数据：首次启动自动写入（智己 L6 及充电记录） ---- */
@@ -1632,6 +1787,20 @@
       }
       html += '</div>';
 
+      // 数据同步（私有 Gist）
+      html += '<div class="card" id="syncCard"><h3>' + Icons.cloud + '数据同步 <span style="font-size:11px;color:var(--text-light);font-weight:400;">私有 Gist</span></h3>';
+      html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin:2px 0 12px;">本地仍是主数据库；每次保存自动备份到你的<strong>私有 Gist</strong>，换设备/重部署后打开即拉取。需要一枚带 <strong>Gist 读写</strong>权限的 GitHub 令牌。</div>';
+      html += '<div class="settings-list">';
+      html += this.settingsItem('blue', Icons.syncIcon, '启用自动同步', '开启后每次保存自动备份到私有 Gist',
+        '<input type="checkbox" id="syncEnable" style="width:20px;height:20px;accent-color:var(--accent-frost);"' + (Sync.loadCfg().enabled ? ' checked' : '') + '>');
+      html += this.settingsItem('blue', Icons.keyIcon, 'GitHub 令牌', '需 Gist 读/写权限（fine-grained 勾选 Gists）',
+        '<input type="password" id="syncToken" placeholder="github_pat_…" style="width:150px;padding:8px 10px;border-radius:8px;border:1px solid var(--border-default);background:var(--bg-elevated);color:var(--text-primary);font-size:13px;font-family:var(--font-mono);">');
+      html += this.settingsItem('green', Icons.upload, '立即备份 / 同步', '手动拉取并回推一次，校验数据一致',
+        '<button class="btn btn-primary" id="btnSyncNow" style="padding:9px 14px;font-size:14px;">' + Icons.syncIcon + ' 同步</button>');
+      html += '</div>';
+      html += '<div style="font-size:12px;color:var(--text-light);margin-top:10px;" id="syncStatus">' + Sync.statusLine() + '</div>';
+      html += '</div>';
+
       // 数据管理
       html += '<div class="card"><h3>' + Icons.settings + '数据管理</h3><div class="settings-list">';
       html += this.settingsItem('blue', Icons.download, '导出备份', '将所有数据导出为 JSON 文件', '<button class="btn btn-primary" id="btnExport">导出</button>');
@@ -1676,6 +1845,29 @@
           Store.clearAll();
           location.reload();
         });
+      };
+
+      // 数据同步控件
+      var syncEnable = document.getElementById('syncEnable');
+      if (syncEnable) syncEnable.onchange = function () {
+        var cfg = Sync.loadCfg();
+        cfg.enabled = syncEnable.checked;
+        Sync.saveCfg();
+        if (cfg.enabled && cfg.token && !cfg.gistId) Sync.push();
+        else self.toast(cfg.enabled ? '已启用自动同步' : '已关闭自动同步', 'success');
+        SyncStatusUI(self);
+      };
+      var syncToken = document.getElementById('syncToken');
+      if (syncToken) syncToken.onchange = function () {
+        var v = syncToken.value.trim();
+        if (v) { var cfg = Sync.loadCfg(); cfg.token = v; Sync.saveCfg(); self.toast('令牌已保存', 'success'); SyncStatusUI(self); }
+      };
+      var btnSync = document.getElementById('btnSyncNow');
+      if (btnSync) btnSync.onclick = function () {
+        var t = syncToken ? syncToken.value.trim() : '';
+        if (t) { var cfg = Sync.loadCfg(); cfg.token = t; cfg.enabled = true; if (syncEnable) syncEnable.checked = true; Sync.saveCfg(); }
+        Sync.syncNow();
+        setTimeout(function () { SyncStatusUI(self); }, 1200);
       };
     },
 
