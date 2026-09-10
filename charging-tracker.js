@@ -1011,6 +1011,13 @@
       this.bindEvents();
       this.bindAnalysisSegments();
       this.renderAll();
+      // 系统/浏览器返回：若当前处于「添加/编辑记录」内嵌页则先关闭它回到当前页/首页，而非退出应用
+      window.addEventListener('popstate', function (e) {
+        if (e.state && e.state.implOverlay) {
+          App._overlayDepth = Math.max(0, (App._overlayDepth || 0) - 1);
+          App.closeChargePage(true);
+        }
+      });
       // 启动时拉取云端同步（若已启用）
       Sync.startup();
     },
@@ -1240,20 +1247,16 @@
       html += '<div class="home-stat-grid">';
       html += '<div class="home-stat" onclick="App.switchTab(\'analysis\');App.setAnalysisSub(\'stats\')">'
         + '<div class="home-stat-head">' + Icons.gauge + '平均电耗</div>'
-        + '<div class="home-stat-value">' + (effInfo.count > 0 ? Utils.fmt(effInfo.avg, 1) : '—') + '</div>'
-        + '<div class="home-stat-sub">' + (effInfo.count > 0 ? 'kWh/100km · ' + effInfo.count + ' 组' : '补录里程后计算') + '</div></div>';
+        + '<div class="home-stat-value">' + (effInfo.count > 0 ? Utils.fmt(effInfo.avg, 1) : '—') + '</div></div>';
       html += '<div class="home-stat" onclick="App.showStatDetail(\'totalKWh\', \'' + vid + '\')">'
         + '<div class="home-stat-head">' + Icons.coin + '平均电价</div>'
-        + '<div class="home-stat-value">¥' + Utils.fmtMoney(ov.avgPrice) + '</div>'
-        + '<div class="home-stat-sub">/ 度 · ' + ov.chargeCount + ' 次充电</div></div>';
+        + '<div class="home-stat-value">¥' + Utils.fmtMoney(ov.avgPrice) + '</div></div>';
       html += '<div class="home-stat" onclick="App.showStatDetail(\'fastslow\', \'' + vid + '\')">'
         + '<div class="home-stat-head">' + Icons.infinity + '快慢充比</div>'
-        + '<div class="home-stat-value">' + fastPct + ':' + slowPct + '</div>'
-        + '<div class="home-stat-sub">快' + ov.fastCount + ' / 慢' + ov.slowCount + ' · 按次数</div></div>';
+        + '<div class="home-stat-value">' + fastPct + ':' + slowPct + '</div></div>';
       html += '<div class="home-stat" onclick="App.switchTab(\'analysis\');App.setAnalysisSub(\'health\')">'
         + '<div class="home-stat-head">' + Icons.shield + '电池健康度</div>'
-        + '<div class="home-stat-value">' + (health.index === null ? '—' : health.index) + '</div>'
-        + '<div class="home-stat-sub">' + health.status + ' · 点击查看</div></div>';
+        + '<div class="home-stat-value">' + (health.index === null ? '—' : health.index) + '</div></div>';
       html += '</div>';
 
       // 近 6 个月费用趋势
@@ -1262,7 +1265,7 @@
       // 最近充电（信息流态 · 取消卡片化 · 最底「查看全部」）
       var recent = ChargeMgr.list(vid).slice(0, 3);
       html += '<div class="home-feed">';
-      html += '<div class="feed-head"><h3>' + Icons.clock + '最近充电</h3><span class="feed-count">共 ' + ov.chargeCount + ' 条 · 流量 ' + Utils.fmt(ov.totalKWh, 1) + ' 度</span></div>';
+      html += '<div class="feed-head"><h3>' + Icons.clock + '最近充电</h3></div>';
       if (recent.length === 0) {
         html += '<div class="empty-state" style="padding:18px;">' + Icons.bolt + '<p>暂无充电记录</p></div>';
       } else {
