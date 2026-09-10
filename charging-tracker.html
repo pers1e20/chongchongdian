@@ -1217,8 +1217,6 @@
         radial-gradient(80% 44% at 100% -10%, rgba(91,143,168,.20), transparent 62%),
         radial-gradient(72% 42% at 0% 112%, rgba(90,74,107,.18), transparent 62%),
         rgba(9,12,18,.84);
-      -webkit-backdrop-filter: blur(26px) saturate(160%);
-      backdrop-filter: blur(26px) saturate(160%);
     }
     .page-header { background: var(--bg-base); border-bottom: 1px solid var(--border-default); box-shadow: none; }
     .page-back-btn { background: var(--bg-elevated); border: 1px solid var(--border-default); }
@@ -1320,6 +1318,17 @@
       background: radial-gradient(circle, rgba(91,143,168,.22), transparent 68%);
       filter: blur(2px); pointer-events: none;
     }
+    /* 窄屏：4 张 KPI 信息卡改为 2×2，避免窄格内数值溢出/截断 */
+    @media (max-width: 420px) {
+      .kpi-chips { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 16px; }
+      .kpi-chip { min-height: 54px; padding: 7px 6px; }
+      /* 第 3 张卡在 2×2 中为左下，取消右侧通高竖条，改为顶部暖色光带以保持差异化 */
+      .kpi-chip:nth-child(3)::after {
+        top: 0; bottom: auto; right: auto; left: 8%; width: auto; height: 2px;
+        background: linear-gradient(90deg, rgba(120,170,205,.55), transparent);
+        box-shadow: 0 0 8px rgba(120,170,205,.4);
+      }
+    }
     .home-stat:nth-child(2)::before { top: auto; bottom: 0; }
     .home-stat:nth-child(3)::before { display: none; }
     .home-stat:nth-child(4)::before { top: 0; left: 32%; right: 32%; }
@@ -1387,6 +1396,11 @@
       color: var(--accent-frost);
       box-shadow: 0 0 14px rgba(91,143,168,.28), inset 0 1px 0 rgba(255,255,255,.10);
     }
+
+    /* ===== 交互反馈与可达性 ===== */
+    :focus-visible { outline: 2px solid var(--accent-frost); outline-offset: 2px; border-radius: 6px; }
+    button:active, [role="button"]:active, .hi-cell:active, .tab-btn:active { opacity: .82; }
+    select:focus { outline: none; }
 
     /* 滚动条 */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
