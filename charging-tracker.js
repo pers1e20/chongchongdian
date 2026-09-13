@@ -418,9 +418,14 @@
     kWhPer100km: function (charges) {
       var results = [];
       for (var i = 1; i < charges.length; i++) {
-        var dist = charges[i].odometer - charges[i - 1].odometer;
-        if (dist > 0 && charges[i].kWh > 0)
-          results.push({ date: charges[i].date, monthKey: Utils.monthKey(charges[i].date), value: (charges[i].kWh / dist) * 100, distance: dist });
+        var prev = charges[i - 1], cur = charges[i];
+        var o0 = prev.odometer || 0, o1 = cur.odometer || 0;
+        // 规则A：必须相邻两次记录都有有效里程且递增，单点或多条缺里程时不构成区间
+        // 规则B：两次里程点之间若夹有里程/记录不完整的条目（o0/o1 任一为0）则区间不可靠，跳过
+        if (o0 > 0 && o1 > o0 && cur.kWh > 0) {
+          var dist = o1 - o0;
+          results.push({ date: cur.date, monthKey: Utils.monthKey(cur.date), value: (cur.kWh / dist) * 100, distance: dist });
+        }
       }
       return results;
     },
@@ -443,9 +448,18 @@
       return kept.reduce(function (s, v) { return s + v; }, 0) / kept.length;
     },
     // 平均电耗：返回稳健均值、有效样本数与样本明细
+    // 规则D：有效样本不足 3 条时不计均值，界面显示「数据不足」，避免单条冒充结论
     avgEfficiency: function (vid, year) {
       var samples = this.effSamples(vid, year);
-      return { avg: this.robustMean(samples.map(function (e) { return e.value; })), count: samples.length, samples: samples };
+      var count = samples.length;
+      var enough = count >= 3;
+      var avg = 0;
+      if (enough) {
+        avg = this.robustMean(samples.map(function (e) { return e.value; }));
+      } else if (count > 0) {
+        avg = samples.reduce(function (s, e) { return s + e.value; }, 0) / count;
+      }
+      return { avg: avg, count: count, enough: enough, samples: samples };
     },
     overview: function (vid, year) {
       var charges = vid ? Store.data.charges.filter(function (c) { return c.vehicleId === vid; }) : Store.data.charges;
@@ -520,11 +534,19 @@
   var BatteryHealth = {
     estimateCapacity: function (vid) {
       var charges = ChargeMgr.listByVehicle(vid);
+      var vehicle = VehicleMgr.get(vid);
+      var nominal = vehicle ? (vehicle.batteryCapacity || 0) : 0;
+      // 规则C：物理区间护栏——实测容量需落在 [标称×0.7, 标称×1.08] 内才合理，超限视为读数偏差/离群剔除
+      var lo = nominal > 0 ? nominal * 0.7 : 0;
+      var hi = nominal > 0 ? nominal * 1.08 : Infinity;
       var estimates = [];
       charges.forEach(function (c) {
         var socDelta = c.socAfter - c.socBefore;
-        if (socDelta >= 30 && c.kWh > 0)
-          estimates.push({ date: c.date, monthKey: Utils.monthKey(c.date), capacity: c.kWh / (socDelta / 100) });
+        if (socDelta >= 30 && c.kWh > 0) {
+          var cap = c.kWh / (socDelta / 100);
+          if (cap >= lo && cap <= hi)
+            estimates.push({ date: c.date, monthKey: Utils.monthKey(c.date), capacity: cap });
+        }
       });
       return Utils.sortByDate(estimates, false);
     },
@@ -570,18 +592,23 @@
       return { score: score, factors: factors, fastRatio: fastRatio, deepRatio: deepRatio, overRatio: overRatio };
     },
     /** 电池健康度（仅电池容量维度）= 实测容量 ÷ 标称容量，与充电习惯无关 */
+    // 规则D：有效估算样本不足 3 组时不给出容量结论，显示「数据不足」
     capacityHealth: function (vid) {
       var vehicle = VehicleMgr.get(vid);
       var nominal = vehicle ? vehicle.batteryCapacity : 0;
-      var current = this.currentEstimate(vid);
+      var estimates = this.estimateCapacity(vid);
+      var sampleCount = estimates.length;
+      var enough = sampleCount >= 3;
+      var current = enough ? this.currentEstimate(vid) : (sampleCount ? this.currentEstimate(vid) : null);
       var retention = (current && nominal > 0) ? Math.min(1, current / nominal) : null;
       var index = retention === null ? null : Math.round(retention * 100);
       var status;
       if (index === null) { status = '补录电量后可用'; }
+      else if (!enough) { status = '数据不足'; }
       else if (index >= 90) { status = '优秀'; }
       else if (index >= HEALTH_CONFIG.capacityWarningRatio * 100) { status = '良好'; }
       else { status = '需关注'; }
-      return { index: index, retention: retention, currentEstimate: current, nominal: nominal, status: status };
+      return { index: index, retention: retention, currentEstimate: current, nominal: nominal, status: status, sampleCount: sampleCount, enough: enough };
     },
     healthIndex: function (vid) {
       var vehicle = VehicleMgr.get(vid);
@@ -1247,7 +1274,7 @@
       html += '<div class="home-stat-grid">';
       html += '<div class="home-stat" onclick="App.switchTab(\'analysis\');App.setAnalysisSub(\'stats\')">'
         + '<div class="home-stat-head">' + Icons.gauge + '平均电耗</div>'
-        + '<div class="home-stat-value">' + (effInfo.count > 0 ? Utils.fmt(effInfo.avg, 1) : '—') + '</div></div>';
+        + '<div class="home-stat-value">' + (effInfo.enough ? Utils.fmt(effInfo.avg, 1) : (effInfo.count > 0 ? '数据不足' : '—')) + '</div></div>';
       html += '<div class="home-stat" onclick="App.showStatDetail(\'totalKWh\', \'' + vid + '\')">'
         + '<div class="home-stat-head">' + Icons.coin + '平均电价</div>'
         + '<div class="home-stat-value">¥' + Utils.fmtMoney(ov.avgPrice) + '</div></div>';
@@ -1373,10 +1400,10 @@
           effList = '<div class="sd-empty">暂无有效样本：需要两次以上记录且有有效里程差方可计算电耗。</div>';
         }
         body = '<div class="sd-period">数据范围：' + period + '</div><div class="sd-grid">'
-          + this._sdRow('平均电耗', Utils.fmt(effVal, 1) + ' 度/100km')
+          + this._sdRow('平均电耗', effInfo.enough ? Utils.fmt(effVal, 1) + ' 度/100km' : (eff.length ? '数据不足' : '—'))
           + this._sdRow('有效样本', eff.length + ' 组')
           + '</div>' + effList
-          + '<div class="sd-note"><b>说明：</b>电耗 = 相邻两次充电间「充入度数 ÷ 行驶里程 × 100」。仅纳入里程表有效（相邻记录里程差 &gt; 0）的相邻数据；为排除单次异常，先剔除超过 3 倍标准差的离群样本，再对剩余有效样本求平均。缺里程或数据不足（少于 2 次有效）时显示「—」。</div>';
+          + '<div class="sd-note"><b>说明：</b>电耗 = 相邻两次充电间「充入度数 ÷ 行驶里程 × 100」。仅纳入两次里程都有效（相邻记录里程递增）的区间；若区间内存在缺里程/漏记的充电则该区间不可靠、自动剔除。需至少 3 组有效样本才给出均值，样本不足 3 组时显示「数据不足」，避免单条数据冒充结论。</div>';
       } else if (key === 'pricePerKm') {
         color = 'amber';
         title = '每公里单价';
@@ -1385,9 +1412,9 @@
         body = '<div class="sd-period">数据范围：' + period + '</div><div class="sd-grid">'
           + this._sdRow('每公里单价', pkmVal)
           + this._sdRow('平均电价', '¥' + Utils.fmtMoney(ov.avgPrice) + '/度')
-          + this._sdRow('百公里电耗', effInfo.count > 0 ? Utils.fmt(effVal, 1) + ' 度/100km' : '—')
+          + this._sdRow('百公里电耗', effInfo.enough ? Utils.fmt(effVal, 1) + ' 度/100km' : (effInfo.count > 0 ? '数据不足' : '—'))
           + this._sdRow('有效样本', effInfo.count + ' 组')
-          + '</div><div class="sd-note"><b>说明：</b>每公里单价 = 平均电价 × 百公里电耗 ÷ 100。需要补录里程数据后方可计算。仅纳入里程表有效（相邻记录里程差 &gt; 0）的数据。</div>';
+          + '</div><div class="sd-note"><b>说明：</b>每公里单价 = 平均电价 × 百公里电耗 ÷ 100。需要补录里程数据后方可计算。仅纳入两次里程都有效的区间，需至少 3 组样本才给出数值。</div>';
       } else if (key === 'fastslow') {
         color = 'purple';
         title = '快慢充比';
@@ -1709,13 +1736,17 @@
         var warn = pct < HEALTH_CONFIG.capacityWarningRatio * 100;
         html += '<div class="card capacity-card"><h3>' + Icons.battery + '电池容量分析</h3>';
         html += '<div class="capacity-main">';
-        html += '<div><div class="capacity-num"><span class="cap-value">' + Utils.fmt(health.currentEstimate, 1) + '</span><span class="cap-unit">kWh</span></div>'
-          + '<span class="cap-nominal">标称容量 ' + health.nominal + ' kWh</span></div>';
-        html += '<span class="capacity-retention' + (warn ? ' warn' : '') + '">' + (warn ? '低于标准' : '保持率') + ' ' + pct + '%</span>';
-        html += '</div>';
-        html += '<div class="health-bar-wrap"><div class="health-bar"><div class="health-bar-fill" style="width:' + Math.min(100, pct) + '%;background:' + color + '"></div></div></div>';
-        if (warn) html += '<p class="warn-text">实测容量低于标称的 ' + Math.round(HEALTH_CONFIG.capacityWarningRatio * 100) + '%，建议关注电池健康并前往检测。</p>';
-        html += '<p class="capacity-note"><b>口径说明：</b>实测容量由「单次充入度数 ÷ 充电前后电量(SOC)变化比例」估算，并取近 5 次的中位数，用于监控电池随时间的老化趋势。</p>';
+        if (health.enough) {
+          html += '<div><div class="capacity-num"><span class="cap-value">' + Utils.fmt(health.currentEstimate, 1) + '</span><span class="cap-unit">kWh</span></div>'
+            + '<span class="cap-nominal">标称容量 ' + health.nominal + ' kWh</span></div>';
+          html += '<span class="capacity-retention' + (warn ? ' warn' : '') + '">' + (warn ? '低于标准' : '保持率') + ' ' + pct + '%</span>';
+          html += '</div>';
+          html += '<div class="health-bar-wrap"><div class="health-bar"><div class="health-bar-fill" style="width:' + Math.min(100, pct) + '%;background:' + color + '"></div></div></div>';
+          if (warn) html += '<p class="warn-text">实测容量低于标称的 ' + Math.round(HEALTH_CONFIG.capacityWarningRatio * 100) + '%，建议关注电池健康并前往检测。</p>';
+        } else {
+          html += '<div class="empty-state" style="padding:12px 0;">' + Icons.info + '<p style="font-size:13px;">有效样本 ' + health.sampleCount + ' 组，暂不足 3 组，<b>无法给出可靠容量结论</b>。请继续补录带 SOC 前后电量的充电记录。</p></div>';
+        }
+        html += '<p class="capacity-note"><b>口径说明：</b>实测容量由「单次充入度数 ÷ 充电前后电量(SOC)变化比例」估算，并取近 5 次的中位数；仅采纳落在标称容量 70%–108% 合理区间内的样本，异常读数自动剔除。需至少 3 组有效样本才形成结论，取中位数用于监控电池随时间的真实老化趋势。</p>';
         html += '</div>';
       } else if (health.nominal > 0) {
         html += '<div class="card capacity-card"><h3>' + Icons.battery + '电池容量分析</h3><div class="empty-state" style="padding:16px;">' + Icons.info + '<p style="font-size:13px;">需要记录充电前后SOC及充入度数才能估算实际容量</p></div></div>';
