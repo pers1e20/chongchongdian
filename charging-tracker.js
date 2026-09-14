@@ -468,15 +468,15 @@
         charges = charges.filter(function (c) { return c.date.slice(0, 4) === y; });
       }
       var totalCost = 0, totalKWh = 0, count = charges.length, fastCount = 0, slowCount = 0;
-      var thisMonth = Utils.monthKey(Utils.today()), thisMonthCost = 0, thisMonthKWh = 0;
+      var thisMonth = Utils.monthKey(Utils.today()), thisMonthCost = 0, thisMonthKWh = 0, thisMonthCount = 0;
       charges.forEach(function (c) {
         totalCost += c.totalCost || 0; totalKWh += c.kWh || 0;
         if (c.chargeType === CHARGE_TYPE.FAST) fastCount++; else slowCount++;
-        if (Utils.monthKey(c.date) === thisMonth) { thisMonthCost += c.totalCost || 0; thisMonthKWh += c.kWh || 0; }
+        if (Utils.monthKey(c.date) === thisMonth) { thisMonthCost += c.totalCost || 0; thisMonthKWh += c.kWh || 0; thisMonthCount++; }
       });
       var effInfo = this.avgEfficiency(vid, year);
       var avgPrice = totalKWh > 0 ? totalCost / totalKWh : 0;
-      return { totalCost: totalCost, totalKWh: totalKWh, chargeCount: count, fastCount: fastCount, slowCount: slowCount, thisMonthCost: thisMonthCost, thisMonthKWh: thisMonthKWh, avgEff: effInfo.avg, effCount: effInfo.count, avgPrice: avgPrice };
+      return { totalCost: totalCost, totalKWh: totalKWh, chargeCount: count, fastCount: fastCount, slowCount: slowCount, thisMonthCost: thisMonthCost, thisMonthKWh: thisMonthKWh, thisMonthCount: thisMonthCount, avgEff: effInfo.avg, effCount: effInfo.count, avgPrice: avgPrice };
     },
     monthlyCost: function (vid, months) {
       if (!months) months = Utils.recentMonths(6);
@@ -792,7 +792,7 @@
       var cw = W - padL - padR, ch = H - padT - padB;
       var noData = !data.length || data.every(function (d) { return !d.value; });
       var maxV = noData ? 1 : Math.max.apply(null, data.map(function (d) { return d.value; })) * 1.15;
-      var color = opts.color || '#5B8FA8';
+      var color = opts.color || '#8B9BAE';
 
       // 填充左侧固定 Y 轴（刻度 + 单位）
       this._renderYAxis(opts, maxV, H, padT, ch);
@@ -943,7 +943,7 @@
         return;
       }
       var maxV = Math.max.apply(null, data.map(function (d) { return d.value; })) * 1.2 || 1;
-      var color = opts.color || '#5B8FA8';
+      var color = opts.color || '#8B9BAE';
 
       // 填充左侧固定 Y 轴
       this._renderYAxis(opts, maxV, H, padT, ch);
@@ -1097,7 +1097,7 @@
 
     bindEvents: function () {
       var self = this;
-      document.querySelectorAll('.tab-btn').forEach(function (btn) {
+      document.querySelectorAll('.tabbar-dark .tab-item').forEach(function (btn) {
         btn.addEventListener('click', function () { self.switchTab(btn.dataset.tab); });
       });
       var chargeForm = document.getElementById('chargeFormPage-form');
@@ -1209,7 +1209,7 @@
     switchTab: function (tab) {
       Charts.hide();
       this.currentTab = tab;
-      document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === tab); });
+      document.querySelectorAll('.tabbar-dark .tab-item').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === tab); });
       document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'panel-' + tab); });
       this.renderTab(tab);
     },
@@ -1251,79 +1251,111 @@
         return;
       }
 
-      // 英雄概览卡（Hero：费用 + 副信息 + 进行中徽章 + KPI chip 行，无 CTA 按钮）
-      html += '<div class="hero-card">';
-      html += '<div class="hero-label">本月充电费用</div>';
-      html += '<div class="hero-amount">¥' + Utils.fmtMoney(ov.thisMonthCost) + '</div>';
-      html += '<div class="hero-amount-sub">本月充入 ' + Utils.fmt(ov.thisMonthKWh, 1) + ' 度 · 平均电价 ¥' + Utils.fmtMoney(ov.avgPrice) + '/度</div>';
-      html += '<div class="kpi-chips">';
-      html += '<div class="kpi-chip"><span class="kpi-lbl">累计度数</span><span class="kpi-val">' + Utils.fmt(ov.totalKWh, 1) + '</span></div>';
-      html += '<div class="kpi-chip"><span class="kpi-lbl">累计花费</span><span class="kpi-val">¥' + Utils.fmtMoney(ov.totalCost) + '</span></div>';
-      html += '<div class="kpi-chip"><span class="kpi-lbl">充电次数</span><span class="kpi-val">' + ov.chargeCount + '</span></div>';
+      // 顶部毛玻璃导航（设计稿 home-nav-dark）
+      html += '<div class="home-nav-dark">'
+        + '<button class="nav-btn" onclick="App.switchTab(\'records\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>'
+        + '<span class="nav-title">冲充电</span>'
+        + '<button class="nav-btn" onclick="App.switchTab(\'profile\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>'
+        + '</div>';
+
+      // 液态玻璃英雄卡（设计稿 home-hero-dark · 本月费用 + 副信息）
+      var mv = Utils.monthKey(Utils.today()).slice(0, 4);
+      var abit = Utils.fmtMoney(ov.thisMonthCost).split('.');
+      html += '<div class="home-hero-dark">';
+      html += '<div class="month-label">' + (this.monthLabelHome || Utils.monthLabel(Utils.monthKey(Utils.today()))) + ' · 本月费用</div>';
+      html += '<div class="amount">¥' + abit[0] + (abit[1] ? '<span class="unit">.' + abit[1] + '</span>' : '') + '</div>';
+      html += '<div class="hero-sub">';
+      html += '<span class="sub-item">充入 <strong>' + Utils.fmt(ov.thisMonthKWh, 1) + '</strong> 度</span>';
+      html += '<span class="sub-item">均价 <strong>¥' + Utils.fmtMoney(ov.thisMonthKWh > 0 ? ov.thisMonthCost / ov.thisMonthKWh : 0) + '</strong>/度</span>';
+      html += '<span class="sub-item"><strong>' + ov.thisMonthCount + '</strong> 次</span>';
+      html += '</div></div>';
+
+      // KPI 图标网格（设计稿 kpi-grid-dark · 累计类 2x2）
       var pkm = Stats.pricePerKm(vid);
-      html += '<div class="kpi-chip"><span class="kpi-lbl">每公里费用</span><span class="kpi-val">' + (pkm.hasData ? '¥' + Utils.fmt(pkm.value, 2) : '—') + '</span></div>';
-      html += '</div>';
+      html += '<div class="kpi-grid-dark">';
+      html += '<div class="kpi-dark"><div class="kpi-icon ic-gold">' + Icons.coin + '</div><div class="kpi-value">¥' + Utils.fmtMoney(ov.totalCost) + '</div><div class="kpi-label">累计费用</div></div>';
+      html += '<div class="kpi-dark"><div class="kpi-icon ic-teal">' + Icons.zap + '</div><div class="kpi-value">' + Utils.fmt(ov.totalKWh, 1) + '</div><div class="kpi-label">累计度数</div></div>';
+      html += '<div class="kpi-dark"><div class="kpi-icon ic-blue">' + Icons.battery + '</div><div class="kpi-value">' + ov.chargeCount + '</div><div class="kpi-label">充电次数</div></div>';
+      html += '<div class="kpi-dark"><div class="kpi-icon ic-orange">' + Icons.gauge + '</div><div class="kpi-value">' + (pkm.hasData ? '¥' + Utils.fmt(pkm.value, 2) : '—') + '</div><div class="kpi-label">每公里费用</div></div>';
       html += '</div>';
 
-      // 2×2 分析统计卡区（整合分析维度，均可点击进分析页）
+      // 费用趋势（设计稿 chart-card-dark + mini bar）
+      html += '<div class="home-section-header"><h4>费用趋势</h4><span class="see-all" onclick="App.switchTab(\'analysis\');App.setAnalysisSub(\'stats\')">更多 ›</span></div>';
+      html += '<div class="chart-card-dark"><div class="chart-title">近 6 个月充电费用</div><div class="mini-chart">';
+      html += this.homeMiniChartHTML(vid);
+      html += '</div></div>';
+
+      // 关键指标网格（设计稿 stat-grid-dark）
       var effInfo = Stats.avgEfficiency(vid);
       var ratio = Stats.chargeTypeRatio(vid);
       var fastPct = Math.round(ratio.fast * 100);
       var slowPct = 100 - fastPct;
       var health = BatteryHealth.capacityHealth(vid);
-      html += '<div class="home-stat-grid">';
-      html += '<div class="home-stat" onclick="App.switchTab(\'analysis\');App.setAnalysisSub(\'stats\')">'
-        + '<div class="home-stat-head">' + Icons.gauge + '平均电耗</div>'
-        + '<div class="home-stat-value">' + (effInfo.enough ? Utils.fmt(effInfo.avg, 1) : (effInfo.count > 0 ? '数据不足' : '—')) + '</div></div>';
-      html += '<div class="home-stat" onclick="App.showStatDetail(\'totalKWh\', \'' + vid + '\')">'
-        + '<div class="home-stat-head">' + Icons.coin + '平均电价</div>'
-        + '<div class="home-stat-value">¥' + Utils.fmtMoney(ov.avgPrice) + '</div></div>';
-      html += '<div class="home-stat" onclick="App.showStatDetail(\'fastslow\', \'' + vid + '\')">'
-        + '<div class="home-stat-head">' + Icons.infinity + '快慢充比</div>'
-        + '<div class="home-stat-value">' + fastPct + ':' + slowPct + '</div></div>';
-      html += '<div class="home-stat" onclick="App.switchTab(\'analysis\');App.setAnalysisSub(\'health\')">'
-        + '<div class="home-stat-head">' + Icons.shield + '电池健康度</div>'
-        + '<div class="home-stat-value">' + (health.index === null ? '—' : health.index) + '</div></div>';
+      html += '<div class="home-section-header"><h4>关键指标</h4></div>';
+      html += '<div class="stat-grid-dark">';
+      html += '<div class="stat-mini-dark" onclick="App.switchTab(\'analysis\');App.setAnalysisSub(\'stats\')">'
+        + '<div class="sm-icon-row"><div class="sm-icon ic-teal">' + Icons.gauge + '</div><span class="sm-label">平均电耗</span></div>'
+        + '<div class="sm-value">' + (effInfo.enough ? Utils.fmt(effInfo.avg, 1) : (effInfo.count > 0 ? '不足' : '—')) + '</div>'
+        + '<div class="sm-trend">' + (effInfo.enough ? 'kWh/100km' : (effInfo.count > 0 ? '数据样本不足' : '补录里程后可算')) + '</div></div>';
+      html += '<div class="stat-mini-dark" onclick="App.showStatDetail(\'totalKWh\', \'' + vid + '\')">'
+        + '<div class="sm-icon-row"><div class="sm-icon ic-gold">' + Icons.coin + '</div><span class="sm-label">平均电价</span></div>'
+        + '<div class="sm-value">¥' + Utils.fmtMoney(ov.avgPrice) + '</div>'
+        + '<div class="sm-trend">元/度</div></div>';
+      html += '<div class="stat-mini-dark" onclick="App.showStatDetail(\'fastslow\', \'' + vid + '\')">'
+        + '<div class="sm-icon-row"><div class="sm-icon ic-orange">' + Icons.infinity + '</div><span class="sm-label">快慢充比</span></div>'
+        + '<div class="sm-value">' + fastPct + ':' + slowPct + '</div>'
+        + '<div class="sm-trend">快充 ' + fastPct + '%</div></div>';
+      html += '<div class="stat-mini-dark" onclick="App.switchTab(\'analysis\');App.setAnalysisSub(\'health\')">'
+        + '<div class="sm-icon-row"><div class="sm-icon ic-purple">' + Icons.shield + '</div><span class="sm-label">电池健康</span></div>'
+        + '<div class="sm-value">' + (health.index === null ? '—' : health.index) + '</div>'
+        + '<div class="sm-trend">' + (health.index === null ? '补录电量后可算' : '健康指数') + '</div></div>';
       html += '</div>';
 
-      // 近 6 个月费用趋势
-      html += '<div class="card card-chart"><h3>' + Icons.trend + '充电费用趋势<span class="chart-year-tag">近 6 个月</span></h3>' + this.chartWrap('homeCostChart') + '</div>';
-
-      // 最近充电（信息流态 · 取消卡片化 · 最底「查看全部」）
+      // 最近充电（设计稿 recent-list-dark · 3 条）
       var recent = ChargeMgr.list(vid).slice(0, 3);
-      html += '<div class="home-feed">';
-      html += '<div class="feed-head"><h3>' + Icons.clock + '最近充电</h3></div>';
+      html += '<div class="home-section-header"><h4>最近充电</h4><span class="see-all" onclick="App.switchTab(\'records\')">全部 ›</span></div>';
+      html += '<div class="recent-list-dark">';
       if (recent.length === 0) {
-        html += '<div class="empty-state" style="padding:18px;">' + Icons.bolt + '<p>暂无充电记录</p></div>';
+        html += '<div class="records-empty" style="padding:22px;">' + Icons.bolt + '<div class="re-title">暂无充电记录</div><div class="re-sub">点击下方「记一笔」开始记录</div></div>';
       } else {
-        html += '<div class="charge-list feed-list">';
         var self2 = this;
         recent.forEach(function (c) {
-          html += self2.chargeCardHTML(c, false);
+          html += self2.recentItemDarkHTML(c);
         });
-        html += '</div>';
       }
-      html += '<button class="feed-view-all" onclick="App.switchTab(\'records\')"><span>查看全部</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></button>';
       html += '</div>';
 
       document.getElementById('panel-home').innerHTML = html;
-      var self = this;
-      this.drawChart('homeCostChart', function (canvas) {
-        Charts.line(canvas, Stats.monthlyCost(vid, Utils.recentMonths(6)), {
-          yaxisId: 'homeCostChartY', color: '#5B8FA8', digits: 0, minSpan: 64, yunit: '¥',
-          labelFormat: function (d) {
-            if (d.isPartial) return '本月进行中';
-            return '¥' + Utils.fmtMoney(d.value) + (d.totalKWh > 0 ? '\n' + Utils.fmt(d.totalKWh, 0) + '度' : '');
-          },
-          tooltipFormat: function (d) {
-            if (d.isPartial) return '本月截至目前 ¥' + Utils.fmtMoney(d.value) + '，记录后更新';
-            var t = d.label + ': ¥' + Utils.fmtMoney(d.value);
-            if (d.totalKWh > 0) t += ' · ' + Utils.fmt(d.totalKWh, 1) + ' 度';
-            return t;
-          },
-          yFormat: function (v) { return v.toFixed(0); }
-        });
+    },
+
+    /* 首页迷你柱状费用图（设计稿 mini-chart · 6 个月） */
+    homeMiniChartHTML: function (vid) {
+      var months = Stats.monthlyCost(vid, Utils.recentMonths(6));
+      var max = 1;
+      months.forEach(function (d) { if (d.value > max) max = d.value; });
+      if (max <= 0) max = 1;
+      var html = '';
+      months.forEach(function (d, i) {
+        var h = Math.max(8, Math.round((d.value / max) * 100));
+        var isLast = i === months.length - 1;
+        html += '<div class="bar' + (isLast ? ' active' : ' muted') + '" style="height:' + h + '%;" title="' + Utils.fmtMoney(d.value) + '">'
+          + '<span class="bar-label">' + d.label + '</span></div>';
       });
+      return html;
+    },
+
+    /* 首页最近充电卡片（设计稿 recent-item-dark） */
+    recentItemDarkHTML: function (c) {
+      var typeLabel = CHARGE_TYPE_LABEL[c.chargeType] || c.chargeType;
+      var note = (c.note || '').replace(/[<>&]/g, function (ch) {
+        return ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : '&amp;';
+      });
+      var title = note ? note : (typeLabel + '充电');
+      var date = c.date.replace(/-/g, '.');
+      return '<div class="recent-item-dark" onclick="App.editCharge(\'' + c.id + '\')">'
+        + '<div class="ri-icon ' + (c.chargeType === 'fast' ? 'ic-gold' : 'ic-teal') + '">' + (c.chargeType === 'fast' ? Icons.zap : Icons.power) + '</div>'
+        + '<div class="ri-info"><div class="ri-title">' + title + '</div><div class="ri-sub">' + date + ' · ' + Utils.fmt(c.kWh, 1) + ' 度 · ' + typeLabel + '</div></div>'
+        + '<div class="ri-amount">¥' + Utils.fmtMoney(c.totalCost) + '</div></div>';
     },
 
     statCard: function (color, icon, title, value, sub, key, vid) {
@@ -1429,8 +1461,8 @@
       }
 
       var dot = document.getElementById('statDetailIcon');
-      var iconColors = { blue: '#5B8FA8', green: '#4A7A6B', amber: '#8A6A3A', purple: '#7A6AA6' };
-      if (dot) dot.style.background = iconColors[color] || '#5B8FA8';
+      var iconColors = { blue: '#8B9BAE', green: '#22C55E', amber: '#F59E0B', purple: '#8B5CF6' };
+      if (dot) dot.style.background = iconColors[color] || '#8B9BAE';
       document.getElementById('statDetailTitle').textContent = title;
       document.getElementById('statDetailBody').innerHTML = body;
       document.getElementById('statDetailModal').classList.add('show');
@@ -1497,108 +1529,178 @@
     renderRecords: function () {
       var vehicle = VehicleMgr.current();
       var vid = vehicle ? vehicle.id : null;
-      var charges = ChargeMgr.list(vid);
+      var charges = ChargeMgr.list(vid).slice(0).sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
       var html = '';
 
       if (!vid) {
-        html = '<div class="empty-state">' + Icons.doc + '<p>请先添加车型</p></div>';
+        html = '<div class="records-empty">' + Icons.doc + '<div class="re-title">请先添加车型</div><div class="re-sub">添加车型后才能记录充电</div><button class="re-btn" onclick="App.switchTab(\'profile\')">去添加车辆</button></div>';
         document.getElementById('panel-records').innerHTML = html;
         return;
       }
 
-      html += '<div class="card"><div class="card-head"><h3>' + Icons.doc + '充电记录</h3></div>';
+      // 顶部毛玻璃导航：返回 + 标题 + 历史
+      html += '<div class="home-nav-dark">'
+        + '<button class="nav-btn" onclick="App.switchTab(\'home\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
+        + '<span class="nav-title">充电记录</span>'
+        + '<button class="nav-btn" onclick="App.scrollToRecordsHistory()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M10 9h4M10 15h4" stroke-linecap="round"/></svg></button>'
+        + '</div>';
 
+      // 充电类型分段（设计稿 seg）
+      var curType = this.recordsType || 'fast';
+      html += '<div class="record-header-dark"><div class="seg-dark" id="cf_chargeTypeSegment">';
+      html += '<button type="button" class="seg-item' + (curType === 'fast' ? ' active' : '') + '" data-val="fast">公共快充</button>';
+      html += '<button type="button" class="seg-item' + (curType === 'slow' ? ' active' : '') + '" data-val="slow">家充私桩</button>';
+      html += '</div></div>';
+
+      // 内联录入表单（复用 cf_* 字段契约）
+      html += '<form id="chargeFormPage-form" class="records-form-dark" novalidate>';
+      html += '<input type="hidden" id="cf_vehicleId" value="' + vid + '">';
+      html += '<input type="hidden" id="cf_chargeType" value="' + curType + '">';
+
+      // 充电信息
+      html += '<div class="form-group-dark"><div class="form-group-title-dark">充电信息</div><div class="form-list-dark">';
+      html += '<div class="form-row-dark"><span class="fr-label">日期</span><input class="fr-input" type="date" id="cf_date"></div>';
+      html += '<div class="form-row-dark"><span class="fr-label">充电电量</span><input class="fr-input" type="number" inputmode="decimal" step="0.1" placeholder="如 42.5" id="cf_kWh"><span class="fr-suffix">kWh</span></div>';
+      html += '<div class="form-row-dark"><span class="fr-label">充电单价</span><input class="fr-input" type="number" inputmode="decimal" step="0.01" placeholder="如 1.28" id="cf_unitPrice"><span class="fr-suffix">¥/度</span></div>';
+      html += '<div class="form-row-dark"><span class="fr-label">总费用</span><input class="fr-input" type="number" inputmode="decimal" step="0.01" placeholder="自动计算" id="cf_totalCost"><span class="fr-suffix">¥</span></div>';
+      html += '</div></div>';
+
+      // 车辆状态
+      html += '<div class="form-group-dark"><div class="form-group-title-dark">车辆状态</div><div class="form-list-dark">';
+      html += '<div class="form-row-dark"><span class="fr-label">充电前 SOC</span><input class="fr-input" type="number" inputmode="numeric" min="0" max="100" placeholder="如 22" id="cf_socBefore"><span class="fr-suffix">%</span></div>';
+      html += '<div class="form-row-dark"><span class="fr-label">充电后 SOC</span><input class="fr-input" type="number" inputmode="numeric" min="0" max="100" placeholder="如 85" id="cf_socAfter"><span class="fr-suffix">%</span></div>';
+      html += '<div class="form-row-dark"><span class="fr-label">里程表</span><input class="fr-input" type="number" inputmode="numeric" step="0.1" placeholder="如 18420" id="cf_odometer"><span class="fr-suffix">km</span></div>';
+      html += '</div></div>';
+
+      // 预计费用
+      html += '<div class="record-summary-dark"><div class="rs-label">预计充电费用</div><div class="rs-amount" id="recordRsAmount">¥0.00</div><div class="rs-detail" id="recordRsDetail">—</div></div>';
+
+      // 保存
+      html += '<div class="record-btn-row"><button type="submit" class="btn-accent">保存记录</button></div>';
+      html += '</form>';
+
+      // 最近记录
+      html += '<div class="history-section-dark"><div class="hs-head"><h4>最近记录</h4><span class="hs-count">' + charges.length + ' 条</span></div>';
+      html += '<div class="history-list-dark">';
       if (charges.length === 0) {
-        html += '<div class="empty-state" style="padding:20px;">' + Icons.bolt + '<p>还没有充电记录</p></div>';
+        html += '<div class="records-empty">' + Icons.bolt + '<div class="re-title">还没有充电记录</div><div class="re-sub">填写上方表单保存第一条记录</div></div>';
       } else {
-        // 筛选标签
-        html += '<div class="filter-chips">';
-        html += '<button class="filter-chip ' + (this.recordsFilter === 'all' ? 'active' : '') + '" onclick="App.setRecordsFilter(\'all\')">全部</button>';
-        html += '<button class="filter-chip ' + (this.recordsFilter === 'slow' ? 'active' : '') + '" onclick="App.setRecordsFilter(\'slow\')">慢充</button>';
-        html += '<button class="filter-chip ' + (this.recordsFilter === 'fast' ? 'active' : '') + '" onclick="App.setRecordsFilter(\'fast\')">快充</button>';
-        html += '</div>';
-
-        // 日期筛选（年份 + 月份级联）
-        var years = Utils.availableYears(vid);
-
-        html += '<div class="date-filter-bar">';
-        html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6" stroke-linecap="round"/><line x1="8" y1="2" x2="8" y2="6" stroke-linecap="round"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
-        // 年份下拉
-        html += '<select onchange="App.setRecordsYear(this.value)">';
-        html += '<option value="">全部年份</option>';
-        years.forEach(function (y) {
-          html += '<option value="' + y + '"' + (App.recordsYearFilter === y ? ' selected' : '') + '>' + y + '年</option>';
-        });
-        html += '</select>';
-        // 月份下拉（随所选年份联动）
-        var months = [];
-        charges.forEach(function (c) {
-          if (App.recordsYearFilter && c.date.slice(0, 4) !== App.recordsYearFilter) return;
-          var mk = Utils.monthKey(c.date);
-          if (months.indexOf(mk) < 0) months.push(mk);
-        });
-        months.sort(function (a, b) { return b.localeCompare(a); });
-        html += '<select onchange="App.setRecordsMonth(this.value)">';
-        html += '<option value="">全部月份</option>';
-        months.forEach(function (mk) {
-          html += '<option value="' + mk + '"' + (App.recordsMonthFilter === mk ? ' selected' : '') + '>' + Utils.monthLabel(mk) + '</option>';
-        });
-        html += '</select>';
-        if (this.recordsYearFilter || this.recordsMonthFilter) {
-          html += '<button class="filter-reset" onclick="App.setRecordsYear(\'\');App.setRecordsMonth(\'\')">重置</button>';
-        }
-        html += '</div>';
-
-        // 过滤记录
-        var filtered = charges;
-        if (this.recordsFilter !== 'all') {
-          filtered = filtered.filter(function (c) { return c.chargeType === App.recordsFilter; });
-        }
-        if (this.recordsYearFilter) {
-          filtered = filtered.filter(function (c) { return c.date.slice(0, 4) === App.recordsYearFilter; });
-        }
-        if (this.recordsMonthFilter) {
-          filtered = filtered.filter(function (c) { return Utils.monthKey(c.date) === App.recordsMonthFilter; });
-        }
-
-        if (filtered.length === 0) {
-          html += '<div class="empty-state" style="padding:20px;"><p>没有匹配的记录</p></div>';
-        } else {
-          // 按月度分组
-          var groups = {};
-          filtered.forEach(function (c) {
-            var mk = Utils.monthKey(c.date);
-            if (!groups[mk]) groups[mk] = [];
-            groups[mk].push(c);
-          });
-          var sortedMonths = Object.keys(groups).sort(function (a, b) { return b.localeCompare(a); });
-          var self = this;
-
-          sortedMonths.forEach(function (mk) {
-            var monthCharges = groups[mk];
-            var monthCost = 0, monthKWh = 0;
-            monthCharges.forEach(function (c) { monthCost += c.totalCost || 0; monthKWh += c.kWh || 0; });
-
-            html += '<div class="month-group">';
-            html += '<div class="month-group-header">';
-            html += '<div class="month-group-title">' + Utils.monthLabel(mk) + ' · ' + monthCharges.length + ' 次</div>';
-            html += '<div class="month-group-summary">';
-            html += '<span>' + Icons.zap + Utils.fmt(monthKWh, 1) + ' 度</span>';
-            html += '<span>' + Icons.coin + '¥' + Utils.fmtMoney(monthCost) + '</span>';
-            html += '</div>';
-            html += '</div>';
-            html += '<div class="charge-list">';
-            monthCharges.forEach(function (c) {
-              html += self.chargeCardHTML(c, true);
-            });
-            html += '</div>';
-            html += '</div>';
-          });
+        var limit = this.recordsLimit || 50;
+        var self = this;
+        charges.slice(0, limit).forEach(function (c) { html += self.recordItemHTML(c); });
+        if (charges.length > limit) {
+          html += '<button class="hs-more" onclick="App.recordsLimit=1000;App.renderRecords()">查看全部 ' + charges.length + ' 条</button>';
         }
       }
-      html += '</div>';
+      html += '</div></div>';
 
-      document.getElementById('panel-records').innerHTML = html;
+      var panel = document.getElementById('panel-records');
+      panel.innerHTML = html;
+      this.bindRecordForm();
+      if (this.editingChargeId) this.fillRecordForm(this.editingChargeId);
+      else this.resetRecordForm();
+    },
+
+    /* 记录页内联表单绑定 */
+    bindRecordForm: function () {
+      var form = document.getElementById('chargeFormPage-form');
+      if (form) form.addEventListener('submit', function (e) { e.preventDefault(); App.saveCharge(); });
+      var segBtns = document.querySelectorAll('#cf_chargeTypeSegment .seg-item');
+      var self = this;
+      segBtns.forEach(function (b) {
+        b.addEventListener('click', function () {
+          segBtns.forEach(function (x) { x.classList.remove('active'); });
+          b.classList.add('active');
+          var t = document.getElementById('cf_chargeType');
+          if (t) t.value = b.dataset.val;
+          self.recordsType = b.dataset.val;
+          self.updateRecordSummary();
+        });
+      });
+      ['cf_kWh', 'cf_unitPrice', 'cf_totalCost'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('input', function () { App.updateRecordSummary(); });
+      });
+    },
+
+    /* 预计费用联动 */
+    updateRecordSummary: function () {
+      var amount = document.getElementById('recordRsAmount');
+      var detail = document.getElementById('recordRsDetail');
+      if (!amount) return;
+      var kEl = document.getElementById('cf_kWh');
+      var pEl = document.getElementById('cf_unitPrice');
+      var cEl = document.getElementById('cf_totalCost');
+      var k = parseFloat(kEl.value) || 0;
+      var p = parseFloat(pEl.value) || 0;
+      var c = parseFloat(cEl.value) || 0;
+      if (k > 0 && p > 0 && !c) { c = k * p; cEl.value = c.toFixed(2); }
+      else if (k > 0 && c > 0 && !p) { p = c / k; pEl.value = p.toFixed(2); p = parseFloat(pEl.value) || 0; }
+      amount.textContent = '¥' + Utils.fmtMoney(c);
+      detail.textContent = (k > 0 && p > 0) ? Utils.fmt(k, 1) + ' 度 × ¥' + Utils.fmtMoney(p) + '/度' : '—';
+    },
+
+    /* 编辑回填 / 新建重置 */
+    fillRecordForm: function (id) {
+      var c = id ? ChargeMgr.get(id) : null;
+      var vehicle = VehicleMgr.current();
+      var vehId = document.getElementById('cf_vehicleId');
+      if (vehId && vehicle) vehId.value = vehicle.id;
+      var type = c ? (c.chargeType || 'fast') : (this.recordsType || 'fast');
+      this.recordsType = type;
+      document.querySelectorAll('#cf_chargeTypeSegment .seg-item').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.val === type);
+      });
+      var t = document.getElementById('cf_chargeType');
+      if (t) t.value = type;
+      document.getElementById('cf_date').value = c ? (c.date || '') : Utils.today();
+      ['cf_kWh', 'cf_unitPrice', 'cf_totalCost', 'cf_socBefore', 'cf_socAfter', 'cf_odometer'].forEach(function (idn) {
+        var el = document.getElementById(idn);
+        if (!el) return;
+        el.value = c ? (c[idn.replace('cf_', '')] === undefined || c[idn.replace('cf_', '')] === null ? '' : c[idn.replace('cf_', '')]) : '';
+      });
+      this.updateRecordSummary();
+    },
+    resetRecordForm: function () {
+      var vehicle = VehicleMgr.current();
+      var vehId = document.getElementById('cf_vehicleId');
+      if (vehId && vehicle) vehId.value = vehicle.id;
+      var t = document.getElementById('cf_chargeType');
+      if (t) t.value = this.recordsType || 'fast';
+      document.querySelectorAll('#cf_chargeTypeSegment .seg-item').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.val === (App.recordsType || 'fast'));
+      });
+      document.getElementById('cf_date').value = Utils.today();
+      ['cf_kWh', 'cf_unitPrice', 'cf_totalCost', 'cf_socBefore', 'cf_socAfter', 'cf_odometer'].forEach(function (idn) {
+        var el = document.getElementById(idn);
+        if (el) el.value = '';
+      });
+      this.updateRecordSummary();
+    },
+
+    scrollToRecordsHistory: function () {
+      var el = document.querySelector('#panel-records .history-section-dark');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+
+    recordItemHTML: function (c) {
+      var m = c.date.split('-');
+      var day = parseInt(m[2], 10), month = parseInt(m[1], 10);
+      var typeLabel = CHARGE_TYPE_LABEL[c.chargeType] || c.chargeType;
+      var note = (c.note || '').replace(/[<>&]/g, function (ch) {
+        return ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : '&amp;';
+      });
+      var titleTxt = '<span class="type">' + typeLabel + '</span>' + (note ? ' &middot; ' + note : '');
+      var sub = Utils.fmt(c.kWh, 1) + ' 度 &middot; ' + typeLabel;
+      if (Number(c.socBefore) > 0 && Number(c.socAfter) > 0) {
+        sub += ' &middot; SOC ' + c.socBefore + '%→' + c.socAfter + '%';
+      }
+      return '<div class="history-item-dark" onclick="App.editCharge(\'' + c.id + '\')">'
+        + '<div class="hi-date"><div class="day">' + day + '</div><div class="month">' + month + '月</div></div>'
+        + '<div class="hi-info"><div class="hi-title">' + titleTxt + '</div><div class="hi-sub">' + sub + '</div></div>'
+        + '<div class="hi-amount">¥' + Utils.fmtMoney(c.totalCost) + '</div>'
+        + '<svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        + '</div>';
     },
 
     setRecordsMonth: function (mk) {
@@ -1621,29 +1723,198 @@
     },
 
     setAnalysisSub: function (sub) {
-      this.analysisSub = sub;
-      document.querySelectorAll('.segment-btn').forEach(function (b) {
-        b.classList.toggle('active', b.dataset.sub === sub);
-      });
+      // 首页入口：跳转到综合分析页（成本 + 电池健康）单页
+      this.switchTab('analysis');
+    },
+
+    /* ---- 分析（设计稿单页：本月 / 本年 / 全部） ---- */
+    setAnalysisPeriod: function (p) {
+      this.analysisPeriod = p;
       this.renderAnalysis();
     },
 
-    /* ---- 分析（分段切换） ---- */
     renderAnalysis: function () {
+      if (!this.analysisPeriod) this.analysisPeriod = 'year';
       var vehicle = VehicleMgr.current();
       var vid = vehicle ? vehicle.id : null;
-      var container = document.getElementById('analysis-content');
+      var panel = document.getElementById('panel-analysis');
       if (!vid) {
-        container.innerHTML = '<div class="empty-state">'
-          + '<img class="empty-state-illustration" src="assets/stats-empty.png" alt="暂无数据">'
-          + '<p>请先添加车型</p></div>';
+        panel.innerHTML = this.analysisNavHtml()
+          + '<div class="records-empty" style="margin:24px 16px;">' + Icons.car
+          + '<div class="re-title">请先添加车型</div><div class="re-sub">添加车型后才能查看数据分析</div>'
+          + '<button class="btn-accent" onclick="App.switchTab(\'profile\')">去添加车辆</button></div>';
         return;
       }
-      switch (this.analysisSub) {
-        case 'stats': container.innerHTML = this.renderStatsHTML(vid); this.drawStatsCharts(vid); break;
-        case 'health': container.innerHTML = this.renderHealthHTML(vid); this.drawHealthCharts(vid); break;
-        case 'recommend': container.innerHTML = this.renderRecommendHTML(vid, vehicle); break;
+
+      var period = this.analysisPeriod;
+      var scope = this.analysisScope(period);
+      var months = this.analysisMonths(period, vid);
+      var monthly = Stats.monthlyCost(vid, months);
+      var line = this.buildAnalysisLine(monthly);
+      var pLabels = { month: '本月', year: '本年', all: '全部' };
+      var html = '';
+
+      html += this.analysisNavHtml();
+
+      // 时间维度分段
+      html += '<div class="record-header-dark"><div class="seg-dark" id="analysisPeriodSegment">';
+      ['month', 'year', 'all'].forEach(function (p) {
+        html += '<button class="seg-item' + (period === p ? ' active' : '') + '" onclick="App.setAnalysisPeriod(\'' + p + '\')">' + pLabels[p] + '</button>';
+      });
+      html += '</div></div>';
+
+      // 总费用英雄卡
+      var heroLabel = { month: '本月充电总费用', year: '本年充电总费用', all: '累计充电总费用' }[period];
+      html += '<div class="analysis-hero-dark">';
+      html += '<div class="ah-label">' + heroLabel + '</div>';
+      html += '<div class="ah-value">¥' + Utils.fmtMoney(scope.cost) + '</div>';
+      html += '<div class="ah-trend"><span class="trend-val">' + scope.count + ' 次</span>'
+        + '<span class="trend-label">均价 ¥' + Utils.fmtMoney(scope.avgPrice) + '/度 · 充入 ' + Utils.fmt(scope.kWh, 1) + ' 度</span></div>';
+      html += '</div>';
+
+      // 月度费用趋势
+      html += '<div class="trend-chart-dark"><div class="tc-title">月度费用趋势 · ' + (period === 'year' ? '本年' : '近 ' + months.length + ' 个月') + '</div>';
+      html += '<div class="line-chart-dark"><svg viewBox="0 0 300 120" preserveAspectRatio="none">';
+      html += '<defs><linearGradient id="dgTrend" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8B9BAE" stop-opacity="0.25"/><stop offset="100%" stop-color="#8B9BAE" stop-opacity="0"/></linearGradient></defs>';
+      html += '<path d="' + line.area + '" fill="url(#dgTrend)"/>';
+      html += '<path d="' + line.d + '" fill="none" stroke="#8B9BAE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+      line.pts.forEach(function (p, i) {
+        var r = i === line.pts.length - 1 ? 5 : 4;
+        var extra = i === line.pts.length - 1 ? ' stroke="rgba(255,255,255,0.5)" stroke-width="2"' : '';
+        html += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="#8B9BAE"' + extra + '/>';
+      });
+      html += '</svg></div>';
+      html += '<div class="line-chart-dark" style="height:auto;"><div class="x-labels">' + line.xlabels + '</div></div>';
+      html += '</div>';
+
+      // 快慢充比例
+      var total = scope.fastCount + scope.slowCount;
+      var fPct = total > 0 ? Math.round(scope.fastCount / total * 100) : 0;
+      html += '<div class="donut-dark"><div class="dc-title">快慢充比例</div><div class="donut-row-dark">';
+      html += this.buildDonut(scope.fastCount, scope.slowCount);
+      html += '<div class="donut-legend-dark">';
+      html += '<div class="legend-item"><span class="dot" style="background:#8B9BAE;"></span><span class="ll-label">快充</span><span class="ll-value">' + fPct + '%</span></div>';
+      html += '<div class="legend-item"><span class="dot" style="background:#2DD4BF;"></span><span class="ll-label">慢充</span><span class="ll-value">' + (100 - fPct) + '%</span></div>';
+      html += '</div></div></div>';
+
+      // 电池健康
+      html += this.buildBatteryPanel(vid);
+
+      html += '<div style="height:24px;"></div>';
+      panel.innerHTML = html;
+    },
+
+    analysisNavHtml: function () {
+      return '<div class="home-nav-dark">'
+        + '<button class="nav-btn" onclick="App.switchTab(\'records\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
+        + '<span class="nav-title">数据分析</span>'
+        + '<button class="nav-btn" onclick="App.switchTab(\'home\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h14V10" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
+        + '</div>';
+    },
+
+    analysisScope: function (period) {
+      var vehicle = VehicleMgr.current();
+      var vid = vehicle ? vehicle.id : null;
+      var charges = vid ? ChargeMgr.list(vid) : [];
+      var now = new Date();
+      var curKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+      var curYear = String(now.getFullYear());
+      var sc = charges.filter(function (c) {
+        if (!c.date) return false;
+        if (period === 'all') return true;
+        if (period === 'month') return c.date.slice(0, 7) === curKey;
+        return c.date.slice(0, 4) === curYear;
+      });
+      var cost = 0, kWh = 0;
+      sc.forEach(function (c) { cost += (Number(c.totalCost) || 0); kWh += (Number(c.kWh) || 0); });
+      var fast = sc.filter(function (c) { return c.chargeType === 'fast'; }).length;
+      return { cost: cost, kWh: kWh, count: sc.length, fastCount: fast, slowCount: sc.length - fast, avgPrice: kWh > 0 ? cost / kWh : 0 };
+    },
+
+    analysisMonths: function (period, vid) {
+      if (period === 'year') return Utils.yearMonths(new Date().getFullYear());
+      return Utils.chartRange(vid, 6);
+    },
+
+    buildAnalysisLine: function (monthly) {
+      var n = monthly.length;
+      if (n === 0) monthly = [{ label: '—', value: 0 }];
+      n = monthly.length;
+      var W = 300, H = 120, lo, hi;
+      var vals = monthly.map(function (m) { return +m.value || 0; });
+      var max = Math.max.apply(null, vals);
+      var min = Math.min.apply(null, vals);
+      if (max === min) { lo = 0; hi = max || 1; } else { var pad = (max - min) * 0.15; lo = Math.max(0, min - pad); hi = max + pad; }
+      var pts = [];
+      for (var i = 0; i < n; i++) {
+        var x = W * (n === 1 ? 0.5 : i / (n - 1));
+        var y = H - 12 - ((vals[i] - lo) / (hi - lo)) * (H - 24);
+        pts.push([x.toFixed(1), y.toFixed(1)]);
       }
+      var d = pts.map(function (p, i) { return (i ? 'L' : 'M') + p[0] + ' ' + p[1]; }).join(' ');
+      var area = d + ' L' + pts[n - 1][0] + ' ' + H + ' L' + pts[0][0] + ' ' + H + ' Z';
+      var labels = monthly.map(function (m) { return m.label || '—'; });
+      if (labels.length <= 6) {
+        var xlabels = labels.map(function (lb) { return '<span>' + lb + '</span>'; }).join('');
+      } else {
+        var ids = [];
+        for (var s = 0; s <= 5; s++) ids.push(Math.round(s * (labels.length - 1) / 5));
+        xlabels = ids.map(function (idx) { return '<span>' + labels[idx] + '</span>'; }).join('');
+      }
+      return { d: d, area: area, pts: pts, xlabels: xlabels };
+    },
+
+    buildDonut: function (fast, slow) {
+      var total = fast + slow;
+      var C = Math.round(2 * Math.PI * 40 * 100) / 100;
+      var html = '<svg class="donut-svg-dark" viewBox="0 0 100 100">'
+        + '<circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12"/>';
+      if (total > 0) {
+        var dfast = fast / total * C;
+        if (fast > 0) html += '<circle cx="50" cy="50" r="40" fill="none" stroke="#8B9BAE" stroke-width="12" stroke-dasharray="' + dfast.toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 50 50)"/>';
+        if (slow > 0) html += '<circle cx="50" cy="50" r="40" fill="none" stroke="#2DD4BF" stroke-width="12" stroke-dasharray="' + (C - dfast).toFixed(1) + ' ' + C.toFixed(1) + '" stroke-dashoffset="' + (-dfast).toFixed(1) + '" transform="rotate(-90 50 50)"/>';
+      }
+      html += '</svg>';
+      return html;
+    },
+
+    buildBatteryPanel: function (vid) {
+      var health = BatteryHealth.healthIndex(vid);
+      if (!health || health.index === null || health.index === undefined) {
+        return '<div class="battery-dark"><div class="bh-title">电池健康评估</div>'
+          + '<div class="records-empty" style="padding:16px 8px;">' + Icons.info + '<div class="re-title">暂无容量数据</div><div class="re-sub">记录带充电前后 SOC 的电量后可评估</div></div></div>';
+      }
+      var idx = Math.round(health.index);
+      var color = idx >= 85 ? '#22C55E' : (idx >= 70 ? '#8B9BAE' : (idx >= 50 ? '#F59E0B' : '#EF4444'));
+      var capPct = Math.round((health.capacityRatio || 0) * 100);
+      var habitPct = Math.round((health.habit && health.habit.score) || 0);
+      var deepPct = Math.round(((health.habit && health.habit.deepRatio) || 0) * 100);
+      var status = health.status || (idx >= 85 ? '优秀' : '良好');
+      var metricBar = function (label, pct, c) {
+        return '<div class="battery-metric-dark"><span class="bm-label">' + label + '</span>'
+          + '<div class="bm-bar"><div class="bm-bar-fill" style="width:' + Math.min(100, pct) + '%;background:' + c + ';"></div></div>'
+          + '<span class="bm-value">' + Math.min(100, pct) + '%</span></div>';
+      };
+      return '<div class="battery-dark"><div class="bh-title">电池健康评估</div>'
+        + '<div class="battery-ring-row-dark">'
+        + this.buildBatteryRing(idx, color)
+        + '<div class="battery-ring-info-dark"><div class="bh-score">' + idx + '</div><div class="bh-label">健康指数</div>'
+        + '<div class="bh-status" style="color:' + color + ';"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> ' + status + '</div></div>'
+        + '</div>'
+        + '<div class="battery-metrics-dark">'
+        + metricBar('容量健康', capPct, color)
+        + metricBar('充电习惯', habitPct, '#8B9BAE')
+        + metricBar('深放频率', deepPct, deepPct >= 40 ? '#F59E0B' : '#3B82F6')
+        + '</div></div>';
+    },
+
+    buildBatteryRing: function (pct, color) {
+      var C = Math.round(2 * Math.PI * 50 * 100) / 100;
+      var d = (Math.min(100, Math.max(0, pct)) / 100) * C;
+      return '<svg class="battery-ring-svg-dark" viewBox="0 0 120 120">'
+        + '<circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>'
+        + '<circle cx="60" cy="60" r="50" fill="none" stroke="' + color + '" stroke-width="8" stroke-dasharray="' + d.toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 60 60)" stroke-linecap="round"/>'
+        + '</svg>';
     },
 
     renderStatsHTML: function (vid) {
@@ -1663,6 +1934,13 @@
         html += '</div>';
       }
 
+      // 分析总费用主卡（对齐设计稿「分析页」analysis-hero）
+      html += '<div class="analysis-hero-dark">';
+      html += '<div class="ah-label">' + (yearFilter ? yearFilter + ' 年' : '累计') + '充电总费用</div>';
+      html += '<div class="ah-value">¥' + Utils.fmtMoney(ov.totalCost) + '</div>';
+      html += '<div class="ah-trend"><span class="trend-val">' + ov.chargeCount + ' 次</span><span class="trend-label">本月 ¥' + Utils.fmtMoney(ov.thisMonthCost) + ' · 平均 ¥' + Utils.fmtMoney(ov.avgPrice) + '/度</span></div>';
+      html += '</div>';
+
       html += '<div class="stat-cards">';
       html += this.statCard('blue', Icons.coin, '总费用', '¥' + Utils.fmtMoney(ov.totalCost), ov.chargeCount + ' 次', 'totalCost', vid);
       html += this.statCard('green', Icons.zap, '总度数', Utils.fmt(ov.totalKWh, 1) + ' 度', '均价 ¥' + Utils.fmtMoney(ov.avgPrice) + '/度', 'totalKWh', vid);
@@ -1677,8 +1955,8 @@
       html += '<div class="card card-chart"><h3>' + Icons.trend + '月度充电费用趋势<span class="chart-year-tag">' + yearTag + '</span></h3>' + this.chartWrap('statsCostChart') + '</div>';
       html += '<div class="card card-chart"><h3>' + Icons.gauge + '月度百公里电耗趋势<span class="chart-year-tag">' + yearTag + '</span></h3>' + this.chartWrap('statsEffChart') + '</div>';
       html += '<div class="card"><h3>' + Icons.battery + '快慢充占比</h3><div class="donut-wrap"><canvas id="statsDonut" class="chart donut"></canvas>';
-      html += '<div class="donut-legend"><div class="legend-item"><div class="legend-dot" style="background:#8A6A3A"></div>快充 ' + ratio.fastCount + ' 次</div>'
-        + '<div class="legend-item"><div class="legend-dot" style="background:#5B8FA8"></div>慢充 ' + ratio.slowCount + ' 次</div></div></div></div>';
+      html += '<div class="donut-legend"><div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div>快充 ' + ratio.fastCount + ' 次</div>'
+        + '<div class="legend-item"><div class="legend-dot" style="background:#8B9BAE"></div>慢充 ' + ratio.slowCount + ' 次</div></div></div></div>';
       return html;
     },
 
@@ -1693,7 +1971,7 @@
       var self = this;
       this.drawChart('statsCostChart', function (canvas) {
         Charts.line(canvas, Stats.monthlyCost(vid, months), {
-          yaxisId: 'statsCostChartY', color: '#5B8FA8', digits: 0, minSpan: 64, yunit: '¥',
+          yaxisId: 'statsCostChartY', color: '#8B9BAE', digits: 0, minSpan: 64, yunit: '¥',
           labelFormat: function (d) {
             if (d.isPartial) return '本月进行中';
             return '¥' + Utils.fmtMoney(d.value) + (d.totalKWh > 0 ? '\n' + Utils.fmt(d.totalKWh, 0) + '度' : '');
@@ -1709,7 +1987,7 @@
       });
       this.drawChart('statsEffChart', function (canvas) {
         Charts.bar(canvas, Stats.monthlyEfficiency(vid, months), {
-          yaxisId: 'statsEffChartY', color: '#5B8FA8', digits: 1, minSpan: 58,
+          yaxisId: 'statsEffChartY', color: '#8B9BAE', digits: 1, minSpan: 58,
           labelFormat: function (v) { return Utils.fmt(v, 1); },
           yFormat: function (v) { return v.toFixed(1); },
           tooltipFormat: function (d) {
@@ -1727,7 +2005,7 @@
 
     renderHealthHTML: function (vid) {
       var health = BatteryHealth.healthIndex(vid);
-      var color = health.index >= 85 ? '#4A7A6B' : (health.index >= 70 ? '#5B8FA8' : (health.index >= 50 ? '#8A6A3A' : '#8A3A4A'));
+      var color = health.index >= 85 ? '#22C55E' : (health.index >= 70 ? '#8B9BAE' : (health.index >= 50 ? '#F59E0B' : '#EF4444'));
       var html = '';
 
       // 1. 电池容量分析（置顶）
@@ -1809,67 +2087,129 @@
     renderProfile: function () {
       var vehicles = VehicleMgr.list();
       var html = '';
+      var esc = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
 
-      // 车辆管理
-      html += '<div class="card"><div class="card-head"><h3>' + Icons.car + '我的车辆</h3>'
-        + '<button class="btn btn-sm btn-primary" onclick="App.openVehicleModal()">' + Icons.plus + '添加</button></div>';
-      if (vehicles.length === 0) {
-        html += '<div class="empty-state" style="padding:26px 20px;">' + Icons.car
-          + '<p>还没有添加车辆</p>'
-          + '<p class="empty-sub">添加车辆后即可记录充电，统计费用与电耗</p>'
-          + '<button class="btn btn-sm btn-primary" onclick="App.openVehicleModal()">' + Icons.plus + '添加车辆</button></div>';
-      } else {
-        html += '<div class="vehicle-list">';
-        vehicles.forEach(function (v) {
-          html += '<div class="vehicle-card" onclick="App.detailVehicle(\'' + v.id + '\')">'
-            + '<div class="vehicle-avatar">' + Icons.car + '</div>'
-            + '<div class="vehicle-info">'
-            + '<div class="vehicle-name">' + v.name + '</div>'
-            + '<div class="vehicle-meta">' + (v.brand || '') + ' ' + (v.model || '') + '</div>'
-            + '</div>'
-            + '<div class="vehicle-chevron">›</div>'
-            + '</div>';
-        });
-        html += '</div>';
+      // 顶部导航（设计稿 home-nav · 右侧 = 添加车辆）
+      var currentV = VehicleMgr.current();
+      html += '<div class="home-nav-dark"><span class="nav-title">我的</span>'
+        + '<button class="nav-btn" onclick="App.openVehicleModal()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke-linecap="round"/></svg></button></div>';
+
+      // 头像区（设计稿 profile-header · 冷金属灰渐变头像）
+      var totKWh = 0, totCnt = 0;
+      if (currentV) { var om = Stats.overview(currentV.id); totKWh = om.totalKWh; totCnt = om.chargeCount; }
+      var created = Store.data.settings && Store.data.settings.createdAt;
+      var days = created ? Math.max(1, Math.ceil((Date.now() - new Date(created).getTime()) / 86400000)) : null;
+      html += '<div class="profile-header-dark">';
+      html += '<div class="profile-avatar-dark">冲</div>';
+      html += '<div class="profile-info-dark"><div class="pi-name">冲冲用户</div>'
+        + '<div class="pi-sub">' + (currentV ? '当前 · ' + currentV.name : '尚未添加车辆')
+        + (days ? ' · 已使用 ' + days + ' 天' : '')
+        + ' · 累计 ' + Utils.fmt(totKWh, 0) + ' 度</div></div>';
+      html += '</div>';
+
+      // 当前车辆统计卡（设计稿 vehicle-card · 点击进详情）
+      if (currentV) {
+        var omv = Stats.overview(currentV.id);
+        var ev = Stats.avgEfficiency(currentV.id);
+        var hv = BatteryHealth.capacityHealth(currentV.id);
+        html += '<div class="vehicle-card-dark" onclick="App.detailVehicle(\'' + currentV.id + '\')">';
+        html += '<div class="vehicle-header-dark"><div class="vehicle-icon-dark">' + Icons.car + '</div>'
+          + '<div class="vehicle-info-dark"><div class="vi-name">' + currentV.name + '</div>'
+          + '<div class="vi-detail">' + (currentV.brand || '') + ' ' + (currentV.model || '') + ' · 当前</div></div>'
+          + '<span style="color:rgba(255,255,255,0.15);font-size:20px;">›</span></div>';
+        html += '<div class="vehicle-stat-row-dark">';
+        html += '<div class="vehicle-stat-item-dark"><div class="vsi-value">' + (ev.enough ? Utils.fmt(ev.avg, 1) : '—') + '</div><div class="vsi-label">电耗 kWh/100km</div></div>';
+        html += '<div class="vehicle-stat-item-dark"><div class="vsi-value">' + Utils.fmt(omv.totalKWh, 0) + '</div><div class="vsi-label">累计度数</div></div>';
+        html += '<div class="vehicle-stat-item-dark"><div class="vsi-value">' + (hv.index === null ? '—' : hv.index + '%') + '</div><div class="vsi-label">电池健康</div></div>';
+        html += '</div></div>';
       }
-      html += '</div>';
 
-      // 数据同步（私有 Gist）
-      html += '<div class="card" id="syncCard"><h3>' + Icons.cloud + '数据同步 <span style="font-size:11px;color:var(--text-light);font-weight:400;">私有 Gist</span></h3>';
-      html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin:2px 0 12px;">本地仍是主数据库；每次保存自动备份到你的<strong>私有 Gist</strong>，换设备/重部署后打开即拉取。需要一枚带 <strong>Gist 读写</strong>权限的 GitHub 令牌。</div>';
-      html += '<div class="settings-list">';
-      html += this.settingsItem('blue', Icons.syncIcon, '启用自动同步', '开启后每次保存自动备份到私有 Gist',
-        '<input type="checkbox" id="syncEnable" style="width:20px;height:20px;accent-color:var(--accent-frost);"' + (Sync.loadCfg().enabled ? ' checked' : '') + '>');
-      html += this.settingsItem('blue', Icons.keyIcon, 'GitHub 令牌', '需 Gist 读/写权限（fine-grained 勾选 Gists）',
-        '<input type="password" id="syncToken" placeholder="github_pat_…" style="width:150px;padding:8px 10px;border-radius:8px;border:1px solid var(--border-default);background:var(--bg-elevated);color:var(--text-primary);font-size:13px;font-family:var(--font-mono);">');
-      html += this.settingsItem('green', Icons.upload, '立即备份 / 同步', '手动拉取并回推一次，校验数据一致',
-        '<button class="btn btn-primary" id="btnSyncNow" style="padding:9px 14px;font-size:14px;">' + Icons.syncIcon + ' 同步</button>');
-      html += '</div>';
-      html += '<div style="font-size:12px;color:var(--text-light);margin-top:10px;" id="syncStatus">' + Sync.statusLine() + '</div>';
-      html += '</div>';
-
-      // 数据管理
-      html += '<div class="card"><h3>' + Icons.settings + '数据管理</h3><div class="settings-list">';
-      html += this.settingsItem('blue', Icons.download, '导出备份', '将所有数据导出为 JSON 文件', '<button class="btn btn-primary" id="btnExport">导出</button>');
-      html += this.settingsItem('green', Icons.upload, '导入备份', '从 JSON 文件恢复数据', '<label class="btn btn-outline" style="cursor:pointer;">导入<input type="file" id="importInput" accept=".json" style="display:none;"></label>');
-      html += this.settingsItem('red', Icons.trash, '清空所有数据', '删除全部数据，不可恢复', '<button class="btn-mini danger" id="btnClear" style="padding:9px 16px;font-size:14px;">清空</button>');
+      // 我的车辆（设计稿分组行）
+      html += '<div class="profile-section-title-dark">车辆</div>';
+      html += '<div class="profile-list-dark"><div class="settings-list-dark">';
+      vehicles.forEach(function (v) {
+        html += '<div class="settings-row-dark" onclick="App.detailVehicle(\'' + v.id + '\')">'
+          + '<div class="sr-icon ic-gold">' + Icons.car + '</div>'
+          + '<span class="sr-label">' + v.name + '</span>'
+          + (currentV && currentV.id === v.id ? '<span class="sr-value" style="color:var(--sys-green);">当前</span>' : '')
+          + '<span class="sr-chevron">›</span></div>';
+      });
+      html += '<div class="settings-row-dark" onclick="App.openVehicleModal()">'
+        + '<div class="sr-icon ic-teal">' + Icons.plus + '</div>'
+        + '<span class="sr-label">添加车辆</span><span class="sr-chevron">›</span></div>';
       html += '</div></div>';
 
-      // 迁移说明（折叠）
-      html += '<div class="card"><div class="form-section-toggle" onclick="App.toggleMigrationNote()" id="migrationToggle">';
-      html += '<span>' + Icons.info + '小程序 / App 迁移说明</span>';
-      html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
+      // 数据管理（设计稿分组：导出 / 导入 / 云同步 / 令牌 / 立即同步）
+      var syncCfg = Sync.loadCfg();
+      html += '<div class="profile-section-title-dark">数据管理</div>';
+      html += '<div class="profile-list-dark"><div class="settings-list-dark">';
+      html += '<div class="settings-row-dark" onclick="Store.exportJSON();App.toast(\'已导出备份文件\',\'success\')">'
+        + '<div class="sr-icon ic-blue">' + Icons.download + '</div><span class="sr-label">导出数据</span><span class="sr-value">JSON</span><span class="sr-chevron">›</span></div>';
+      html += '<label class="settings-row-dark" style="cursor:pointer;">'
+        + '<div class="sr-icon ic-teal">' + Icons.upload + '</div><span class="sr-label">导入数据</span><span class="sr-value">JSON</span><span class="sr-chevron">›</span>'
+        + '<input type="file" id="importInput" accept=".json" style="display:none;"></label>';
+      html += '<div class="settings-row-dark" onclick="App.toggleSync()">'
+        + '<div class="sr-icon ic-green">' + Icons.cloud + '</div><span class="sr-label">云同步备份</span>'
+        + '<div class="toggle-dark' + (syncCfg.enabled ? ' on' : ' off') + '" id="syncToggle"></div></div>';
+      html += '<div class="settings-row-dark">'
+        + '<div class="sr-icon ic-purple">' + Icons.keyIcon + '</div><span class="sr-label">GitHub 令牌</span>'
+        + '<input type="password" id="syncToken" placeholder="github_pat_…" value="' + esc(syncCfg.token || '') + '" style="width:120px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:12px;font-family:var(--font-mono);padding:6px 8px;border-radius:8px;text-align:right;"></div>';
+      html += '<div class="settings-row-dark" onclick="App.syncNow()">'
+        + '<div class="sr-icon ic-orange">' + Icons.syncIcon + '</div><span class="sr-label">立即备份 / 同步</span><span class="sr-value" id="syncStatus">' + Sync.statusLine() + '</span><span class="sr-chevron">›</span></div>';
+      html += '</div></div>';
+
+      // 设置（含迁移说明）
+      html += '<div class="profile-section-title-dark">设置</div>';
+      html += '<div class="profile-list-dark"><div class="settings-list-dark">';
+      html += '<div class="settings-row-dark" onclick="App.toggleMigrationNote()" id="migrationToggle">'
+        + '<div class="sr-icon ic-gold">' + Icons.info + '</div><span class="sr-label">小程序 / App 迁移说明</span><span class="sr-chevron">›</span></div>';
+      html += '</div></div>';
       html += '<div class="form-section-collapse" id="migrationCollapse"><div class="migration-note"><p>本应用采用<strong>数据层与渲染层分离</strong>的架构，便于迁移：</p>'
         + '<p style="margin-top:8px;"><strong>1. 微信小程序：</strong>将 <code>charging-tracker.js</code> 中的 <code>localStorage</code> 替换为 <code>wx.setStorageSync</code> / <code>wx.getStorageSync</code>，渲染层将 DOM 操作替换为 WXML + <code>setData</code>。</p>'
         + '<p style="margin-top:8px;"><strong>2. 原生 App：</strong>将 <code>Store</code> 的存储替换为 SQLite 或 AsyncStorage（React Native）。</p>'
         + '<p style="margin-top:8px;"><strong>3. 云同步：</strong>数据结构已含 <code>id</code> / <code>createdAt</code> 字段，可直接作为数据库 Schema。</p>'
-        + '<p style="margin-top:8px;"><strong>4. 车型库扩展：</strong>当前为手动填写，后续可新增 <code>vehicles_db</code> 表预置主流车型参数。</p></div></div></div>';
+        + '<p style="margin-top:8px;"><strong>4. 车型库扩展：</strong>当前为手动填写，后续可新增 <code>vehicles_db</code> 表预置主流车型参数。</p></div></div>';
 
-      html += '<div class="card" style="text-align:center;color:var(--text-light);font-size:12px;"><p>冲充电 v4.0 · 数据存储于本地浏览器</p></div>';
+      // 危险操作
+      html += '<div class="profile-section-title-dark" style="color:var(--sys-red);">危险操作</div>';
+      html += '<div class="profile-list-dark"><div class="settings-list-dark">';
+      html += '<div class="settings-row-dark" onclick="App.showConfirm(\'清空所有数据\',\'确定清空所有数据？此操作不可恢复，建议先导出备份。\',function(){Store.clearAll();location.reload();})">'
+        + '<div class="sr-icon ic-red">' + Icons.trash + '</div><span class="sr-label" style="color:var(--sys-red);">清空所有数据</span><span class="sr-chevron">›</span></div>';
+      html += '</div></div>';
+
+      // 版本脚注
+      html += '<div style="text-align:center;padding:var(--sp-4) 0 var(--sp-6);">'
+        + '<span style="font-size:12px;color:rgba(255,255,255,0.15);">冲充电 v2.0 · Dark Liquid Glass</span></div>';
 
       document.getElementById('panel-profile').innerHTML = html;
-      // 重新绑定设置按钮事件
+      // 绑定设置事件（导入 / 令牌）
       this.bindSettingsEvents();
+    },
+
+    toggleSync: function () {
+      var cfg = Sync.loadCfg();
+      cfg.enabled = !cfg.enabled;
+      Sync.saveCfg();
+      var el = document.getElementById('syncToggle');
+      if (el) el.className = 'toggle-dark ' + (cfg.enabled ? 'on' : 'off');
+      if (cfg.enabled && cfg.token && !cfg.gistId) Sync.push();
+      this.toast(cfg.enabled ? '已启用云同步备份' : '已关闭云同步备份', 'success');
+      var st = document.getElementById('syncStatus');
+      if (st) st.textContent = Sync.statusLine();
+    },
+
+    syncNow: function () {
+      var tEl = document.getElementById('syncToken');
+      var token = tEl ? tEl.value.trim() : '';
+      if (token) {
+        var cfg = Sync.loadCfg(); cfg.token = token; cfg.enabled = true; Sync.saveCfg();
+        var tg = document.getElementById('syncToggle'); if (tg) tg.className = 'toggle-dark on';
+      }
+      Sync.syncNow();
+      setTimeout(function () {
+        var st = document.getElementById('syncStatus');
+        if (st) st.textContent = Sync.statusLine();
+      }, 1200);
     },
 
     settingsItem: function (color, icon, title, desc, action) {
