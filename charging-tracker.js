@@ -1039,9 +1039,9 @@
       this.bindAnalysisSegments();
       this.renderAll();
       // 系统/浏览器返回：若当前处于「添加/编辑记录」内嵌页则先关闭它回到当前页/首页，而非退出应用
-      window.addEventListener('popstate', function (e) {
-        if (e.state && e.state.implOverlay) {
-          App._overlayDepth = Math.max(0, (App._overlayDepth || 0) - 1);
+      window.addEventListener('popstate', function () {
+        if (App._overlayDepth > 0) {
+          App._overlayDepth = Math.max(0, App._overlayDepth - 1);
           App.closeChargePage(true);
         }
       });
@@ -1212,6 +1212,10 @@
       document.querySelectorAll('.tabbar-dark .tab-item').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === tab); });
       document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.toggle('active', p.id === 'panel-' + tab); });
       this.renderTab(tab);
+      // 切换页签后回到顶部，避免新页签停留在上个页面的滚动位置
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
     },
 
     renderTab: function (tab) {
@@ -1338,7 +1342,7 @@
       months.forEach(function (d, i) {
         var h = Math.max(8, Math.round((d.value / max) * 100));
         var isLast = i === months.length - 1;
-        html += '<div class="bar' + (isLast ? ' active' : ' muted') + '" style="height:' + h + '%;" title="' + Utils.fmtMoney(d.value) + '">'
+        html += '<div class="bar' + (isLast ? ' active' : ' muted') + '" style="height:' + h + '%;" title="' + Utils.fmtMoney(d.value) + '" onclick="App.showChartSheet(\'month\',\'' + d.monthKey + '\')">'
           + '<span class="bar-label">' + d.label + '</span></div>';
       });
       return html;
@@ -1529,158 +1533,246 @@
     renderRecords: function () {
       var vehicle = VehicleMgr.current();
       var vid = vehicle ? vehicle.id : null;
-      var charges = ChargeMgr.list(vid).slice(0).sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
-      var html = '';
-
+      var panel = document.getElementById('panel-records');
       if (!vid) {
-        html = '<div class="records-empty">' + Icons.doc + '<div class="re-title">请先添加车型</div><div class="re-sub">添加车型后才能记录充电</div><button class="re-btn" onclick="App.switchTab(\'profile\')">去添加车辆</button></div>';
-        document.getElementById('panel-records').innerHTML = html;
+        panel.innerHTML = '<div class="home-nav-dark">'
+          + '<button class="nav-btn" onclick="App.switchTab(\'home\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
+          + '<span class="nav-title">充电记录</span></div>'
+          + '<div class="records-empty">' + Icons.doc + '<div class="re-title">请先添加车型</div><div class="re-sub">添加车型后才能记录充电</div><button class="re-btn" onclick="App.switchTab(\'profile\')">去添加车辆</button></div>';
         return;
       }
 
-      // 顶部毛玻璃导航：返回 + 标题 + 历史
+      var charges = ChargeMgr.list(vid).slice().sort(function (a, b) { return (b.date || '').localeCompare(a.date || ''); });
+      var filter = this.recordsFilter || 'all';
+      var yrF = this.recordsYearFilter || '';
+      var moF = this.recordsMonthFilter || '';
+      var fCount = this.recordsFilterCount();
+      if (filter !== 'all') charges = charges.filter(function (c) { return c.chargeType === filter; });
+      if (yrF) charges = charges.filter(function (c) { return (c.date || '').slice(0, 4) === yrF; });
+      if (moF) charges = charges.filter(function (c) { return (c.date || '').slice(0, 7) === moF; });
+
+      var html = '';
+
+      // 顶部毛玻璃导航：返回 + 标题 + 右上角「新增」（文本按钮）
       html += '<div class="home-nav-dark">'
         + '<button class="nav-btn" onclick="App.switchTab(\'home\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
         + '<span class="nav-title">充电记录</span>'
-        + '<button class="nav-btn" onclick="App.scrollToRecordsHistory()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M10 9h4M10 15h4" stroke-linecap="round"/></svg></button>'
+        + '<button class="nav-action" onclick="App.openChargePage()">' + Icons.plus + '新增</button>'
         + '</div>';
 
-      // 充电类型分段（设计稿 seg）
-      var curType = this.recordsType || 'fast';
-      html += '<div class="record-header-dark"><div class="seg-dark" id="cf_chargeTypeSegment">';
-      html += '<button type="button" class="seg-item' + (curType === 'fast' ? ' active' : '') + '" data-val="fast">公共快充</button>';
-      html += '<button type="button" class="seg-item' + (curType === 'slow' ? ' active' : '') + '" data-val="slow">家充私桩</button>';
-      html += '</div></div>';
+      // 工具栏：总数 + 筛选（默认隐藏面板）+ 新增
+      html += '<div class="records-toolbar-dark">'
+        + '<div class="toolbar-title">全部记录<span class="tb-sub">' + charges.length + ' 条' + (fCount ? ' · 已筛选 ' + fCount + ' 项' : '') + '</span></div>'
+        + '<div class="toolbar-actions">'
+        + '<button class="filter-toggle-btn' + (fCount ? ' active' : '') + '" onclick="App.toggleRecordsFilter()">'
+        + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        + '筛选' + (fCount ? '<span class="f-count">' + fCount + '</span>' : '') + '</button>'
+        + '<button class="records-add-btn" onclick="App.openChargePage()">' + Icons.plus + '新增</button>'
+        + '</div></div>';
 
-      // 内联录入表单（复用 cf_* 字段契约）
-      html += '<form id="chargeFormPage-form" class="records-form-dark" novalidate>';
-      html += '<input type="hidden" id="cf_vehicleId" value="' + vid + '">';
-      html += '<input type="hidden" id="cf_chargeType" value="' + curType + '">';
+      // 隐藏式筛选面板
+      if (this.recordsFilterOpen) html += this.recordsFilterPanelHTML(vid, filter, yrF, moF);
 
-      // 充电信息
-      html += '<div class="form-group-dark"><div class="form-group-title-dark">充电信息</div><div class="form-list-dark">';
-      html += '<div class="form-row-dark"><span class="fr-label">日期</span><input class="fr-input" type="date" id="cf_date"></div>';
-      html += '<div class="form-row-dark"><span class="fr-label">充电电量</span><input class="fr-input" type="number" inputmode="decimal" step="0.1" placeholder="如 42.5" id="cf_kWh"><span class="fr-suffix">kWh</span></div>';
-      html += '<div class="form-row-dark"><span class="fr-label">充电单价</span><input class="fr-input" type="number" inputmode="decimal" step="0.01" placeholder="如 1.28" id="cf_unitPrice"><span class="fr-suffix">¥/度</span></div>';
-      html += '<div class="form-row-dark"><span class="fr-label">总费用</span><input class="fr-input" type="number" inputmode="decimal" step="0.01" placeholder="自动计算" id="cf_totalCost"><span class="fr-suffix">¥</span></div>';
-      html += '</div></div>';
-
-      // 车辆状态
-      html += '<div class="form-group-dark"><div class="form-group-title-dark">车辆状态</div><div class="form-list-dark">';
-      html += '<div class="form-row-dark"><span class="fr-label">充电前 SOC</span><input class="fr-input" type="number" inputmode="numeric" min="0" max="100" placeholder="如 22" id="cf_socBefore"><span class="fr-suffix">%</span></div>';
-      html += '<div class="form-row-dark"><span class="fr-label">充电后 SOC</span><input class="fr-input" type="number" inputmode="numeric" min="0" max="100" placeholder="如 85" id="cf_socAfter"><span class="fr-suffix">%</span></div>';
-      html += '<div class="form-row-dark"><span class="fr-label">里程表</span><input class="fr-input" type="number" inputmode="numeric" step="0.1" placeholder="如 18420" id="cf_odometer"><span class="fr-suffix">km</span></div>';
-      html += '</div></div>';
-
-      // 预计费用
-      html += '<div class="record-summary-dark"><div class="rs-label">预计充电费用</div><div class="rs-amount" id="recordRsAmount">¥0.00</div><div class="rs-detail" id="recordRsDetail">—</div></div>';
-
-      // 保存
-      html += '<div class="record-btn-row"><button type="submit" class="btn-accent">保存记录</button></div>';
-      html += '</form>';
-
-      // 最近记录
-      html += '<div class="history-section-dark"><div class="hs-head"><h4>最近记录</h4><span class="hs-count">' + charges.length + ' 条</span></div>';
-      html += '<div class="history-list-dark">';
-      if (charges.length === 0) {
-        html += '<div class="records-empty">' + Icons.bolt + '<div class="re-title">还没有充电记录</div><div class="re-sub">填写上方表单保存第一条记录</div></div>';
+      // 记录列表：按年份/月份分段 + 区间统计
+      html += '<div class="records-list-wrap">';
+      if (!charges.length) {
+        html += '<div class="records-empty" style="margin-top:26px;">' + Icons.bolt
+          + '<div class="re-title">' + (fCount ? '没有符合条件的记录' : '还没有充电记录') + '</div>'
+          + '<div class="re-sub">' + (fCount ? '试试调整筛选条件' : '点击右上角「新增」记录第一条充电') + '</div>'
+          + '</div>';
       } else {
-        var limit = this.recordsLimit || 50;
+        var byYear = {};
+        charges.forEach(function (c) { var y = (c.date || '').slice(0, 4) || '未知'; (byYear[y] = byYear[y] || []).push(c); });
+        var years = Object.keys(byYear).sort().reverse();
         var self = this;
-        charges.slice(0, limit).forEach(function (c) { html += self.recordItemHTML(c); });
-        if (charges.length > limit) {
-          html += '<button class="hs-more" onclick="App.recordsLimit=1000;App.renderRecords()">查看全部 ' + charges.length + ' 条</button>';
-        }
-      }
-      html += '</div></div>';
-
-      var panel = document.getElementById('panel-records');
-      panel.innerHTML = html;
-      this.bindRecordForm();
-      if (this.editingChargeId) this.fillRecordForm(this.editingChargeId);
-      else this.resetRecordForm();
-    },
-
-    /* 记录页内联表单绑定 */
-    bindRecordForm: function () {
-      var form = document.getElementById('chargeFormPage-form');
-      if (form) form.addEventListener('submit', function (e) { e.preventDefault(); App.saveCharge(); });
-      var segBtns = document.querySelectorAll('#cf_chargeTypeSegment .seg-item');
-      var self = this;
-      segBtns.forEach(function (b) {
-        b.addEventListener('click', function () {
-          segBtns.forEach(function (x) { x.classList.remove('active'); });
-          b.classList.add('active');
-          var t = document.getElementById('cf_chargeType');
-          if (t) t.value = b.dataset.val;
-          self.recordsType = b.dataset.val;
-          self.updateRecordSummary();
+        years.forEach(function (y) {
+          var list = byYear[y];
+          var yCost = 0;
+          list.forEach(function (c) { yCost += c.totalCost || 0; });
+          html += '<div class="records-year-group"><div class="records-year-title">' + y + ' 年<span class="ry-count">¥' + Utils.fmtMoney(yCost) + ' · ' + list.length + ' 条</span></div>';
+          var byMonth = {};
+          list.forEach(function (c) { var m = (c.date || '').slice(0, 7); (byMonth[m] = byMonth[m] || []).push(c); });
+          var months = Object.keys(byMonth).sort().reverse();
+          months.forEach(function (mk) {
+            var ml = byMonth[mk];
+            var cost = 0, kwh = 0;
+            ml.forEach(function (c) { cost += c.totalCost || 0; kwh += c.kWh || 0; });
+            html += '<div class="records-month-group">'
+              + '<div class="records-month-head">'
+              + '<span class="rm-title">' + Utils.monthShort(mk) + '</span>'
+              + '<div class="rm-stats">'
+              + '<span class="rm-stat">费用 <b>¥' + Utils.fmtMoney(cost) + '</b></span>'
+              + '<span class="rm-stat"><b>' + Utils.fmt(kwh, 1) + '</b> 度</span>'
+              + '<span class="rm-stat"><b>' + ml.length + '</b> 次</span>'
+              + '</div></div>'
+              + '<div class="records-month-list">';
+            ml.forEach(function (c) { html += self.recordItemHTML(c); });
+            html += '</div></div>';
+          });
+          html += '</div>';
         });
-      });
-      ['cf_kWh', 'cf_unitPrice', 'cf_totalCost'].forEach(function (id) {
-        var el = document.getElementById(id);
-        if (el) el.addEventListener('input', function () { App.updateRecordSummary(); });
-      });
+      }
+      html += '</div>';
+
+      // 悬浮新增按钮
+      html += '<button class="records-fab" onclick="App.openChargePage()">' + Icons.plus + '新增记录</button>';
+
+      panel.innerHTML = html;
     },
 
-    /* 预计费用联动 */
-    updateRecordSummary: function () {
-      var amount = document.getElementById('recordRsAmount');
-      var detail = document.getElementById('recordRsDetail');
-      if (!amount) return;
-      var kEl = document.getElementById('cf_kWh');
-      var pEl = document.getElementById('cf_unitPrice');
-      var cEl = document.getElementById('cf_totalCost');
-      var k = parseFloat(kEl.value) || 0;
-      var p = parseFloat(pEl.value) || 0;
-      var c = parseFloat(cEl.value) || 0;
-      if (k > 0 && p > 0 && !c) { c = k * p; cEl.value = c.toFixed(2); }
-      else if (k > 0 && c > 0 && !p) { p = c / k; pEl.value = p.toFixed(2); p = parseFloat(pEl.value) || 0; }
-      amount.textContent = '¥' + Utils.fmtMoney(c);
-      detail.textContent = (k > 0 && p > 0) ? Utils.fmt(k, 1) + ' 度 × ¥' + Utils.fmtMoney(p) + '/度' : '—';
+    /* 隐藏式筛选面板内容 */
+    recordsFilterPanelHTML: function (vid, filter, yrF, moF) {
+      var html = '<div class="records-filter-panel open" id="recordsFilterPanel">';
+      html += '<div class="rf-group"><div class="rf-label">充电类型</div><div class="rf-chips">';
+      [['all', '全部'], ['fast', '快充'], ['slow', '慢充']].forEach(function (o) {
+        html += '<button class="rf-chip' + (filter === o[0] ? ' active' : '') + '" onclick="App.setRecordsFilter(\'' + o[0] + '\')">' + o[1] + '</button>';
+      });
+      html += '</div></div>';
+      var years = Utils.availableYears(vid);
+      html += '<div class="rf-group"><div class="rf-label">年份</div><div class="rf-chips">';
+      html += '<button class="rf-chip' + (!yrF ? ' active' : '') + '" onclick="App.setRecordsYear(\'\')">全部</button>';
+      years.forEach(function (y) {
+        html += '<button class="rf-chip' + (yrF === y ? ' active' : '') + '" onclick="App.setRecordsYear(\'' + y + '\')">' + y + ' 年</button>';
+      });
+      html += '</div></div>';
+      if (yrF) {
+        var ms = Utils.yearMonths(yrF);
+        html += '<div class="rf-group"><div class="rf-label">月份</div><div class="rf-chips">';
+        html += '<button class="rf-chip' + (!moF ? ' active' : '') + '" onclick="App.setRecordsMonth(\'\')">全部</button>';
+        ms.forEach(function (mk) {
+          html += '<button class="rf-chip' + (moF === mk ? ' active' : '') + '" onclick="App.setRecordsMonth(\'' + mk + '\')">' + Utils.monthShort(mk) + '</button>';
+        });
+        html += '</div></div>';
+      }
+      html += '</div>';
+      return html;
     },
 
-    /* 编辑回填 / 新建重置 */
-    fillRecordForm: function (id) {
-      var c = id ? ChargeMgr.get(id) : null;
+    recordsFilterCount: function () {
+      var n = 0;
+      if (this.recordsFilter && this.recordsFilter !== 'all') n++;
+      if (this.recordsYearFilter) n++;
+      if (this.recordsMonthFilter) n++;
+      return n;
+    },
+
+    toggleRecordsFilter: function () {
+      this.recordsFilterOpen = !this.recordsFilterOpen;
+      this.renderRecords();
+    },
+
+    /* ---- 图表半屏数据弹层 ---- */
+    showChartSheet: function (type, key) {
       var vehicle = VehicleMgr.current();
-      var vehId = document.getElementById('cf_vehicleId');
-      if (vehId && vehicle) vehId.value = vehicle.id;
-      var type = c ? (c.chargeType || 'fast') : (this.recordsType || 'fast');
-      this.recordsType = type;
-      document.querySelectorAll('#cf_chargeTypeSegment .seg-item').forEach(function (b) {
-        b.classList.toggle('active', b.dataset.val === type);
-      });
-      var t = document.getElementById('cf_chargeType');
-      if (t) t.value = type;
-      document.getElementById('cf_date').value = c ? (c.date || '') : Utils.today();
-      ['cf_kWh', 'cf_unitPrice', 'cf_totalCost', 'cf_socBefore', 'cf_socAfter', 'cf_odometer'].forEach(function (idn) {
-        var el = document.getElementById(idn);
-        if (!el) return;
-        el.value = c ? (c[idn.replace('cf_', '')] === undefined || c[idn.replace('cf_', '')] === null ? '' : c[idn.replace('cf_', '')]) : '';
-      });
-      this.updateRecordSummary();
-    },
-    resetRecordForm: function () {
-      var vehicle = VehicleMgr.current();
-      var vehId = document.getElementById('cf_vehicleId');
-      if (vehId && vehicle) vehId.value = vehicle.id;
-      var t = document.getElementById('cf_chargeType');
-      if (t) t.value = this.recordsType || 'fast';
-      document.querySelectorAll('#cf_chargeTypeSegment .seg-item').forEach(function (b) {
-        b.classList.toggle('active', b.dataset.val === (App.recordsType || 'fast'));
-      });
-      document.getElementById('cf_date').value = Utils.today();
-      ['cf_kWh', 'cf_unitPrice', 'cf_totalCost', 'cf_socBefore', 'cf_socAfter', 'cf_odometer'].forEach(function (idn) {
-        var el = document.getElementById(idn);
-        if (el) el.value = '';
-      });
-      this.updateRecordSummary();
+      var vid = vehicle ? vehicle.id : null;
+      var sheet = document.getElementById('dataSheet');
+      if (!sheet) return;
+      var fn = this[type + 'Sheet'];
+      if (typeof fn !== 'function') return;
+      var res = fn.call(this, vid, key);
+      if (!res) return;
+      document.getElementById('dsTitle').textContent = res.title;
+      document.getElementById('dsSub').textContent = res.sub || '';
+      document.getElementById('dsBody').innerHTML = res.body;
+      sheet.classList.add('show');
     },
 
-    scrollToRecordsHistory: function () {
-      var el = document.querySelector('#panel-records .history-section-dark');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    closeChartSheet: function () {
+      var sheet = document.getElementById('dataSheet');
+      if (sheet) sheet.classList.remove('show');
+    },
+
+    /* 当月明细（柱状图 / 趋势线图点击） */
+    monthSheet: function (vid, monthKey) {
+      var charges = vid ? ChargeMgr.list(vid) : [];
+      var sc = charges.filter(function (c) { return Utils.monthKey(c.date || '') === monthKey; });
+      var cost = 0, kwh = 0, fast = 0, slow = 0;
+      sc.forEach(function (c) {
+        cost += c.totalCost || 0; kwh += c.kWh || 0;
+        if (c.chargeType === 'fast') fast++; else slow++;
+      });
+      var label = Utils.monthLabel(monthKey);
+      if (!sc.length) {
+        return {
+          title: label + ' 充电明细', sub: monthKey,
+          body: '<div class="ds-empty">' + Icons.bolt + '<div class="de-title">该月暂无充电记录</div><div class="de-sub">选择其他月份，或点击「新增」记录一条充电</div></div>'
+        };
+      }
+      var effInfo = this._monthEff(charges, monthKey);
+      var avgPrice = kwh > 0 ? cost / kwh : 0;
+      var fastPct = Math.round(fast / sc.length * 100);
+      var body = '<div class="ds-hero"><div class="dh-label">' + label + ' · 充电费用</div>'
+        + '<div class="dh-value">¥' + Utils.fmtMoney(cost) + '</div>'
+        + '<div class="dh-sub">' + sc.length + ' 次充电 · 快充 ' + fastPct + '%</div></div>'
+        + '<div class="ds-grid">'
+        + '<div class="ds-cell"><div class="dc-label">充电度数</div><div class="dc-value">' + Utils.fmt(kwh, 1) + '<span class="dc-unit">度</span></div></div>'
+        + '<div class="ds-cell"><div class="dc-label">充电次数</div><div class="dc-value">' + sc.length + '<span class="dc-unit">次</span></div></div>'
+        + '<div class="ds-cell"><div class="dc-label">平均电价</div><div class="dc-value">¥' + Utils.fmtMoney(avgPrice) + '<span class="dc-unit">/度</span></div></div>'
+        + '<div class="ds-cell"><div class="dc-label">平均电耗</div><div class="dc-value">' + (effInfo.enough ? Utils.fmt(effInfo.avg, 1) : '—') + '<span class="dc-unit">' + (effInfo.enough ? 'kWh/100km' : (effInfo.count > 0 ? '样本不足' : '无里程数据')) + '</span></div></div>'
+        + '<div class="ds-cell"><div class="dc-label">快充</div><div class="dc-value">' + fast + '<span class="dc-unit">次</span></div></div>'
+        + '<div class="ds-cell"><div class="dc-label">慢充</div><div class="dc-value">' + slow + '<span class="dc-unit">次</span></div></div>'
+        + '</div>';
+      return { title: label + ' 充电明细', sub: monthKey + ' · ' + sc.length + ' 条记录', body: body };
+    },
+
+    /* 当月内相邻有效里程区间电耗样本 */
+    _monthEff: function (charges, monthKey) {
+      var sc = charges.filter(function (c) { return Utils.monthKey(c.date || '') === monthKey; })
+        .sort(function (a, b) { return (a.date || '').localeCompare(b.date || ''); });
+      var vals = [];
+      for (var i = 1; i < sc.length; i++) {
+        var o0 = sc[i - 1].odometer || 0, o1 = sc[i].odometer || 0;
+        if (o0 > 0 && o1 > o0 && sc[i].kWh > 0) vals.push((sc[i].kWh / (o1 - o0)) * 100);
+      }
+      return { count: vals.length, enough: vals.length >= 3, avg: vals.length ? vals.reduce(function (s, v) { return s + v; }, 0) / vals.length : 0 };
+    },
+
+    /* 快慢充比例明细（环形图点击） */
+    donutSheet: function (vid) {
+      var charges = vid ? ChargeMgr.list(vid) : [];
+      var fast = 0, slow = 0, fastK = 0, slowK = 0;
+      charges.forEach(function (c) {
+        if (c.chargeType === 'fast') { fast++; fastK += c.kWh || 0; }
+        else { slow++; slowK += c.kWh || 0; }
+      });
+      var total = fast + slow;
+      if (!total) {
+        return { title: '快慢充比例', sub: '全部记录', body: '<div class="ds-empty">' + Icons.bolt + '<div class="de-title">暂无充电记录</div><div class="de-sub">记录充电后即可查看快慢充分布</div></div>' };
+      }
+      var fPct = Math.round(fast / total * 100);
+      var body = '<div class="ds-hero"><div class="dh-label">快慢充比例 · 全部记录</div>'
+        + '<div class="dh-value">' + fPct + ' : ' + (100 - fPct) + '</div>'
+        + '<div class="dh-sub">共 ' + total + ' 次充电</div></div>'
+        + '<div class="ds-grid">'
+        + '<div class="ds-cell"><div class="dc-label">快充次数</div><div class="dc-value">' + fast + '<span class="dc-unit">次</span></div></div>'
+        + '<div class="ds-cell"><div class="dc-label">慢充次数</div><div class="dc-value">' + slow + '<span class="dc-unit">次</span></div></div>'
+        + '<div class="ds-cell"><div class="dc-label">快充度数</div><div class="dc-value">' + Utils.fmt(fastK, 1) + '<span class="dc-unit">度</span></div></div>'
+        + '<div class="ds-cell"><div class="dc-label">慢充度数</div><div class="dc-value">' + Utils.fmt(slowK, 1) + '<span class="dc-unit">度</span></div></div>'
+        + '</div>';
+      return { title: '快慢充比例', sub: '全部记录', body: body };
+    },
+
+    /* 电池健康明细（电池环点击） */
+    batterySheet: function (vid) {
+      var health = BatteryHealth.healthIndex(vid);
+      if (!health || health.index === null || health.index === undefined) {
+        return { title: '电池健康评估', sub: '当前车辆', body: '<div class="ds-empty">' + Icons.info + '<div class="de-title">暂无容量数据</div><div class="de-sub">记录带充电前后 SOC 的电量后可评估</div></div>' };
+      }
+      var idx = Math.round(health.index);
+      var color = idx >= 85 ? '#22C55E' : (idx >= 70 ? '#8B9BAE' : (idx >= 50 ? '#F59E0B' : '#EF4444'));
+      var capPct = Math.round((health.capacityRatio || 0) * 100);
+      var habitPct = Math.round((health.habit && health.habit.score) || 0);
+      var deepPct = Math.round(((health.habit && health.habit.deepRatio) || 0) * 100);
+      var status = health.status || (idx >= 85 ? '优秀' : '良好');
+      var body = '<div class="ds-hero"><div class="dh-label">电池健康指数</div>'
+        + '<div class="dh-value" style="color:' + color + ';">' + idx + '</div>'
+        + '<div class="dh-sub">' + status + '</div></div>'
+        + '<div class="ds-grid">'
+        + '<div class="ds-cell"><div class="dc-label">容量健康</div><div class="dc-value">' + capPct + '<span class="dc-unit">%</span></div></div>'
+        + '<div class="ds-cell"><div class="dc-label">充电习惯</div><div class="dc-value">' + habitPct + '<span class="dc-unit">%</span></div></div>'
+        + '<div class="ds-cell"><div class="dc-label">深放频率</div><div class="dc-value">' + deepPct + '<span class="dc-unit">%</span></div></div>'
+        + '</div>';
+      return { title: '电池健康评估', sub: '当前车辆', body: body };
     },
 
     recordItemHTML: function (c) {
@@ -1781,7 +1873,8 @@
       line.pts.forEach(function (p, i) {
         var r = i === line.pts.length - 1 ? 5 : 4;
         var extra = i === line.pts.length - 1 ? ' stroke="rgba(255,255,255,0.5)" stroke-width="2"' : '';
-        html += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="#8B9BAE"' + extra + '/>';
+        var mk = monthly[i] ? monthly[i].monthKey : '';
+        html += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="#8B9BAE"' + extra + ' onclick="App.showChartSheet(\'month\',\'' + mk + '\')"/>';
       });
       html += '</svg></div>';
       html += '<div class="line-chart-dark" style="height:auto;"><div class="x-labels">' + line.xlabels + '</div></div>';
@@ -1867,7 +1960,7 @@
     buildDonut: function (fast, slow) {
       var total = fast + slow;
       var C = Math.round(2 * Math.PI * 40 * 100) / 100;
-      var html = '<svg class="donut-svg-dark" viewBox="0 0 100 100">'
+      var html = '<svg class="donut-svg-dark" viewBox="0 0 100 100" onclick="App.showChartSheet(\'donut\',\'\')">'
         + '<circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12"/>';
       if (total > 0) {
         var dfast = fast / total * C;
@@ -1911,7 +2004,7 @@
     buildBatteryRing: function (pct, color) {
       var C = Math.round(2 * Math.PI * 50 * 100) / 100;
       var d = (Math.min(100, Math.max(0, pct)) / 100) * C;
-      return '<svg class="battery-ring-svg-dark" viewBox="0 0 120 120">'
+      return '<svg class="battery-ring-svg-dark" viewBox="0 0 120 120" onclick="App.showChartSheet(\'battery\',\'\')">'
         + '<circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>'
         + '<circle cx="60" cy="60" r="50" fill="none" stroke="' + color + '" stroke-width="8" stroke-dasharray="' + d.toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 60 60)" stroke-linecap="round"/>'
         + '</svg>';
@@ -2333,11 +2426,20 @@
         document.getElementById('chargeFormPageTitle').textContent = '添加充电记录';
       }
       document.getElementById('chargeFormPage').classList.add('show');
+      document.getElementById('chargeFormPage').scrollTop = 0;
+      // 压入历史栈，使系统级返回（浏览器返回键/手势）先关闭本页而非退出应用
+      this._overlayDepth = (this._overlayDepth || 0) + 1;
+      history.pushState({ implOverlay: true, t: Date.now() }, '');
     },
 
-    closeChargePage: function () {
+    closeChargePage: function (silent) {
       document.getElementById('chargeFormPage').classList.remove('show');
       this.editingChargeId = null;
+      // 常规关闭（×/保存/页面返回按钮）：弹出历史栈与 popstate 保持同步
+      if (!silent && this._overlayDepth > 0) {
+        this._overlayDepth = Math.max(0, this._overlayDepth - 1);
+        history.back();
+      }
     },
 
     // 兼容旧调用
