@@ -1038,6 +1038,8 @@
       this.bindEvents();
       this.bindAnalysisSegments();
       this.renderAll();
+      // 首次启动时同步底部导航高亮为当前页（首页），避免静态标记停留在其他页签
+      document.querySelectorAll('.tabbar-dark .tab-item').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === App.currentTab); });
       // 系统/浏览器返回：若当前处于「添加/编辑记录」内嵌页则先关闭它回到当前页/首页，而非退出应用
       window.addEventListener('popstate', function () {
         if (App._overlayDepth > 0) {
