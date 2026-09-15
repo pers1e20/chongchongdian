@@ -2095,6 +2095,203 @@
     .battery-metric-dark .bm-bar-fill { height: 100%; border-radius: 3px; }
     .battery-metric-dark .bm-value { font-size: 15px; font-weight: 600; font-family: var(--font-mono); color: rgba(255,255,255,0.70); }
 
+    /* === 统计页 · 英雄卡增减标签 === */
+    .ah-delta { margin-left: 8px; padding: 3px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; vertical-align: 1px; font-family: var(--font-mono); }
+    .ah-delta b { font-weight: 700; }
+    .ah-delta em { font-style: normal; opacity: 0.65; font-weight: 500; }
+    .ah-delta.up { color: var(--sys-green); background: rgba(34,197,94,0.10); }
+    .ah-delta.down { color: var(--sys-orange); background: rgba(245,158,11,0.10); }
+    .ah-delta.flat { color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.06); }
+
+    /* === 统计页 · 关键指标条 === */
+    .stats-summary-dark {
+      margin: 0 var(--sp-4) var(--sp-3);
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-1);
+      border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-2);
+      background: rgba(20,20,24,0.50);
+      backdrop-filter: blur(20px) saturate(140%);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      border: 0.5px solid rgba(255,255,255,0.04);
+      box-shadow: var(--shadow-sm), var(--specular-top);
+    }
+    .stats-summary-dark .ss-item { text-align: center; min-width: 0; }
+    .stats-summary-dark .ss-v { font-size: 16px; font-weight: 700; font-family: var(--font-mono); color: rgba(255,255,255,0.88); white-space: nowrap; }
+    .stats-summary-dark .ss-v em { font-style: normal; font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.35); margin-left: 1px; }
+    .ss-item .ss-need { display: block; font-style: normal; font-family: var(--font-sans); font-size: 9px; font-weight: 500; color: var(--sys-orange); margin-top: 1px; white-space: nowrap; }
+    .stats-summary-dark .ss-l { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 3px; white-space: nowrap; }
+
+    /* === 统计页 · 多指标趋势切换 === */
+    .trend-chart-dark .trend-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+    .trend-chart-dark .tc-title { margin-bottom: 0; }
+    .metric-seg { display: flex; gap: 2px; background: rgba(255,255,255,0.05); border-radius: var(--r-capsule); padding: 2px; }
+    .metric-seg-item { border: none; background: transparent; color: rgba(255,255,255,0.40); font-size: 11px; padding: 5px 9px; border-radius: var(--r-capsule); cursor: pointer; transition: all var(--dur-fast) var(--ease-liquid); }
+    .metric-seg-item.active { color: #0A0A0C; background: var(--brand-gold); font-weight: 600; }
+    .trend-foot { margin: var(--sp-2) var(--sp-1) 0; font-size: 12px; color: rgba(255,255,255,0.30); }
+
+    /* === 统计页 · 快慢充价差提示 === */
+    .price-diff-hint {
+      margin: 0 var(--sp-4) var(--sp-3);
+      display: flex; align-items: flex-start; gap: 8px;
+      border-radius: var(--r-lg); padding: var(--sp-3);
+      font-size: 13px; line-height: 1.5; color: var(--sys-orange);
+      background: rgba(245,158,11,0.08);
+      border: 0.5px solid rgba(245,158,11,0.16);
+    }
+    .price-diff-hint svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+    .price-diff-hint b { font-weight: 700; font-family: var(--font-mono); }
+    .price-diff-hint.ok { color: var(--sys-green); background: rgba(34,197,94,0.07); border-color: rgba(34,197,94,0.14); }
+
+    /* === 电池健康 · 异常提醒 === */
+    .health-alert {
+      margin: 0 var(--sp-4) var(--sp-3);
+      display: flex; gap: var(--sp-3);
+      border-radius: var(--r-lg); padding: var(--sp-4);
+      background: rgba(245,158,11,0.08);
+      backdrop-filter: blur(20px) saturate(140%);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      border: 0.5px solid rgba(245,158,11,0.18);
+    }
+    .health-alert > svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--sys-orange); margin-top: 1px; }
+    .health-alert .ha-title { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.85); }
+    .health-alert .ha-text { font-size: 12px; line-height: 1.6; color: rgba(255,255,255,0.55); margin-top: 3px; }
+    .health-alert .ha-text b { color: var(--sys-orange); font-family: var(--font-mono); }
+
+    /* === 电池健康 · 趋势卡 + 权重卡 === */
+    .health-trend-card, .health-est-card, .health-weight-dark {
+      margin: 0 var(--sp-4) var(--sp-3);
+      border-radius: var(--r-lg); padding: var(--sp-4);
+      background: rgba(20,20,24,0.50);
+      backdrop-filter: blur(20px) saturate(140%);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      border: 0.5px solid rgba(255,255,255,0.04);
+      box-shadow: var(--shadow-sm), var(--specular-top);
+    }
+    .hc-title, .hw-title { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.35); margin-bottom: var(--sp-3); }
+    .x-labels-mini { display: flex; justify-content: space-between; margin-top: 4px; }
+    .x-labels-mini span { font-size: 10px; color: rgba(255,255,255,0.22); }
+
+    .health-weight-dark .hw-row { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) 0; }
+    .health-weight-dark .hw-name { font-size: 13px; color: rgba(255,255,255,0.60); width: 96px; flex-shrink: 0; }
+    .health-weight-dark .hw-name b { font-weight: 600; color: rgba(255,255,255,0.35); }
+    .health-weight-dark .hw-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+    .health-weight-dark .hw-fill { height: 100%; border-radius: 3px; }
+    .health-weight-dark .hw-v { font-size: 13px; font-weight: 600; font-family: var(--font-mono); color: rgba(255,255,255,0.70); width: 44px; text-align: right; }
+    .health-weight-dark .hw-note { font-size: 11px; color: rgba(255,255,255,0.25); margin-top: var(--sp-2); padding-top: var(--sp-2); border-top: 0.5px solid rgba(255,255,255,0.03); }
+
+    /* === 电池健康 · 容量估算明细 === */
+    .health-est-card .he-row { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) 0; border-top: 0.5px solid rgba(255,255,255,0.03); }
+    .health-est-card .he-date { font-size: 12px; color: rgba(255,255,255,0.55); width: 78px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    .health-est-card .he-mid { flex: 1; font-size: 12px; color: rgba(255,255,255,0.40); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .health-est-card .he-mid i { font-style: normal; margin: 0 5px; color: rgba(255,255,255,0.18); }
+    .health-est-card .he-cap { font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: rgba(255,255,255,0.85); }
+    .health-est-card .he-cap em { font-style: normal; font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.35); }
+    .health-est-card .he-tag { flex-shrink: 0; font-size: 10px; color: rgba(255,255,255,0.30); background: rgba(255,255,255,0.05); border-radius: 999px; padding: 2px 7px; }
+    .health-est-card .he-discard { opacity: 0.45; }
+    .health-est-card .hc-note { font-size: 10px; line-height: 1.5; color: rgba(255,255,255,0.25); margin-top: var(--sp-2); padding-top: var(--sp-2); border-top: 0.5px solid rgba(255,255,255,0.03); }
+    .health-est-card .he-empty { font-size: 13px; color: rgba(255,255,255,0.35); padding: var(--sp-2) 0; line-height: 1.6; }
+
+    /* === 充电建议 · 现状概览卡 === */
+    .advice-ovr {
+      margin: 0 var(--sp-4) var(--sp-3);
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-2);
+      background: rgba(20,20,24,0.50);
+      backdrop-filter: blur(20px) saturate(140%);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      border: 0.5px solid rgba(255,255,255,0.04);
+      box-shadow: var(--shadow-sm), var(--specular-top);
+    }
+    .advice-ovr .ao-item { text-align: center; min-width: 0; }
+    .advice-ovr .ao-v { font-size: 15px; font-weight: 700; font-family: var(--font-mono); color: var(--sys-green); white-space: nowrap; }
+    .advice-ovr .ao-l { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 3px; white-space: nowrap; }
+
+    /* === 充电建议 · 摘要与分级计数 === */
+    .advice-summary-dark {
+      margin: 0 var(--sp-4) var(--sp-3);
+      border-radius: var(--r-lg); padding: var(--sp-4);
+      background: rgba(20,20,24,0.50);
+      backdrop-filter: blur(20px) saturate(140%);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      border: 0.5px solid rgba(255,255,255,0.04);
+      box-shadow: var(--shadow-sm), var(--specular-top);
+      font-size: 13px; line-height: 1.7; color: rgba(255,255,255,0.65);
+    }
+    .advice-grade-count { display: flex; gap: var(--sp-2); margin-top: var(--sp-2); flex-wrap: wrap; }
+    .advice-grade-count .gc { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 4px 10px; }
+    .advice-grade-count .g-danger { color: #F87171; background: rgba(239,68,68,0.12); }
+    .advice-grade-count .g-warn { color: var(--sys-orange); background: rgba(245,158,11,0.12); }
+    .advice-grade-count .g-ok { color: var(--sys-green); background: rgba(34,197,94,0.12); }
+
+    /* === 充电建议 · 建议列表 === */
+    .advice-list-dark { margin: 0 var(--sp-4) var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); }
+    .advice-item-dark {
+      display: flex; gap: var(--sp-3);
+      border-radius: var(--r-lg); padding: var(--sp-4);
+      background: rgba(20,20,24,0.50);
+      backdrop-filter: blur(20px) saturate(140%);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      border: 0.5px solid rgba(255,255,255,0.04);
+      box-shadow: var(--shadow-sm), var(--specular-top);
+    }
+    .advice-item-dark .advice-icon { width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .advice-item-dark .advice-icon svg { width: 16px; height: 16px; }
+    .advice-item-dark.advice-ok .advice-icon { background: rgba(34,197,94,0.12); color: var(--sys-green); }
+    .advice-item-dark.advice-warn .advice-icon { background: rgba(245,158,11,0.12); color: var(--sys-orange); }
+    .advice-item-dark.advice-info .advice-icon { background: rgba(139,155,174,0.14); color: #C7D2DE; }
+    .advice-item-dark .advice-body { flex: 1; min-width: 0; }
+    .advice-item-dark .advice-title-row { display: flex; align-items: center; gap: var(--sp-2); }
+    .advice-item-dark .advice-title { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.85); }
+    .advice-item-dark .advice-tag { flex-shrink: 0; font-size: 10px; font-weight: 600; border-radius: 999px; padding: 2px 8px; }
+    .advice-item-dark .advice-tag.danger { color: #F87171; background: rgba(239,68,68,0.12); }
+    .advice-item-dark .advice-tag.warn { color: var(--sys-orange); background: rgba(245,158,11,0.12); }
+    .advice-item-dark .advice-tag.ok { color: var(--sys-green); background: rgba(34,197,94,0.12); }
+    .advice-item-dark .advice-text { font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.55); margin-top: 5px; }
+
+    /* === 充电建议 · 成本优化模拟 === */
+    .advice-swap {
+      margin: 0 var(--sp-4) var(--sp-3);
+      border-radius: var(--r-lg); padding: var(--sp-4);
+      background: linear-gradient(135deg, rgba(34,197,94,0.10), rgba(20,20,24,0.50));
+      backdrop-filter: blur(20px) saturate(140%);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      border: 0.5px solid rgba(34,197,94,0.16);
+      box-shadow: var(--shadow-sm), var(--specular-top);
+    }
+    .advice-swap .as-title { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.45); margin-bottom: var(--sp-3); }
+    .advice-swap .as-control { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+    .advice-swap .as-btn {
+      width: 38px; height: 38px; border-radius: 50%; border: 0.5px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85);
+      font-size: 20px; font-weight: 600; cursor: pointer; transition: all var(--dur-fast) var(--ease-liquid);
+    }
+    .advice-swap .as-btn:active:not(:disabled) { transform: scale(0.92); background: var(--brand-gold); color: #0A0A0C; }
+    .advice-swap .as-btn:disabled { opacity: 0.28; cursor: default; }
+    .advice-swap .as-mid { text-align: center; }
+    .advice-swap .as-num { font-size: 26px; font-weight: 700; font-family: var(--font-mono); color: rgba(255,255,255,0.92); }
+    .advice-swap .as-sub { font-size: 11px; color: rgba(255,255,255,0.40); margin-top: 2px; }
+    .advice-swap .as-save { font-size: 15px; color: rgba(255,255,255,0.75); margin-top: var(--sp-3); text-align: center; }
+    .advice-swap .as-save b { font-size: 20px; color: var(--sys-green); font-family: var(--font-mono); margin: 0 2px; }
+    .advice-swap .as-save .as-detail { display: block; font-size: 11px; color: rgba(255,255,255,0.30); margin-top: 2px; font-family: var(--font-mono); }
+    .advice-swap .as-hint { text-align: center; font-size: 11px; color: var(--sys-orange); margin-top: var(--sp-2); }
+    .advice-swap .as-note { font-size: 11px; line-height: 1.6; color: rgba(255,255,255,0.35); margin-top: var(--sp-3); padding-top: var(--sp-2); border-top: 0.5px solid rgba(255,255,255,0.06); }
+
+    /* === 充电建议 · 参数参考 + 直达编辑 === */
+    .advice-params-dark {
+      margin: 0 var(--sp-4) var(--sp-3);
+      border-radius: var(--r-lg); padding: var(--sp-4);
+      background: rgba(20,20,24,0.50);
+      backdrop-filter: blur(20px) saturate(140%);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      border: 0.5px solid rgba(255,255,255,0.04);
+      box-shadow: var(--shadow-sm), var(--specular-top);
+    }
+    .advice-params-dark .ap-title { display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.35); margin-bottom: var(--sp-2); }
+    .advice-params-dark .ap-edit { border: 0.5px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.70); font-size: 11px; padding: 4px 11px; border-radius: var(--r-capsule); cursor: pointer; transition: all var(--dur-fast) var(--ease-liquid); }
+    .advice-params-dark .ap-edit:active { background: var(--brand-gold); color: #0A0A0C; }
+    .advice-params-dark .ap-row { display: flex; justify-content: space-between; align-items: center; padding: var(--sp-2) 0; border-top: 0.5px solid rgba(255,255,255,0.03); }
+    .advice-params-dark .ap-row span { font-size: 13px; color: rgba(255,255,255,0.50); }
+    .advice-params-dark .ap-row b { font-size: 13px; font-weight: 600; font-family: var(--font-mono); color: rgba(255,255,255,0.80); }
+
     .profile-header-dark {
       margin: var(--sp-3) var(--sp-4);
       border-radius: var(--r-2xl); padding: var(--sp-5);
