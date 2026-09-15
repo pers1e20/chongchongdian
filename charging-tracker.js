@@ -1176,9 +1176,28 @@
         if (calcHint) calcHint.style.display = 'none';
       }
 
-      if (kWhInput) kWhInput.addEventListener('input', function () { updateAutoCalc('kWh'); });
-      if (priceInput) priceInput.addEventListener('input', function () { updateAutoCalc('unitPrice'); });
-      if (costInput) costInput.addEventListener('input', function () { updateAutoCalc('totalCost'); });
+      // 同步「预计充电费用」预览卡（设计稿 record-summary-dark）
+      self.refreshCostPreview = function () {
+        var costPreview = document.getElementById('cf_costPreview');
+        if (!costPreview) return;
+        var costPreviewDetail = document.getElementById('cf_costPreviewDetail');
+        var k = parseFloat(kWhInput.value) || 0;
+        var p = parseFloat(priceInput.value) || 0;
+        var c = parseFloat(costInput.value) || 0;
+        var total = c > 0 ? c : (k > 0 && p > 0 ? k * p : 0);
+        costPreview.textContent = '¥' + Utils.fmtMoney(total);
+        if (k > 0 && p > 0 && total > 0) {
+          costPreviewDetail.textContent = k + ' 度 × ¥' + Utils.fmtMoney(p) + '/度';
+        } else if (total > 0) {
+          costPreviewDetail.textContent = '总费用已填写';
+        } else {
+          costPreviewDetail.textContent = '输入电量和单价后自动计算';
+        }
+      };
+
+      if (kWhInput) { kWhInput.addEventListener('input', function () { updateAutoCalc('kWh'); self.refreshCostPreview(); }); }
+      if (priceInput) { priceInput.addEventListener('input', function () { updateAutoCalc('unitPrice'); self.refreshCostPreview(); }); }
+      if (costInput) { costInput.addEventListener('input', function () { updateAutoCalc('totalCost'); self.refreshCostPreview(); }); }
 
       var exportBtn = document.getElementById('btnExport');
       if (exportBtn) exportBtn.addEventListener('click', function () { Store.exportJSON(); self.toast('已导出备份文件', 'success'); });
@@ -1255,11 +1274,9 @@
         return;
       }
 
-      // 顶部毛玻璃导航（设计稿 home-nav-dark）
+      // 顶部毛玻璃导航（设计稿 home-nav-dark · 仅标题，无侧按钮）
       html += '<div class="home-nav-dark">'
-        + '<button class="nav-btn" onclick="App.switchTab(\'records\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>'
         + '<span class="nav-title">冲充电</span>'
-        + '<button class="nav-btn" onclick="App.switchTab(\'profile\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>'
         + '</div>';
 
       // 液态玻璃英雄卡（设计稿 home-hero-dark · 本月费用 + 副信息）
@@ -1350,15 +1367,16 @@
 
     /* 首页最近充电卡片（设计稿 recent-item-dark） */
     recentItemDarkHTML: function (c) {
-      var typeLabel = CHARGE_TYPE_LABEL[c.chargeType] || c.chargeType;
       var note = (c.note || '').replace(/[<>&]/g, function (ch) {
         return ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : '&amp;';
       });
-      var title = note ? note : (typeLabel + '充电');
+      var title = note ? note : (c.chargeType === 'fast' ? '快充' : '慢充');
       var date = c.date.replace(/-/g, '.');
-      return '<div class="recent-item-dark" onclick="App.editCharge(\'' + c.id + '\')">'
-        + '<div class="ri-icon ' + (c.chargeType === 'fast' ? 'ic-gold' : 'ic-teal') + '">' + (c.chargeType === 'fast' ? Icons.zap : Icons.power) + '</div>'
-        + '<div class="ri-info"><div class="ri-title">' + title + '</div><div class="ri-sub">' + date + ' · ' + Utils.fmt(c.kWh, 1) + ' 度 · ' + typeLabel + '</div></div>'
+      var iconClass = c.chargeType === 'fast' ? 'ic-fast' : 'ic-slow';
+      var iconSvg = c.chargeType === 'fast' ? Icons.zap : Icons.power;
+      return '<div class="recent-item-dark" onclick="App.showChargeDetail(\'' + c.id + '\')">'
+        + '<div class="ri-icon ' + iconClass + '">' + iconSvg + '</div>'
+        + '<div class="ri-info"><div class="ri-title">' + Utils.fmt(c.kWh, 1) + ' 度</div><div class="ri-sub">' + date + '</div></div>'
         + '<div class="ri-amount">¥' + Utils.fmtMoney(c.totalCost) + '</div></div>';
     },
 
@@ -1371,7 +1389,7 @@
 
     /* ---- 统计卡片详情弹窗 ---- */
     _sdRow: function (label, value) {
-      return '<div class="sd-row"><span class="sd-label">' + label + '</span><span class="sd-value">' + value + '</span></div>';
+      return '<div class="ds-cell"><div class="dc-label">' + label + '</div><div class="dc-value" style="font-size:15px;">' + value + '</div></div>';
     },
     showStatDetail: function (key, vid) {
       vid = vid || Store.data.vehicles[0] && Store.data.vehicles[0].id;
@@ -1392,88 +1410,114 @@
       var avgCost = charges.length ? ov.totalCost / charges.length : 0;
       var fastPct = charges.length ? Math.round(fastCount / charges.length * 100) : 0;
 
-      // 电耗有效样本（仅纳入可计算数据，采用稳健均值口径）
       var effInfo = Stats.avgEfficiency(vid, year);
       var eff = effInfo.samples;
       var effVal = effInfo.avg;
 
       var period = year ? year + '年' : '全部记录';
-      var title = '', body = '', color = 'blue';
+      var title = '', heroLabel = '', heroValue = '', heroSub = '', body = '';
       var self = this;
 
       if (key === 'totalCost') {
-        color = 'blue';
-        title = '总费用';
-        body = '<div class="sd-period">数据范围：' + period + '</div><div class="sd-grid">'
-          + this._sdRow('总费用', '¥' + Utils.fmtMoney(ov.totalCost))
-          + this._sdRow('充电次数', ov.chargeCount + ' 次')
+        title = '总费用'; heroLabel = '充电总费用'; heroValue = '¥' + Utils.fmtMoney(ov.totalCost);
+        heroSub = period + ' · ' + ov.chargeCount + ' 次';
+        body = '<div class="ds-hero"><div class="dh-label">' + heroLabel + '</div>'
+          + '<div class="dh-value">' + heroValue + '</div>'
+          + '<div class="dh-sub">' + heroSub + '</div></div>'
+          + '<div class="ds-grid">'
           + this._sdRow('平均每次', '¥' + Utils.fmtMoney(avgCost))
           + this._sdRow('单次最高', '¥' + Utils.fmtMoney(maxC))
           + this._sdRow('单次最低', '¥' + Utils.fmtMoney(minC))
           + this._sdRow('本月费用', '¥' + Utils.fmtMoney(ov.thisMonthCost))
-          + '</div><div class="sd-note"><b>说明：</b>统计' + period + '内全部充电记录的总支出（快充 + 慢充），按每次充电的「总费用」累加；均价 = 总费用 ÷ 总度数。</div>';
-      } else if (key === 'totalKWh') {
-        color = 'green';
-        title = '总度数';
-        body = '<div class="sd-period">数据范围：' + period + '</div><div class="sd-grid">'
-          + this._sdRow('总度数', Utils.fmt(ov.totalKWh, 1) + ' 度')
-          + this._sdRow('平均单价', '¥' + Utils.fmtMoney(ov.avgPrice) + '/度')
           + this._sdRow('充电次数', ov.chargeCount + ' 次')
+          + '</div><div class="ds-note"><b>说明：</b>统计' + period + '内全部充电记录的总支出（快充 + 慢充），按每次充电的「总费用」累加；均价 = 总费用 ÷ 总度数。</div>';
+      } else if (key === 'totalKWh') {
+        title = '总度数'; heroLabel = '充电总度数'; heroValue = Utils.fmt(ov.totalKWh, 1) + ' 度';
+        heroSub = period + ' · 均价 ¥' + Utils.fmtMoney(ov.avgPrice) + '/度';
+        body = '<div class="ds-hero"><div class="dh-label">' + heroLabel + '</div>'
+          + '<div class="dh-value">' + heroValue + '</div>'
+          + '<div class="dh-sub">' + heroSub + '</div></div>'
+          + '<div class="ds-grid">'
+          + this._sdRow('平均单价', '¥' + Utils.fmtMoney(ov.avgPrice) + '/度')
           + this._sdRow('快充度数', Utils.fmt(fastKWh, 1) + ' 度 · ' + fastCount + ' 次')
           + this._sdRow('慢充度数', Utils.fmt(slowKWh, 1) + ' 度 · ' + slowCount + ' 次')
           + this._sdRow('本月度数', Utils.fmt(ov.thisMonthKWh, 1) + ' 度')
-          + '</div><div class="sd-note"><b>说明：</b>统计' + period + '内充入电池的总电量，按每次充电「度数」累加；并按快充 / 慢充分别汇总。</div>';
+          + this._sdRow('充电次数', ov.chargeCount + ' 次')
+          + '</div><div class="ds-note"><b>说明：</b>统计' + period + '内充入电池的总电量，按每次充电「度数」累加；并按快充 / 慢充分别汇总。</div>';
       } else if (key === 'avgEff') {
-        color = 'amber';
         title = '平均电耗';
+        var effValStr = effInfo.enough ? Utils.fmt(effVal, 1) + ' 度/100km' : (eff.length ? '数据不足' : '—');
+        heroLabel = '百公里平均电耗'; heroValue = effInfo.enough ? Utils.fmt(effVal, 1) : '—';
+        heroSub = period + ' · ' + eff.length + ' 组有效样本';
         var effList = '';
         if (eff.length) {
-          var rows = eff.map(function (e) {
-            return '<div class="sd-row"><span class="sd-label">' + e.date + '</span><span class="sd-value">' + Utils.fmt(e.value, 1) + ' 度/100km（行驶 ' + Math.round(e.distance) + 'km）</span></div>';
-          }).join('');
-          effList = '<div class="sd-sub-head">有效样本明细（' + eff.length + ' 组）：</div><div class="sd-grid">' + rows + '</div>';
-        } else {
-          effList = '<div class="sd-empty">暂无有效样本：需要两次以上记录且有有效里程差方可计算电耗。</div>';
+          effList = '<div class="ds-grid">';
+          eff.forEach(function (e) {
+            effList += '<div class="ds-cell"><div class="dc-label">' + e.date + '</div><div class="dc-value" style="font-size:14px;">' + Utils.fmt(e.value, 1) + '<span class="dc-unit">度/100km</span></div></div>';
+          });
+          effList += '</div>';
         }
-        body = '<div class="sd-period">数据范围：' + period + '</div><div class="sd-grid">'
-          + this._sdRow('平均电耗', effInfo.enough ? Utils.fmt(effVal, 1) + ' 度/100km' : (eff.length ? '数据不足' : '—'))
+        body = '<div class="ds-hero"><div class="dh-label">' + heroLabel + '</div>'
+          + '<div class="dh-value">' + heroValue + '</div>'
+          + '<div class="dh-sub">' + heroSub + '</div></div>'
+          + '<div class="ds-grid">'
           + this._sdRow('有效样本', eff.length + ' 组')
-          + '</div>' + effList
-          + '<div class="sd-note"><b>说明：</b>电耗 = 相邻两次充电间「充入度数 ÷ 行驶里程 × 100」。仅纳入两次里程都有效（相邻记录里程递增）的区间；若区间内存在缺里程/漏记的充电则该区间不可靠、自动剔除。需至少 3 组有效样本才给出均值，样本不足 3 组时显示「数据不足」，避免单条数据冒充结论。</div>';
+          + '</div>' + (effList || '')
+          + '<div class="ds-note"><b>说明：</b>电耗 = 相邻两次充电间「充入度数 ÷ 行驶里程 × 100」。仅纳入两次里程都有效的区间；需至少 3 组有效样本才给出均值。</div>';
       } else if (key === 'pricePerKm') {
-        color = 'amber';
         title = '每公里单价';
         var pkmData = Stats.pricePerKm(vid, year);
-        var pkmVal = pkmData.hasData ? '¥' + Utils.fmt(pkmData.value, 2) + '/km' : '—';
-        body = '<div class="sd-period">数据范围：' + period + '</div><div class="sd-grid">'
-          + this._sdRow('每公里单价', pkmVal)
+        var pkmVal = pkmData.hasData ? '¥' + Utils.fmt(pkmData.value, 2) : '—';
+        heroLabel = '每公里充电费用'; heroValue = pkmData.hasData ? '¥' + Utils.fmt(pkmData.value, 2) : '—';
+        heroSub = period + ' · ' + effInfo.count + ' 组有效样本';
+        body = '<div class="ds-hero"><div class="dh-label">' + heroLabel + '</div>'
+          + '<div class="dh-value">' + heroValue + '</div>'
+          + '<div class="dh-sub">' + heroSub + '</div></div>'
+          + '<div class="ds-grid">'
           + this._sdRow('平均电价', '¥' + Utils.fmtMoney(ov.avgPrice) + '/度')
           + this._sdRow('百公里电耗', effInfo.enough ? Utils.fmt(effVal, 1) + ' 度/100km' : (effInfo.count > 0 ? '数据不足' : '—'))
           + this._sdRow('有效样本', effInfo.count + ' 组')
-          + '</div><div class="sd-note"><b>说明：</b>每公里单价 = 平均电价 × 百公里电耗 ÷ 100。需要补录里程数据后方可计算。仅纳入两次里程都有效的区间，需至少 3 组样本才给出数值。</div>';
+          + '</div><div class="ds-note"><b>说明：</b>每公里单价 = 平均电价 × 百公里电耗 ÷ 100。需要补录里程数据后方可计算。</div>';
       } else if (key === 'fastslow') {
-        color = 'purple';
         title = '快慢充比';
-        body = '<div class="sd-period">数据范围：' + period + '</div><div class="sd-grid">'
+        heroLabel = '快慢充比例'; heroValue = fastPct + ':' + (100 - fastPct);
+        heroSub = period + ' · ' + charges.length + ' 次充电';
+        body = '<div class="ds-hero"><div class="dh-label">' + heroLabel + '</div>'
+          + '<div class="dh-value">' + heroValue + '</div>'
+          + '<div class="dh-sub">' + heroSub + '</div></div>'
+          + '<div class="ds-grid">'
           + this._sdRow('快充', fastCount + ' 次 · ' + fastPct + '%')
           + this._sdRow('慢充', slowCount + ' 次 · ' + (100 - fastPct) + '%')
           + this._sdRow('快充度数', Utils.fmt(fastKWh, 1) + ' 度')
           + this._sdRow('慢充度数', Utils.fmt(slowKWh, 1) + ' 度')
-          + '</div><div class="sd-note"><b>说明：</b>展示充电方式的选择偏好。快充便捷但长期高频对电池损耗略大，建议在电量 20%–80% 区间快慢结合，日常以慢充为主、长途应急用快充。</div>';
+          + '</div><div class="ds-note"><b>说明：</b>展示充电方式的选择偏好。建议在电量 20%–80% 区间快慢结合，日常以慢充为主、长途应急用快充。</div>';
       } else {
         return;
       }
 
-      var dot = document.getElementById('statDetailIcon');
-      var iconColors = { blue: '#8B9BAE', green: '#22C55E', amber: '#F59E0B', purple: '#8B5CF6' };
-      if (dot) dot.style.background = iconColors[color] || '#8B9BAE';
-      document.getElementById('statDetailTitle').textContent = title;
-      document.getElementById('statDetailBody').innerHTML = body;
-      document.getElementById('statDetailModal').classList.add('show');
+      var sheet = document.getElementById('dataSheet');
+      if (!sheet) return;
+      var head = document.querySelector('.data-sheet-head');
+      if (head) {
+        head.innerHTML = '<div>'
+          + '<h3 id="dsTitle">' + title + '</h3>'
+          + '<div class="ds-sub">' + period + '</div></div>'
+          + '<button type="button" class="ds-close-btn" onclick="App.closeChartSheet()" aria-label="关闭">'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/><line x1="6" y1="18" x2="18" y2="6" stroke-linecap="round"/></svg></button>';
+      }
+      document.getElementById('dsBody').innerHTML = body;
+      sheet.classList.add('show');
     },
     closeStatDetail: function () {
-      var m = document.getElementById('statDetailModal');
-      if (m) m.classList.remove('show');
+      this.closeChartSheet();
+      var head = document.querySelector('.data-sheet-head');
+      if (head) {
+        head.innerHTML = '<div>'
+          + '<h3 id="dsTitle">数据明细</h3>'
+          + '<div class="ds-sub" id="dsSub"></div></div>'
+          + '<button type="button" class="ds-close-btn" onclick="App.closeChartSheet()" aria-label="关闭">'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/><line x1="6" y1="18" x2="18" y2="6" stroke-linecap="round"/></svg></button>';
+      }
     },
 
     /* ---- 趋势图容器（左侧固定Y轴 + 右侧可横滑图表） ---- */
@@ -1536,7 +1580,6 @@
       var panel = document.getElementById('panel-records');
       if (!vid) {
         panel.innerHTML = '<div class="home-nav-dark">'
-          + '<button class="nav-btn" onclick="App.switchTab(\'home\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
           + '<span class="nav-title">充电记录</span></div>'
           + '<div class="records-empty">' + Icons.doc + '<div class="re-title">请先添加车型</div><div class="re-sub">添加车型后才能记录充电</div><button class="re-btn" onclick="App.switchTab(\'profile\')">去添加车辆</button></div>';
         return;
@@ -1553,21 +1596,18 @@
 
       var html = '';
 
-      // 顶部毛玻璃导航：返回 + 标题 + 右上角「新增」（文本按钮）
+      // 顶部导航：仅标题（无返回/新增按钮，新增入口为底部导航栏中央+按钮）
       html += '<div class="home-nav-dark">'
-        + '<button class="nav-btn" onclick="App.switchTab(\'home\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
         + '<span class="nav-title">充电记录</span>'
-        + '<button class="nav-action" onclick="App.openChargePage()">' + Icons.plus + '新增</button>'
         + '</div>';
 
-      // 工具栏：总数 + 筛选（默认隐藏面板）+ 新增
+      // 工具栏：总数 + 筛选（默认隐藏面板）
       html += '<div class="records-toolbar-dark">'
         + '<div class="toolbar-title">全部记录<span class="tb-sub">' + charges.length + ' 条' + (fCount ? ' · 已筛选 ' + fCount + ' 项' : '') + '</span></div>'
         + '<div class="toolbar-actions">'
         + '<button class="filter-toggle-btn' + (fCount ? ' active' : '') + '" onclick="App.toggleRecordsFilter()">'
         + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" stroke-linecap="round" stroke-linejoin="round"/></svg>'
         + '筛选' + (fCount ? '<span class="f-count">' + fCount + '</span>' : '') + '</button>'
-        + '<button class="records-add-btn" onclick="App.openChargePage()">' + Icons.plus + '新增</button>'
         + '</div></div>';
 
       // 隐藏式筛选面板
@@ -1578,7 +1618,7 @@
       if (!charges.length) {
         html += '<div class="records-empty" style="margin-top:26px;">' + Icons.bolt
           + '<div class="re-title">' + (fCount ? '没有符合条件的记录' : '还没有充电记录') + '</div>'
-          + '<div class="re-sub">' + (fCount ? '试试调整筛选条件' : '点击右上角「新增」记录第一条充电') + '</div>'
+          + '<div class="re-sub">' + (fCount ? '试试调整筛选条件' : '点击底部+按钮记录第一条充电') + '</div>'
           + '</div>';
       } else {
         var byYear = {};
@@ -1613,9 +1653,6 @@
         });
       }
       html += '</div>';
-
-      // 悬浮新增按钮
-      html += '<button class="records-fab" onclick="App.openChargePage()">' + Icons.plus + '新增记录</button>';
 
       panel.innerHTML = html;
     },
@@ -1671,6 +1708,15 @@
       if (typeof fn !== 'function') return;
       var res = fn.call(this, vid, key);
       if (!res) return;
+      // 始终重建头部为标准图表标题结构，避免被详情/统计弹层覆盖后残留导致取不到 dsTitle/dsSub
+      var head = document.querySelector('.data-sheet-head');
+      if (head) {
+        head.innerHTML = '<div>'
+          + '<h3 id="dsTitle">数据明细</h3>'
+          + '<div class="ds-sub" id="dsSub"></div></div>'
+          + '<button type="button" class="ds-close-btn" onclick="App.closeChartSheet()" aria-label="关闭">'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/><line x1="6" y1="18" x2="18" y2="6" stroke-linecap="round"/></svg></button>';
+      }
       document.getElementById('dsTitle').textContent = res.title;
       document.getElementById('dsSub').textContent = res.sub || '';
       document.getElementById('dsBody').innerHTML = res.body;
@@ -1680,6 +1726,72 @@
     closeChartSheet: function () {
       var sheet = document.getElementById('dataSheet');
       if (sheet) sheet.classList.remove('show');
+    },
+
+    /* 充电记录详情半屏弹层（点击记录项后展示，含编辑/删除） */
+    showChargeDetail: function (id) {
+      var c = ChargeMgr.get(id);
+      if (!c) return;
+      var sheet = document.getElementById('dataSheet');
+      if (!sheet) return;
+      var isFast = c.chargeType === 'fast';
+      var typeLabel = isFast ? '快充' : '慢充';
+      var unitPrice = c.kWh > 0 ? (Number(c.totalCost) || 0) / Number(c.kWh) : 0;
+      var d = (c.date || '').split('-');
+      var dateStr = d.length === 3 ? (d[0] + '年' + parseInt(d[1], 10) + '月' + parseInt(d[2], 10) + '日') : (c.date || '');
+
+      var head = document.querySelector('.data-sheet-head');
+      if (head) {
+        head.innerHTML = '<div>'
+          + '<h3>充电详情</h3>'
+          + '<div class="ds-sub">' + dateStr + '</div></div>'
+          + '<div class="ds-action-row">'
+          + '<button class="ds-icon-btn" onclick="App.closeChargeDetail();App.openChargePage(\'' + id + '\')" aria-label="编辑">'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
+          + '<button class="ds-icon-btn ds-danger" onclick="App.deleteChargeFromDetail(\'' + id + '\')" aria-label="删除">'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
+          + '<button class="ds-close-btn" onclick="App.closeChargeDetail()" aria-label="关闭">'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/><line x1="6" y1="18" x2="18" y2="6" stroke-linecap="round"/></svg></button>'
+          + '</div>';
+      }
+
+      var body = '<div class="ds-hero"><div class="dh-label">充电费用</div>'
+        + '<div class="dh-value">¥' + Utils.fmtMoney(c.totalCost) + '</div>'
+        + '<div class="dh-sub">' + typeLabel + ' · ' + Utils.fmt(c.kWh, 1) + ' 度</div></div>'
+        + '<div class="ds-grid">'
+        + '<div class="ds-cell"><div class="dc-label">充电度数</div><div class="dc-value">' + Utils.fmt(c.kWh, 1) + '<span class="dc-unit">度</span></div></div>'
+        + '<div class="ds-cell"><div class="dc-label">充电单价</div><div class="dc-value">¥' + Utils.fmtMoney(unitPrice) + '<span class="dc-unit">/度</span></div></div>'
+        + '<div class="ds-cell"><div class="dc-label">充电类型</div><div class="dc-value">' + typeLabel + '</div></div>'
+        + '<div class="ds-cell"><div class="dc-label">日期</div><div class="dc-value" style="font-size:14px;">' + dateStr + '</div></div>';
+      if (Number(c.odometer) > 0) body += '<div class="ds-cell"><div class="dc-label">里程读数</div><div class="dc-value">' + c.odometer + '<span class="dc-unit">km</span></div></div>';
+      if (Number(c.socBefore) > 0 && Number(c.socAfter) > 0) body += '<div class="ds-cell"><div class="dc-label">SOC 变化</div><div class="dc-value">' + c.socBefore + '%→' + c.socAfter + '%</div></div>';
+      body += '</div>';
+      if (c.note) body += '<div class="ds-note">' + c.note.replace(/[<>&]/g, function (ch) { return ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : '&amp;'; }) + '</div>';
+
+      document.getElementById('dsBody').innerHTML = body;
+      sheet.classList.add('show');
+    },
+
+    closeChargeDetail: function () {
+      this.closeChartSheet();
+      var head = document.querySelector('.data-sheet-head');
+      if (head) {
+        head.innerHTML = '<div>'
+          + '<h3 id="dsTitle">数据明细</h3>'
+          + '<div class="ds-sub" id="dsSub"></div></div>'
+          + '<button type="button" class="ds-close-btn" onclick="App.closeChartSheet()" aria-label="关闭">'
+          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/><line x1="6" y1="18" x2="18" y2="6" stroke-linecap="round"/></svg></button>';
+      }
+    },
+
+    deleteChargeFromDetail: function (id) {
+      var self = this;
+      this.showConfirm('删除充电记录', '确定删除这条充电记录？此操作不可恢复。', function () {
+        ChargeMgr.remove(id);
+        App.closeChargeDetail();
+        App.renderAll();
+        App.toast('已删除', 'success');
+      });
     },
 
     /* 当月明细（柱状图 / 趋势线图点击） */
@@ -1778,20 +1890,27 @@
     recordItemHTML: function (c) {
       var m = c.date.split('-');
       var day = parseInt(m[2], 10), month = parseInt(m[1], 10);
-      var typeLabel = CHARGE_TYPE_LABEL[c.chargeType] || c.chargeType;
+      var isFast = c.chargeType === 'fast';
+      var iconClass = isFast ? 'ic-fast' : 'ic-slow';
+      var iconSvg = isFast ? Icons.zap : Icons.power;
       var note = (c.note || '').replace(/[<>&]/g, function (ch) {
         return ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : '&amp;';
       });
-      var titleTxt = '<span class="type">' + typeLabel + '</span>' + (note ? ' &middot; ' + note : '');
-      var sub = Utils.fmt(c.kWh, 1) + ' 度 &middot; ' + typeLabel;
-      if (Number(c.socBefore) > 0 && Number(c.socAfter) > 0) {
-        sub += ' &middot; SOC ' + c.socBefore + '%→' + c.socAfter + '%';
-      }
-      return '<div class="history-item-dark" onclick="App.editCharge(\'' + c.id + '\')">'
-        + '<div class="hi-date"><div class="day">' + day + '</div><div class="month">' + month + '月</div></div>'
-        + '<div class="hi-info"><div class="hi-title">' + titleTxt + '</div><div class="hi-sub">' + sub + '</div></div>'
+      var subParts = [];
+      if (Number(c.socBefore) > 0 && Number(c.socAfter) > 0) subParts.push('SOC ' + c.socBefore + '%→' + c.socAfter + '%');
+      if (note) subParts.push(note);
+      return '<div class="history-item-dark" onclick="App.showChargeDetail(\'' + c.id + '\')">'
+        + '<div class="hi-icon ' + iconClass + '">' + iconSvg + '</div>'
+        + '<div class="hi-info">'
+        + '<div class="hi-main">'
+        + '<span class="hi-kwh">' + Utils.fmt(c.kWh, 1) + '</span><span class="hi-unit">度</span>'
+        + (isFast ? '<span class="hi-tag fast">快充</span>' : '<span class="hi-tag slow">慢充</span>')
+        + '</div>'
+        + '<div class="hi-date-row"><span class="hi-date-val">' + month + '月' + day + '日</span>'
+        + (subParts.length ? '<span class="hi-date-sep">·</span><span class="hi-meta">' + subParts.join(' · ') + '</span>' : '')
+        + '</div>'
+        + '</div>'
         + '<div class="hi-amount">¥' + Utils.fmtMoney(c.totalCost) + '</div>'
-        + '<svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
         + '</div>';
     },
 
@@ -1815,8 +1934,12 @@
     },
 
     setAnalysisSub: function (sub) {
-      // 首页入口：跳转到综合分析页（成本 + 电池健康）单页
-      this.switchTab('analysis');
+      this.analysisSub = sub || 'stats';
+      if (this.currentTab !== 'analysis') {
+        this.switchTab('analysis');
+      } else {
+        this.renderAnalysis();
+      }
     },
 
     /* ---- 分析（设计稿单页：本月 / 本年 / 全部） ---- */
@@ -1826,7 +1949,6 @@
     },
 
     renderAnalysis: function () {
-      if (!this.analysisPeriod) this.analysisPeriod = 'year';
       var vehicle = VehicleMgr.current();
       var vid = vehicle ? vehicle.id : null;
       var panel = document.getElementById('panel-analysis');
@@ -1838,60 +1960,78 @@
         return;
       }
 
-      var period = this.analysisPeriod;
-      var scope = this.analysisScope(period);
-      var months = this.analysisMonths(period, vid);
-      var monthly = Stats.monthlyCost(vid, months);
-      var line = this.buildAnalysisLine(monthly);
-      var pLabels = { month: '本月', year: '本年', all: '全部' };
+      var sub = this.analysisSub || 'stats';
+      var yearFilter = this.statsYear;
       var html = '';
 
       html += this.analysisNavHtml();
 
-      // 时间维度分段
-      html += '<div class="record-header-dark"><div class="seg-dark" id="analysisPeriodSegment">';
-      ['month', 'year', 'all'].forEach(function (p) {
-        html += '<button class="seg-item' + (period === p ? ' active' : '') + '" onclick="App.setAnalysisPeriod(\'' + p + '\')">' + pLabels[p] + '</button>';
+      // 子标签栏（统计 / 电池健康 / 充电建议）
+      html += '<div class="record-header-dark"><div class="seg-dark">';
+      var subs = [['stats', '统计'], ['health', '电池健康'], ['advice', '充电建议']];
+      subs.forEach(function (s) {
+        html += '<button class="seg-item' + (sub === s[0] ? ' active' : '') + '" onclick="App.setAnalysisSub(\'' + s[0] + '\')">' + s[1] + '</button>';
       });
       html += '</div></div>';
 
-      // 总费用英雄卡
-      var heroLabel = { month: '本月充电总费用', year: '本年充电总费用', all: '累计充电总费用' }[period];
-      html += '<div class="analysis-hero-dark">';
-      html += '<div class="ah-label">' + heroLabel + '</div>';
-      html += '<div class="ah-value">¥' + Utils.fmtMoney(scope.cost) + '</div>';
-      html += '<div class="ah-trend"><span class="trend-val">' + scope.count + ' 次</span>'
-        + '<span class="trend-label">均价 ¥' + Utils.fmtMoney(scope.avgPrice) + '/度 · 充入 ' + Utils.fmt(scope.kWh, 1) + ' 度</span></div>';
-      html += '</div>';
+      if (sub === 'health') {
+        // 电池健康
+        html += this.buildBatteryPanel(vid);
+      } else if (sub === 'advice') {
+        // 充电建议
+        html += this.buildAdvicePanel(vid);
+      } else {
+        // 统计：年份筛选 + 费用英雄卡 + 趋势图 + 快慢充比例
+        var years = Utils.availableYears(vid);
+        if (years.length) {
+          html += '<div class="year-filter-dark">';
+          html += '<button class="year-chip-dark' + (!yearFilter ? ' active' : '') + '" onclick="App.setStatsYear(\'\')">全部</button>';
+          years.forEach(function (y) {
+            html += '<button class="year-chip-dark' + (String(yearFilter) === y ? ' active' : '') + '" onclick="App.setStatsYear(\'' + y + '\')">' + y + '</button>';
+          });
+          html += '</div>';
+        }
 
-      // 月度费用趋势
-      html += '<div class="trend-chart-dark"><div class="tc-title">月度费用趋势 · ' + (period === 'year' ? '本年' : '近 ' + months.length + ' 个月') + '</div>';
-      html += '<div class="line-chart-dark"><svg viewBox="0 0 300 120" preserveAspectRatio="none">';
-      html += '<defs><linearGradient id="dgTrend" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8B9BAE" stop-opacity="0.25"/><stop offset="100%" stop-color="#8B9BAE" stop-opacity="0"/></linearGradient></defs>';
-      html += '<path d="' + line.area + '" fill="url(#dgTrend)"/>';
-      html += '<path d="' + line.d + '" fill="none" stroke="#8B9BAE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
-      line.pts.forEach(function (p, i) {
-        var r = i === line.pts.length - 1 ? 5 : 4;
-        var extra = i === line.pts.length - 1 ? ' stroke="rgba(255,255,255,0.5)" stroke-width="2"' : '';
-        var mk = monthly[i] ? monthly[i].monthKey : '';
-        html += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="#8B9BAE"' + extra + ' onclick="App.showChartSheet(\'month\',\'' + mk + '\')"/>';
-      });
-      html += '</svg></div>';
-      html += '<div class="line-chart-dark" style="height:auto;"><div class="x-labels">' + line.xlabels + '</div></div>';
-      html += '</div>';
+        var scope = this.analysisScopeByYear(yearFilter);
+        var months = yearFilter ? Utils.yearMonths(parseInt(yearFilter)) : Utils.chartRange(vid, 12);
+        var monthly = Stats.monthlyCost(vid, months);
+        var line = this.buildAnalysisLine(monthly);
+        var heroLabel = yearFilter ? (yearFilter + ' 年') : '累计';
 
-      // 快慢充比例
-      var total = scope.fastCount + scope.slowCount;
-      var fPct = total > 0 ? Math.round(scope.fastCount / total * 100) : 0;
-      html += '<div class="donut-dark"><div class="dc-title">快慢充比例</div><div class="donut-row-dark">';
-      html += this.buildDonut(scope.fastCount, scope.slowCount);
-      html += '<div class="donut-legend-dark">';
-      html += '<div class="legend-item"><span class="dot" style="background:#8B9BAE;"></span><span class="ll-label">快充</span><span class="ll-value">' + fPct + '%</span></div>';
-      html += '<div class="legend-item"><span class="dot" style="background:#2DD4BF;"></span><span class="ll-label">慢充</span><span class="ll-value">' + (100 - fPct) + '%</span></div>';
-      html += '</div></div></div>';
+        // 总费用英雄卡
+        html += '<div class="analysis-hero-dark">';
+        html += '<div class="ah-label">' + heroLabel + '充电总费用</div>';
+        html += '<div class="ah-value">¥' + Utils.fmtMoney(scope.cost) + '</div>';
+        html += '<div class="ah-trend"><span class="trend-val">' + scope.count + ' 次</span>'
+          + '<span class="trend-label">均价 ¥' + Utils.fmtMoney(scope.avgPrice) + '/度 · 充入 ' + Utils.fmt(scope.kWh, 1) + ' 度</span></div>';
+        html += '</div>';
 
-      // 电池健康
-      html += this.buildBatteryPanel(vid);
+        // 月度费用趋势
+        html += '<div class="trend-chart-dark"><div class="tc-title">月度费用趋势 · ' + heroLabel + '</div>';
+        html += '<div class="line-chart-dark"><svg viewBox="0 0 300 120" preserveAspectRatio="none">';
+        html += '<defs><linearGradient id="dgTrend" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8B9BAE" stop-opacity="0.25"/><stop offset="100%" stop-color="#8B9BAE" stop-opacity="0"/></linearGradient></defs>';
+        html += '<path d="' + line.area + '" fill="url(#dgTrend)"/>';
+        html += '<path d="' + line.d + '" fill="none" stroke="#8B9BAE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+        line.pts.forEach(function (p, i) {
+          var r = i === line.pts.length - 1 ? 5 : 4;
+          var extra = i === line.pts.length - 1 ? ' stroke="rgba(255,255,255,0.5)" stroke-width="2"' : '';
+          var mk = monthly[i] ? monthly[i].monthKey : '';
+          html += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="#8B9BAE"' + extra + ' onclick="App.showChartSheet(\'month\',\'' + mk + '\')"/>';
+        });
+        html += '</svg></div>';
+        html += '<div class="line-chart-dark" style="height:auto;"><div class="x-labels">' + line.xlabels + '</div></div>';
+        html += '</div>';
+
+        // 快慢充比例
+        var total = scope.fastCount + scope.slowCount;
+        var fPct = total > 0 ? Math.round(scope.fastCount / total * 100) : 0;
+        html += '<div class="donut-dark"><div class="dc-title">快慢充比例</div><div class="donut-row-dark">';
+        html += this.buildDonut(scope.fastCount, scope.slowCount);
+        html += '<div class="donut-legend-dark">';
+        html += '<div class="legend-item"><span class="dot" style="background:#8B9BAE;"></span><span class="ll-label">快充</span><span class="ll-value">' + fPct + '%</span></div>';
+        html += '<div class="legend-item"><span class="dot" style="background:#2DD4BF;"></span><span class="ll-label">慢充</span><span class="ll-value">' + (100 - fPct) + '%</span></div>';
+        html += '</div></div></div>';
+      }
 
       html += '<div style="height:24px;"></div>';
       panel.innerHTML = html;
@@ -1899,10 +2039,54 @@
 
     analysisNavHtml: function () {
       return '<div class="home-nav-dark">'
-        + '<button class="nav-btn" onclick="App.switchTab(\'records\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
         + '<span class="nav-title">数据分析</span>'
-        + '<button class="nav-btn" onclick="App.switchTab(\'home\')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h14V10" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
         + '</div>';
+    },
+
+    analysisScopeByYear: function (yearFilter) {
+      var vehicle = VehicleMgr.current();
+      var vid = vehicle ? vehicle.id : null;
+      var charges = vid ? ChargeMgr.list(vid) : [];
+      var sc = charges.filter(function (c) {
+        if (!c.date) return false;
+        if (!yearFilter) return true;
+        return c.date.slice(0, 4) === String(yearFilter);
+      });
+      var cost = 0, kWh = 0;
+      sc.forEach(function (c) { cost += (Number(c.totalCost) || 0); kWh += (Number(c.kWh) || 0); });
+      var fast = sc.filter(function (c) { return c.chargeType === 'fast'; }).length;
+      return { cost: cost, kWh: kWh, count: sc.length, fastCount: fast, slowCount: sc.length - fast, avgPrice: kWh > 0 ? cost / kWh : 0 };
+    },
+
+    buildAdvicePanel: function (vid) {
+      var vehicle = VehicleMgr.current();
+      var rec = Recommender.generate(vid);
+      if (!rec || !rec.tips || !rec.tips.length) {
+        return '<div class="records-empty" style="margin:24px 16px;">' + Icons.info + '<div class="re-title">暂无建议</div></div>';
+      }
+      var iconMap = {
+        check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13" stroke-linecap="round"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-linecap="round"/></svg>',
+        info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12" stroke-linecap="round"/><line x1="12" y1="8" x2="12.01" y2="8" stroke-linecap="round"/></svg>'
+      };
+      var clsMap = { check: 'advice-ok', alert: 'advice-warn', info: 'advice-info' };
+      var html = '<div class="advice-summary-dark">' + rec.summary + '</div>';
+      html += '<div class="advice-list-dark">';
+      rec.tips.forEach(function (tip) {
+        html += '<div class="advice-item-dark ' + (clsMap[tip.icon] || 'advice-info') + '">'
+          + '<div class="advice-icon">' + (iconMap[tip.icon] || iconMap.info) + '</div>'
+          + '<div class="advice-body"><div class="advice-title">' + tip.title + '</div>'
+          + '<div class="advice-text">' + tip.text + '</div></div></div>';
+      });
+      html += '</div>';
+      if (vehicle) {
+        html += '<div class="advice-params-dark"><div class="ap-title">充电参数参考</div>'
+          + '<div class="ap-row"><span>电池容量</span><b>' + vehicle.batteryCapacity + ' kWh</b></div>';
+        if (vehicle.supportsFastCharge) html += '<div class="ap-row"><span>支持快充</span><b>是</b></div>';
+        if (vehicle.maxChargePower > 0) html += '<div class="ap-row"><span>最大快充功率</span><b>' + vehicle.maxChargePower + ' kW</b></div>';
+        html += '</div>';
+      }
+      return html;
     },
 
     analysisScope: function (period) {
@@ -2425,6 +2609,7 @@
       } else {
         document.getElementById('chargeFormPageTitle').textContent = '添加充电记录';
       }
+      if (typeof this.refreshCostPreview === 'function') this.refreshCostPreview();
       document.getElementById('chargeFormPage').classList.add('show');
       document.getElementById('chargeFormPage').scrollTop = 0;
       // 压入历史栈，使系统级返回（浏览器返回键/手势）先关闭本页而非退出应用
@@ -2459,7 +2644,7 @@
     },
 
     shakeSaveBtn: function () {
-      var btn = document.querySelector('#chargeFormPage-form .btn[type=submit]');
+      var btn = document.querySelector('#chargeFormPage-form .btn-accent');
       if (!btn) return;
       btn.classList.remove('shake');
       void btn.offsetWidth; // 重置动画

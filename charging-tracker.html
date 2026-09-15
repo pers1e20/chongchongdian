@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN"><head>
+<html lang="zh-CN" class="trae-edit-mode-dragging"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>冲充电</title>
@@ -1242,12 +1242,12 @@
       background:
         radial-gradient(80% 44% at 100% -10%, rgba(139,155,174,.20), transparent 62%),
         radial-gradient(72% 42% at 0% 112%, rgba(90,74,107,.18), transparent 62%),
-        rgba(9,12,18,.84);
+        #090C12;
     }
-    .page-header { background: var(--bg-base); border-bottom: 1px solid var(--border-default); box-shadow: none; }
-    .page-back-btn { background: var(--bg-elevated); border: 1px solid var(--border-default); }
-    .page-back-btn svg { color: var(--text-primary); }
-    .page-header h2 { color: var(--text-primary); }
+    .page-header { background: transparent; border-bottom: 0.5px solid rgba(255,255,255,0.06); box-shadow: none; }
+    .page-back-btn { background: rgba(255,255,255,0.06); border: 0.5px solid rgba(255,255,255,0.08); }
+    .page-back-btn svg { color: rgba(255,255,255,0.60); }
+    .page-header h2 { color: rgba(255,255,255,0.90); }
 
     /* 编辑记录样式微调 */
     .warn-text { color: var(--warning); }
@@ -1344,19 +1344,28 @@
       pointer-events: none; z-index: 0;
     }
     .page-header {
-      background: rgba(10,12,16,0.62);
-      -webkit-backdrop-filter: blur(26px) saturate(170%);
-      backdrop-filter: blur(26px) saturate(170%);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      box-shadow: 0 6px 24px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.07);
+      position: sticky; top: 4px; z-index: 12;
+      display: flex; align-items: center; gap: 8px;
+      margin: 4px 12px; padding: 8px 16px;
+      border-radius: var(--r-2xl);
+      background: rgba(18,18,22,0.60);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      border: 0.5px solid rgba(255,255,255,0.05);
+      box-shadow: var(--shadow-sm), var(--specular-top);
     }
-    .page-header h2 { color: var(--text-primary); }
+    .page-header h2 { flex: 1; text-align: center; font-size: 17px; font-weight: 600; color: rgba(255,255,255,0.90); }
     .page-back-btn {
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.12);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
+      flex: 0 0 32px; width: 32px; height: 32px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: var(--r-capsule);
+      background: rgba(255,255,255,.06);
+      border: 0.5px solid rgba(255,255,255,.08);
+      cursor: pointer; padding: 0;
     }
-    .page-back-btn svg { color: var(--accent-frost); }
+    .page-back-btn:active { background: rgba(255,255,255,.12); }
+    .page-back-btn svg { width: 18px; height: 18px; color: rgba(255,255,255,0.60); }
+    .page-header-spacer { flex: 0 0 32px; }
     .form-section-card {
       position: relative;
       box-shadow: 0 10px 30px rgba(0,0,0,.24), 0 0 34px rgba(139,155,174,.07), inset 0 1px 0 rgba(255,255,255,.06);
@@ -1397,6 +1406,70 @@
       color: var(--accent-frost);
       box-shadow: 0 0 14px rgba(139,155,174,.28), inset 0 1px 0 rgba(255,255,255,.10);
     }
+
+    /* ===== 表单独立页：设计稿表单组件（form-group-dark 系列） ===== */
+    .form-group-dark { margin: var(--sp-4) var(--sp-4) 0; }
+    .form-group-title-dark {
+      font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.30);
+      margin-bottom: var(--sp-2); padding-left: 2px;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .form-list-dark {
+      border-radius: var(--r-lg); overflow: hidden;
+      background: rgba(20,20,24,0.50);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      backdrop-filter: blur(20px) saturate(140%);
+      border: 0.5px solid rgba(255,255,255,0.04);
+      box-shadow: 0 10px 30px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .form-row-dark {
+      display: flex; align-items: center; padding: 14px 16px;
+      gap: 12px; border-bottom: 0.5px solid rgba(255,255,255,0.03);
+    }
+    .form-list-dark > .form-row-dark:last-child { border-bottom: none; }
+    .form-row-dark .fr-label {
+      font-size: 16px; width: 84px; flex-shrink: 0; color: rgba(255,255,255,0.70);
+    }
+    .form-row-dark .fr-input {
+      font-size: 16px; border: none; background: transparent; outline: none;
+      flex: 1; min-width: 0; text-align: right; color: rgba(255,255,255,0.90);
+      font-family: var(--font-mono); padding: 0;
+    }
+    .form-row-dark .fr-input::placeholder { color: rgba(255,255,255,0.25); }
+    .form-row-dark input[type=date].fr-input::-webkit-calendar-picker-indicator {
+      filter: invert(0.8) opacity(0.4); cursor: pointer;
+    }
+    .form-row-dark .fr-suffix { font-size: 14px; color: rgba(255,255,255,0.30); flex-shrink: 0; }
+    .form-row-dark .fr-placeholder { font-size: 16px; color: rgba(255,255,255,0.25); flex: 1; text-align: right; }
+    .form-list-dark textarea {
+      width: 100%; min-height: 72px; border: none; background: transparent; outline: none;
+      resize: none; color: rgba(255,255,255,0.90); font-size: 15px; line-height: 1.5;
+      font-family: var(--font-sans); padding: 0;
+    }
+    .form-list-dark textarea::placeholder { color: rgba(255,255,255,0.25); }
+    /* 表单内快充/慢充分段 */
+    #cf_chargeTypeSegment {
+      display: flex; border-radius: var(--r-lg); overflow: hidden;
+      background: rgba(20,20,24,0.50);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      backdrop-filter: blur(20px) saturate(140%);
+      border: 0.5px solid rgba(255,255,255,0.04);
+      box-shadow: 0 10px 30px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    #cf_chargeTypeSegment .form-segment-btn {
+      flex: 1; justify-content: center; padding: 14px 0;
+      height: auto; gap: 8px;
+      background: transparent; border: none; box-shadow: none;
+      border-radius: 0; color: rgba(255,255,255,0.45); font-size: 15px;
+      -webkit-backdrop-filter: none; backdrop-filter: none;
+      transition: color .18s, background .18s;
+    }
+    #cf_chargeTypeSegment .form-segment-btn.active {
+      background: rgba(139,155,174,.14);
+      color: rgba(255,255,255,0.95);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    #cf_chargeTypeSegment .form-segment-btn + .form-segment-btn { border-left: 0.5px solid rgba(255,255,255,0.04); }
 
     /* ===== 交互反馈与可达性 ===== */
     :focus-visible { outline: 2px solid var(--accent-frost); outline-offset: 2px; border-radius: 6px; }
@@ -1623,6 +1696,7 @@
     }
     .btn-accent:hover { box-shadow: 0 6px 24px rgba(139,155,174,0.3); transform: scale(1.02); }
     .btn-accent:active { transform: scale(0.97); }
+    .record-btn-row .btn-accent.shake { animation: btnShake .45s ease; }
 
     .seg-dark {
       background: rgba(255,255,255,0.04);
@@ -1696,9 +1770,23 @@
     .tab-item .tab-icon-active, .tab-item .tab-label-active { color: var(--brand-gold); }
     .tab-item .tab-icon-inactive, .tab-item .tab-label-inactive { color: rgba(255,255,255,0.30); }
 
+    /* 底部导航中央+按钮 */
+    .tab-add-btn {
+      flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%;
+      border: 0.5px solid rgba(255,255,255,0.10);
+      background: linear-gradient(135deg, rgba(139,155,174,0.30), rgba(139,155,174,0.16));
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: rgba(255,255,255,0.95);
+      box-shadow: 0 4px 16px rgba(139,155,174,0.25), var(--specular-top);
+      transition: transform var(--dur-fast) var(--ease-spring);
+      margin: 0 4px;
+    }
+    .tab-add-btn:active { transform: scale(0.90); }
+    .tab-add-btn svg { width: 24px; height: 24px; }
+
     /* 页面顶部毛玻璃导航 */
     .home-nav-dark {
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; justify-content: center; align-items: center;
       padding: 8px 16px; margin: 0 12px;
       border-radius: var(--r-2xl);
       background: rgba(18,18,22,0.60);
@@ -1708,8 +1796,9 @@
       box-shadow: var(--shadow-sm), var(--specular-top);
       position: sticky; top: 4px; z-index: 8;
     }
-    .home-nav-dark .nav-title { font-size: 17px; font-weight: 600; color: rgba(255,255,255,0.9); }
+    .home-nav-dark .nav-title { font-size: 17px; font-weight: 600; color: rgba(255,255,255,0.9); text-align: center; align-self: center; }
     .home-nav-dark .nav-btn {
+      position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
       min-width: 32px; height: 32px;
       display: inline-flex; align-items: center; justify-content: center;
       color: rgba(255,255,255,0.5);
@@ -1866,8 +1955,24 @@
     .record-summary-dark .rs-amount { font-size: 34px; font-weight: 700; font-family: var(--font-mono); color: var(--brand-gold); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
     .record-summary-dark .rs-detail { font-size: 13px; color: rgba(255,255,255,0.30); margin-top: 4px; }
 
-    .record-btn-row { padding: 0 var(--sp-4) var(--sp-4); }
-    .record-btn-row .btn-accent { width: 100%; font-size: 17px; padding: 15px; }
+    .record-btn-row {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      background: rgba(9,12,18,0.72);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      backdrop-filter: blur(20px) saturate(160%);
+      border-top: 0.5px solid rgba(255,255,255,0.06);
+      box-shadow: 0 -6px 24px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    .record-btn-row > * { max-width: 600px; margin: 0 auto; }
+    .record-btn-row .btn-accent {
+      width: 100%; font-size: 17px; padding: 15px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 52px; white-space: nowrap;
+    }
+    .record-btn-row .btn-accent svg {
+      width: 22px; height: 22px; flex-shrink: 0; display: block;
+    }
 
     .history-section-dark { margin: var(--sp-5) var(--sp-4); }
     .history-section-dark h4 { font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.90); margin: 0 0 var(--sp-2); padding-left: var(--sp-2); }
@@ -1885,13 +1990,40 @@
       cursor: pointer;
     }
     .history-item-dark:last-child { border-bottom: none; }
-    .history-item-dark .hi-date { text-align: center; flex-shrink: 0; width: 38px; }
-    .history-item-dark .hi-date .day { font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.80); font-variant-numeric: tabular-nums; }
-    .history-item-dark .hi-date .month { font-size: 12px; color: rgba(255,255,255,0.30); }
     .history-item-dark .hi-info { flex: 1; min-width: 0; }
-    .history-item-dark .hi-title { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .history-item-dark .hi-sub { font-size: 13px; color: rgba(255,255,255,0.25); }
-    .history-item-dark .hi-amount { font-size: 15px; font-weight: 600; font-family: var(--font-mono); color: rgba(255,255,255,0.70); }
+    .history-item-dark .hi-amount { font-size: 16px; font-weight: 700; font-family: var(--font-mono); color: rgba(255,255,255,0.85); font-variant-numeric: tabular-nums; }
+    /* 新版图标 + 度数/价格高优先级布局 */
+    .history-item-dark .hi-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 0.5px solid rgba(255,255,255,0.04); }
+    .history-item-dark .hi-icon.ic-fast { background: linear-gradient(135deg, rgba(139,155,174,0.20), rgba(139,155,174,0.08)); }
+    .history-item-dark .hi-icon.ic-slow { background: linear-gradient(135deg, rgba(45,212,191,0.14), rgba(45,212,191,0.06)); }
+    .history-item-dark .hi-icon svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .history-item-dark .hi-icon.ic-fast svg { color: rgba(159,176,194,0.72); }
+    .history-item-dark .hi-icon.ic-slow svg { color: rgba(45,212,191,0.65); }
+    .history-item-dark .hi-main { display: flex; align-items: center; gap: 6px; }
+    .history-item-dark .hi-kwh { font-size: 18px; font-weight: 700; color: rgba(255,255,255,0.92); font-family: var(--font-mono); font-variant-numeric: tabular-nums; line-height: 1.2; }
+    .history-item-dark .hi-unit { font-size: 12px; color: rgba(255,255,255,0.35); font-weight: 500; }
+    .history-item-dark .hi-tag { flex-shrink: 0; height: 20px; line-height: 20px; padding: 0 8px; font-size: 11px; font-weight: 500; border-radius: 9999px; }
+    .history-item-dark .hi-tag.fast { background: rgba(139,155,174,0.12); color: rgba(159,176,194,0.72); border: 0.5px solid rgba(139,155,174,0.12); }
+    .history-item-dark .hi-tag.slow { background: rgba(45,212,191,0.10); color: rgba(45,212,191,0.65); border: 0.5px solid rgba(45,212,191,0.10); }
+    .history-item-dark .hi-date-row { display: flex; align-items: center; gap: 6px; margin-top: 3px; min-width: 0; }
+    .history-item-dark .hi-date-val { font-size: 12px; color: rgba(255,255,255,0.45); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    .history-item-dark .hi-date-sep { color: rgba(255,255,255,0.15); flex-shrink: 0; }
+    .history-item-dark .hi-meta { font-size: 12px; color: rgba(255,255,255,0.28); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .recent-item-dark .ri-icon.ic-fast { background: linear-gradient(135deg, rgba(139,155,174,0.18), rgba(139,155,174,0.08)); }
+    .recent-item-dark .ri-icon.ic-slow { background: linear-gradient(135deg, rgba(45,212,191,0.14), rgba(45,212,191,0.06)); }
+
+    /* 数据弹层操作按钮（编辑/删除） */
+    .ds-action-row { display: flex; align-items: center; gap: 8px; }
+    .ds-icon-btn { width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .18s; }
+    .ds-icon-btn:active { background: rgba(255,255,255,0.12); }
+    .ds-icon-btn svg { width: 16px; height: 16px; color: rgba(255,255,255,0.55); }
+    .ds-icon-btn.ds-danger svg { color: rgba(239,68,68,0.65); }
+    .ds-icon-btn.ds-danger:active { background: rgba(239,68,68,0.12); }
+
+    /* 年份筛选 */
+    .year-filter-dark { display: flex; gap: 8px; padding: var(--sp-2) var(--sp-4) 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .year-chip-dark { flex-shrink: 0; padding: 6px 16px; border-radius: 9999px; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.04); border: 0.5px solid rgba(255,255,255,0.06); cursor: pointer; transition: all .18s; }
+    .year-chip-dark.active { color: var(--brand-gold); background: rgba(139,155,174,0.12); border-color: rgba(139,155,174,0.20); }
 
     .analysis-hero-dark {
       margin: var(--sp-3) var(--sp-4);
@@ -2036,9 +2168,12 @@
     .ic-teal { background: linear-gradient(135deg, #2DD4BF, rgba(45,212,191,0.7)); }
     .ic-purple { background: linear-gradient(135deg, #8B5CF6, rgba(139,92,246,0.7)); }
     .ic-blue-soft { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+    /* 低饱和度快充/慢充图标色（暗色液态玻璃调色板） */
+    .ic-fast { background: linear-gradient(135deg, rgba(139,155,174,0.20), rgba(139,155,174,0.10)); }
+    .ic-slow { background: linear-gradient(135deg, rgba(45,212,191,0.16), rgba(45,212,191,0.08)); }
 
     /* ============================================================
-       记录页重构：列表分组 + 隐藏式筛选 + 悬浮新增
+       记录页重构：列表分组 + 隐藏式筛选
        ============================================================ */
     .records-toolbar-dark {
       display: flex; align-items: center; justify-content: space-between;
@@ -2203,6 +2338,8 @@
     .ds-empty svg { width: 30px; height: 30px; color: rgba(255,255,255,0.20); margin-bottom: var(--sp-2); }
     .ds-empty .de-title { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.55); }
     .ds-empty .de-sub { font-size: 12px; color: rgba(255,255,255,0.30); margin-top: 4px; }
+    .ds-note { font-size: 12px; line-height: 1.6; color: rgba(255,255,255,0.30); background: rgba(255,255,255,0.03); border-radius: 12px; padding: 12px 14px; margin-top: 14px; }
+    .ds-note b { color: rgba(255,255,255,0.50); }
 
     /* 图表可点击提示 */
     .mini-chart .bar { cursor: pointer; }
@@ -2217,21 +2354,24 @@
 
   <!-- 主内容 -->
   <main class="main">
-    <section class="tab-panel active" id="panel-home"><div class="home-nav-dark"><button class="nav-btn" onclick="App.switchTab('records')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button><span class="nav-title">冲充电</span><button class="nav-btn" onclick="App.switchTab('profile')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button></div><div class="home-hero-dark"><div class="month-label">2026年9月 · 本月费用</div><div class="amount">¥0<span class="unit">.00</span></div><div class="hero-sub"><span class="sub-item">充入 <strong>0.0</strong> 度</span><span class="sub-item">均价 <strong>¥0.00</strong>/度</span><span class="sub-item"><strong>0</strong> 次</span></div></div><div class="kpi-grid-dark"><div class="kpi-dark"><div class="kpi-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v12M9 9h4.5a2 2 0 0 1 0 4H9 M9 13h5a2 2 0 0 1 0 4H9" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><div class="kpi-value">¥338.37</div><div class="kpi-label">累计费用</div></div><div class="kpi-dark"><div class="kpi-icon ic-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"></polygon></svg></div><div class="kpi-value">691.8</div><div class="kpi-label">累计度数</div></div><div class="kpi-dark"><div class="kpi-icon ic-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2"></rect><line x1="23" y1="13" x2="23" y2="11"></line><line x1="6" y1="10" x2="6" y2="14" stroke-linecap="round"></line><line x1="10" y1="10" x2="10" y2="14" stroke-linecap="round"></line><line x1="14" y1="10" x2="14" y2="14" stroke-linecap="round"></line></svg></div><div class="kpi-value">17</div><div class="kpi-label">充电次数</div></div><div class="kpi-dark"><div class="kpi-icon ic-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 14l4-4M3.34 19a10 10 0 1 1 17.32 0" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><div class="kpi-value">—</div><div class="kpi-label">每公里费用</div></div></div><div class="home-section-header"><h4>费用趋势</h4><span class="see-all" onclick="App.switchTab('analysis');App.setAnalysisSub('stats')">更多 ›</span></div><div class="chart-card-dark" style="position: relative;"><div class="chart-title">近 6 个月充电费用</div><div class="mini-chart"><div class="bar muted" style="height:8%;" title="0.00"><span class="bar-label">4月</span></div><div class="bar muted" style="height:62%;" title="63.93"><span class="bar-label">5月</span></div><div class="bar muted" style="height:76%;" title="77.82"><span class="bar-label">6月</span></div><div class="bar muted" style="height:92%;" title="94.03"><span class="bar-label">7月</span></div><div class="bar muted" style="height:100%;" title="102.59"><span class="bar-label">8月</span></div><div class="bar active" style="height:8%;" title="0.00"><span class="bar-label">9月</span></div></div></div><div class="home-section-header"><h4>关键指标</h4></div><div class="stat-grid-dark"><div class="stat-mini-dark" onclick="App.switchTab('analysis');App.setAnalysisSub('stats')"><div class="sm-icon-row"><div class="sm-icon ic-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 14l4-4M3.34 19a10 10 0 1 1 17.32 0" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span class="sm-label">平均电耗</span></div><div class="sm-value">—</div><div class="sm-trend">补录里程后可算</div></div><div class="stat-mini-dark" onclick="App.showStatDetail('totalKWh', 'mu0xynfhqdjctz')"><div class="sm-icon-row"><div class="sm-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v12M9 9h4.5a2 2 0 0 1 0 4H9 M9 13h5a2 2 0 0 1 0 4H9" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span class="sm-label">平均电价</span></div><div class="sm-value">¥0.49</div><div class="sm-trend">元/度</div></div><div class="stat-mini-dark" onclick="App.showStatDetail('fastslow', 'mu0xynfhqdjctz')"><div class="sm-icon-row"><div class="sm-icon ic-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.178 8c5.384 0 5.384 8 0 8-5.384 0-7.356-8-12.74-8-5.384 0-5.384 8 0 8 5.384 0 7.356-8 12.74-8z" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span class="sm-label">快慢充比</span></div><div class="sm-value">82:18</div><div class="sm-trend">快充 82%</div></div><div class="stat-mini-dark" onclick="App.switchTab('analysis');App.setAnalysisSub('health')"><div class="sm-icon-row"><div class="sm-icon ic-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span class="sm-label">电池健康</span></div><div class="sm-value">—</div><div class="sm-trend">补录电量后可算</div></div></div><div class="home-section-header"><h4>最近充电</h4><span class="see-all" onclick="App.switchTab('records')">全部 ›</span></div><div class="recent-list-dark"><div class="recent-item-dark" onclick="App.editCharge('mu0xynfi2sr4ag')"><div class="ri-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"></polygon></svg></div><div class="ri-info"><div class="ri-title">快充充电</div><div class="ri-sub">2026.08.30 · 52.0 度 · 快充</div></div><div class="ri-amount">¥29.30</div></div><div class="recent-item-dark" onclick="App.editCharge('mu0xynfinlzpmr')"><div class="ri-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"></polygon></svg></div><div class="ri-info"><div class="ri-title">快充充电</div><div class="ri-sub">2026.08.26 · 30.0 度 · 快充</div></div><div class="ri-amount">¥18.40</div></div><div class="recent-item-dark" onclick="App.editCharge('mu0xynfimprgp1')"><div class="ri-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"></polygon></svg></div><div class="ri-info"><div class="ri-title">快充充电</div><div class="ri-sub">2026.08.16 · 52.0 度 · 快充</div></div><div class="ri-amount">¥31.00</div></div></div></section>
-    <section class="tab-panel" id="panel-records"></section>
-    <section class="tab-panel" id="panel-analysis"><div class="home-nav-dark"><button class="nav-btn" onclick="App.switchTab('records')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></button><span class="nav-title">数据分析</span><button class="nav-btn" onclick="App.switchTab('home')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h14V10" stroke-linecap="round" stroke-linejoin="round"></path></svg></button></div><div class="record-header-dark"><div class="seg-dark" id="analysisPeriodSegment"><button class="seg-item" onclick="App.setAnalysisPeriod('month')">本月</button><button class="seg-item active" onclick="App.setAnalysisPeriod('year')">本年</button><button class="seg-item" onclick="App.setAnalysisPeriod('all')">全部</button></div></div><div class="analysis-hero-dark"><div class="ah-label">本年充电总费用</div><div class="ah-value">¥338.37</div><div class="ah-trend"><span class="trend-val">17 次</span><span class="trend-label">均价 ¥0.49/度 · 充入 691.8 度</span></div></div><div class="trend-chart-dark" style="position: relative;"><div class="tc-title">月度费用趋势 · 本年</div><div class="line-chart-dark"><svg viewBox="0 0 300 120" preserveAspectRatio="none"><defs><linearGradient id="dgTrend" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8B9BAE" stop-opacity="0.25"></stop><stop offset="100%" stop-color="#8B9BAE" stop-opacity="0"></stop></linearGradient></defs><path d="M0.0 108.0 L37.5 108.0 L75.0 108.0 L112.5 108.0 L150.0 56.0 L187.5 44.7 L225.0 31.5 L262.5 24.5 L300.0 108.0 L300.0 120 L0.0 120 Z" fill="url(#dgTrend)"></path><path d="M0.0 108.0 L37.5 108.0 L75.0 108.0 L112.5 108.0 L150.0 56.0 L187.5 44.7 L225.0 31.5 L262.5 24.5 L300.0 108.0" fill="none" stroke="#8B9BAE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="0.0" cy="108.0" r="4" fill="#8B9BAE"></circle><circle cx="37.5" cy="108.0" r="4" fill="#8B9BAE"></circle><circle cx="75.0" cy="108.0" r="4" fill="#8B9BAE"></circle><circle cx="112.5" cy="108.0" r="4" fill="#8B9BAE"></circle><circle cx="150.0" cy="56.0" r="4" fill="#8B9BAE"></circle><circle cx="187.5" cy="44.7" r="4" fill="#8B9BAE"></circle><circle cx="225.0" cy="31.5" r="4" fill="#8B9BAE"></circle><circle cx="262.5" cy="24.5" r="4" fill="#8B9BAE"></circle><circle cx="300.0" cy="108.0" r="5" fill="#8B9BAE" stroke="rgba(255,255,255,0.5)" stroke-width="2"></circle></svg></div><div class="line-chart-dark" style="height:auto;"><div class="x-labels"><span>1月</span><span>3月</span><span>4月</span><span>6月</span><span>7月</span><span>9月</span></div></div></div><div class="donut-dark"><div class="dc-title">快慢充比例</div><div class="donut-row-dark"><svg class="donut-svg-dark" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12"></circle><circle cx="50" cy="50" r="40" fill="none" stroke="#8B9BAE" stroke-width="12" stroke-dasharray="207.0 251.3" transform="rotate(-90 50 50)"></circle><circle cx="50" cy="50" r="40" fill="none" stroke="#2DD4BF" stroke-width="12" stroke-dasharray="44.4 251.3" stroke-dashoffset="-207.0" transform="rotate(-90 50 50)"></circle></svg><div class="donut-legend-dark"><div class="legend-item"><span class="dot" style="background:#8B9BAE;"></span><span class="ll-label">快充</span><span class="ll-value">82%</span></div><div class="legend-item"><span class="dot" style="background:#2DD4BF;"></span><span class="ll-label">慢充</span><span class="ll-value">18%</span></div></div></div></div><div class="battery-dark"><div class="bh-title">电池健康评估</div><div class="battery-ring-row-dark"><svg class="battery-ring-svg-dark" viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"></circle><circle cx="60" cy="60" r="50" fill="none" stroke="#F59E0B" stroke-width="8" stroke-dasharray="207.3 314.2" transform="rotate(-90 60 60)" stroke-linecap="round"></circle></svg><div class="battery-ring-info-dark"><div class="bh-score">66</div><div class="bh-label">健康指数</div><div class="bh-status" style="color:#F59E0B;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> 一般</div></div></div><div class="battery-metrics-dark"><div class="battery-metric-dark"><span class="bm-label">容量健康</span><div class="bm-bar"><div class="bm-bar-fill" style="width:100%;background:#F59E0B;"></div></div><span class="bm-value">100%</span></div><div class="battery-metric-dark"><span class="bm-label">充电习惯</span><div class="bm-bar"><div class="bm-bar-fill" style="width:14%;background:#8B9BAE;"></div></div><span class="bm-value">14%</span></div><div class="battery-metric-dark"><span class="bm-label">深放频率</span><div class="bm-bar"><div class="bm-bar-fill" style="width:100%;background:#F59E0B;"></div></div><span class="bm-value">100%</span></div></div></div><div style="height:24px;"></div></section>
+    <section class="tab-panel" id="panel-home"><div class="home-nav-dark"><span class="nav-title">冲充电</span></div><div class="home-hero-dark"><div class="month-label">2026年9月 · 本月费用</div><div class="amount">¥0<span class="unit">.00</span></div><div class="hero-sub"><span class="sub-item">充入 <strong>0.0</strong> 度</span><span class="sub-item">均价 <strong>¥0.00</strong>/度</span><span class="sub-item"><strong>0</strong> 次</span></div></div><div class="kpi-grid-dark"><div class="kpi-dark"><div class="kpi-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v12M9 9h4.5a2 2 0 0 1 0 4H9 M9 13h5a2 2 0 0 1 0 4H9" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><div class="kpi-value">¥338.37</div><div class="kpi-label">累计费用</div></div><div class="kpi-dark"><div class="kpi-icon ic-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"></polygon></svg></div><div class="kpi-value">691.8</div><div class="kpi-label">累计度数</div></div><div class="kpi-dark"><div class="kpi-icon ic-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2"></rect><line x1="23" y1="13" x2="23" y2="11"></line><line x1="6" y1="10" x2="6" y2="14" stroke-linecap="round"></line><line x1="10" y1="10" x2="10" y2="14" stroke-linecap="round"></line><line x1="14" y1="10" x2="14" y2="14" stroke-linecap="round"></line></svg></div><div class="kpi-value">17</div><div class="kpi-label">充电次数</div></div><div class="kpi-dark"><div class="kpi-icon ic-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 14l4-4M3.34 19a10 10 0 1 1 17.32 0" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><div class="kpi-value">—</div><div class="kpi-label">每公里费用</div></div></div><div class="home-section-header"><h4>费用趋势</h4><span class="see-all" onclick="App.switchTab('analysis');App.setAnalysisSub('stats')">更多 ›</span></div><div class="chart-card-dark"><div class="chart-title">近 6 个月充电费用</div><div class="mini-chart"><div class="bar muted" style="height:8%;" title="0.00" onclick="App.showChartSheet('month','2026-04')"><span class="bar-label">4月</span></div><div class="bar muted" style="height:62%;" title="63.93" onclick="App.showChartSheet('month','2026-05')"><span class="bar-label">5月</span></div><div class="bar muted" style="height:76%;" title="77.82" onclick="App.showChartSheet('month','2026-06')"><span class="bar-label">6月</span></div><div class="bar muted" style="height:92%;" title="94.03" onclick="App.showChartSheet('month','2026-07')"><span class="bar-label">7月</span></div><div class="bar muted" style="height:100%;" title="102.59" onclick="App.showChartSheet('month','2026-08')"><span class="bar-label">8月</span></div><div class="bar active" style="height:8%;" title="0.00" onclick="App.showChartSheet('month','2026-09')"><span class="bar-label">9月</span></div></div></div><div class="home-section-header"><h4>关键指标</h4></div><div class="stat-grid-dark"><div class="stat-mini-dark" onclick="App.switchTab('analysis');App.setAnalysisSub('stats')"><div class="sm-icon-row"><div class="sm-icon ic-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 14l4-4M3.34 19a10 10 0 1 1 17.32 0" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span class="sm-label">平均电耗</span></div><div class="sm-value">—</div><div class="sm-trend">补录里程后可算</div></div><div class="stat-mini-dark" onclick="App.showStatDetail('totalKWh', 'mu0xynfhqdjctz')"><div class="sm-icon-row"><div class="sm-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v12M9 9h4.5a2 2 0 0 1 0 4H9 M9 13h5a2 2 0 0 1 0 4H9" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span class="sm-label">平均电价</span></div><div class="sm-value">¥0.49</div><div class="sm-trend">元/度</div></div><div class="stat-mini-dark" onclick="App.showStatDetail('fastslow', 'mu0xynfhqdjctz')"><div class="sm-icon-row"><div class="sm-icon ic-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.178 8c5.384 0 5.384 8 0 8-5.384 0-7.356-8-12.74-8-5.384 0-5.384 8 0 8 5.384 0 7.356-8 12.74-8z" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span class="sm-label">快慢充比</span></div><div class="sm-value">82:18</div><div class="sm-trend">快充 82%</div></div><div class="stat-mini-dark" onclick="App.switchTab('analysis');App.setAnalysisSub('health')"><div class="sm-icon-row"><div class="sm-icon ic-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span class="sm-label">电池健康</span></div><div class="sm-value">—</div><div class="sm-trend">补录电量后可算</div></div></div><div class="home-section-header"><h4>最近充电</h4><span class="see-all" onclick="App.switchTab('records')">全部 ›</span></div><div class="recent-list-dark"><div class="recent-item-dark" onclick="App.showChargeDetail('mu0xynfi2sr4ag')"><div class="ri-icon ic-fast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"></polygon></svg></div><div class="ri-info"><div class="ri-title">52.0 度</div><div class="ri-sub">2026.08.30</div></div><div class="ri-amount">¥29.30</div></div><div class="recent-item-dark" onclick="App.showChargeDetail('mu0xynfinlzpmr')"><div class="ri-icon ic-fast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"></polygon></svg></div><div class="ri-info"><div class="ri-title">30.0 度</div><div class="ri-sub">2026.08.26</div></div><div class="ri-amount">¥18.40</div></div><div class="recent-item-dark" onclick="App.showChargeDetail('mu0xynfimprgp1')"><div class="ri-icon ic-fast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"></polygon></svg></div><div class="ri-info"><div class="ri-title">52.0 度</div><div class="ri-sub">2026.08.16</div></div><div class="ri-amount">¥31.00</div></div></div></section>
+    <section class="tab-panel active" id="panel-records"><div class="home-nav-dark"><button class="nav-btn" onclick="App.switchTab('home')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></button><span class="nav-title">充电记录</span><button class="nav-action" onclick="App.openChargePage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19" stroke-linecap="round"></line><line x1="5" y1="12" x2="19" y2="12" stroke-linecap="round"></line></svg>新增</button></div><div class="records-toolbar-dark"><div class="toolbar-title">全部记录<span class="tb-sub">17 条</span></div><div class="toolbar-actions"><button class="filter-toggle-btn" onclick="App.toggleRecordsFilter()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" stroke-linecap="round" stroke-linejoin="round"></polygon></svg>筛选</button><button class="records-add-btn" onclick="App.openChargePage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19" stroke-linecap="round"></line><line x1="5" y1="12" x2="19" y2="12" stroke-linecap="round"></line></svg>新增</button></div></div><div class="records-list-wrap"><div class="records-year-group"><div class="records-year-title">2026 年<span class="ry-count">¥338.37 · 17 条</span></div><div class="records-month-group"><div class="records-month-head"><span class="rm-title">8月</span><div class="rm-stats"><span class="rm-stat">费用 <b>¥102.59</b></span><span class="rm-stat"><b>182.0</b> 度</span><span class="rm-stat"><b>4</b> 次</span></div></div><div class="records-month-list"><div class="history-item-dark" onclick="App.editCharge('mu0xynfi2sr4ag')"><div class="hi-date"><div class="day">30</div><div class="month">8月</div></div><div class="hi-info"><div class="hi-title"><span class="type">快充</span></div><div class="hi-sub">52.0 度 · 快充</div></div><div class="hi-amount">¥29.30</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div><div class="history-item-dark" onclick="App.editCharge('mu0xynfinlzpmr')"><div class="hi-date"><div class="day">26</div><div class="month">8月</div></div><div class="hi-info"><div class="hi-title"><span class="type">快充</span></div><div class="hi-sub">30.0 度 · 快充</div></div><div class="hi-amount">¥18.40</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div><div class="history-item-dark" onclick="App.editCharge('mu0xynfimprgp1')"><div class="hi-date"><div class="day">16</div><div class="month">8月</div></div><div class="hi-info"><div class="hi-title"><span class="type">快充</span></div><div class="hi-sub">52.0 度 · 快充</div></div><div class="hi-amount">¥31.00</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div><div class="history-item-dark" onclick="App.editCharge('mu0xynfiwe63l5')"><div class="hi-date"><div class="day">9</div><div class="month">8月</div></div><div class="hi-info"><div class="hi-title"><span class="type">快充</span></div><div class="hi-sub">48.0 度 · 快充</div></div><div class="hi-amount">¥23.89</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div></div></div><div class="records-month-group"><div class="records-month-head"><span class="rm-title">7月</span><div class="rm-stats"><span class="rm-stat">费用 <b>¥94.03</b></span><span class="rm-stat"><b>188.7</b> 度</span><span class="rm-stat"><b>6</b> 次</span></div></div><div class="records-month-list"><div class="history-item-dark" onclick="App.editCharge('mu0xynfiz4uakn')"><div class="hi-date"><div class="day">25</div><div class="month">7月</div></div><div class="hi-info"><div class="hi-title"><span class="type">快充</span></div><div class="hi-sub">64.7 度 · 快充</div></div><div class="hi-amount">¥38.23</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div><div class="history-item-dark" onclick="App.editCharge('mu0xynfhsxnezf')"><div class="hi-date"><div class="day">11</div><div class="month">7月</div></div><div class="hi-info"><div class="hi-title"><span class="type">快充</span></div><div class="hi-sub">35.0 度 · 快充</div></div><div class="hi-amount">¥18.90</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div><div class="history-item-dark" onclick="App.editCharge('mu0xynfhqsb71f')"><div class="hi-date"><div class="day">6</div><div class="month">7月</div></div><div class="hi-info"><div class="hi-title"><span class="type">快充</span></div><div class="hi-sub">22.0 度 · 快充</div></div><div class="hi-amount">¥1.20</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div><div class="history-item-dark" onclick="App.editCharge('mu0xynfhoa8o3i')"><div class="hi-date"><div class="day">6</div><div class="month">7月</div></div><div class="hi-info"><div class="hi-title"><span class="type">快充</span></div><div class="hi-sub">28.0 度 · 快充</div></div><div class="hi-amount">¥15.50</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div><div class="history-item-dark" onclick="App.editCharge('mu0xynfhx4g91l')"><div class="hi-date"><div class="day">5</div><div class="month">7月</div></div><div class="hi-info"><div class="hi-title"><span class="type">快充</span></div><div class="hi-sub">27.0 度 · 快充</div></div><div class="hi-amount">¥19.00</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div><div class="history-item-dark" onclick="App.editCharge('mu0xynfh6vwde2')"><div class="hi-date"><div class="day">4</div><div class="month">7月</div></div><div class="hi-info"><div class="hi-title"><span class="type">快充</span></div><div class="hi-sub">12.0 度 · 快充</div></div><div class="hi-amount">¥1.20</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div></div></div><div class="records-month-group"><div class="records-month-head"><span class="rm-title">6月</span><div class="rm-stats"><span class="rm-stat">费用 <b>¥77.82</b></span><span class="rm-stat"><b>264.8</b> 度</span><span class="rm-stat"><b>6</b> 次</span></div></div><div class="records-month-list"><div class="history-item-dark" onclick="App.editCharge('mu0xynfhvcfgu2')"><div class="hi-date"><div class="day">28</div><div class="month">6月</div></div><div class="hi-info"><div class="hi-title"><span class="type">快充</span></div><div class="hi-sub">44.7 度 · 快充</div></div><div class="hi-amount">¥8.65</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div><div class="history-item-dark" onclick="App.editCharge('mu0xynfhsng7tn')"><div class="hi-date"><div class="day">23</div><div class="month">6月</div></div><div class="hi-info"><div class="hi-title"><span class="type">慢充</span></div><div class="hi-sub">19.0 度 · 慢充</div></div><div class="hi-amount">¥0.00</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div><div class="history-item-dark" onclick="App.editCharge('mu0xynfhymywne')"><div class="hi-date"><div class="day">20</div><div class="month">6月</div></div><div class="hi-info"><div class="hi-title"><span class="type">慢充</span></div><div class="hi-sub">50.0 度 · 慢充</div></div><div class="hi-amount">¥0.00</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div><div class="history-item-dark" onclick="App.editCharge('mu0xynfhmkio1j')"><div class="hi-date"><div class="day">13</div><div class="month">6月</div></div><div class="hi-info"><div class="hi-title"><span class="type">快充</span></div><div class="hi-sub">44.1 度 · 快充</div></div><div class="hi-amount">¥21.60</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div><div class="history-item-dark" onclick="App.editCharge('mu0xynfht1tykv')"><div class="hi-date"><div class="day">10</div><div class="month">6月</div></div><div class="hi-info"><div class="hi-title"><span class="type">慢充</span></div><div class="hi-sub">44.9 度 · 慢充</div></div><div class="hi-amount">¥0.00</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div><div class="history-item-dark" onclick="App.editCharge('mu0xynfhmlui2j')"><div class="hi-date"><div class="day">2</div><div class="month">6月</div></div><div class="hi-info"><div class="hi-title"><span class="type">快充</span></div><div class="hi-sub">62.1 度 · 快充</div></div><div class="hi-amount">¥47.57</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div></div></div><div class="records-month-group"><div class="records-month-head"><span class="rm-title">5月</span><div class="rm-stats"><span class="rm-stat">费用 <b>¥63.93</b></span><span class="rm-stat"><b>56.3</b> 度</span><span class="rm-stat"><b>1</b> 次</span></div></div><div class="records-month-list"><div class="history-item-dark" onclick="App.editCharge('mu0xynfh5j9nuj')"><div class="hi-date"><div class="day">30</div><div class="month">5月</div></div><div class="hi-info"><div class="hi-title"><span class="type">快充</span></div><div class="hi-sub">56.3 度 · 快充</div></div><div class="hi-amount">¥63.93</div><svg class="hi-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div></div></div></div></div></section>
+    <section class="tab-panel" id="panel-analysis"><div class="home-nav-dark"><button class="nav-btn" onclick="App.switchTab('records')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></button><span class="nav-title">数据分析</span><button class="nav-btn" onclick="App.switchTab('home')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h14V10" stroke-linecap="round" stroke-linejoin="round"></path></svg></button></div><div class="record-header-dark"><div class="seg-dark" id="analysisPeriodSegment"><button class="seg-item" onclick="App.setAnalysisPeriod('month')">本月</button><button class="seg-item active" onclick="App.setAnalysisPeriod('year')">本年</button><button class="seg-item" onclick="App.setAnalysisPeriod('all')">全部</button></div></div><div class="analysis-hero-dark"><div class="ah-label">本年充电总费用</div><div class="ah-value">¥338.37</div><div class="ah-trend"><span class="trend-val">17 次</span><span class="trend-label">均价 ¥0.49/度 · 充入 691.8 度</span></div></div><div class="trend-chart-dark"><div class="tc-title">月度费用趋势 · 本年</div><div class="line-chart-dark"><svg viewBox="0 0 300 120" preserveAspectRatio="none"><defs><linearGradient id="dgTrend" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8B9BAE" stop-opacity="0.25"></stop><stop offset="100%" stop-color="#8B9BAE" stop-opacity="0"></stop></linearGradient></defs><path d="M0.0 108.0 L37.5 108.0 L75.0 108.0 L112.5 108.0 L150.0 56.0 L187.5 44.7 L225.0 31.5 L262.5 24.5 L300.0 108.0 L300.0 120 L0.0 120 Z" fill="url(#dgTrend)"></path><path d="M0.0 108.0 L37.5 108.0 L75.0 108.0 L112.5 108.0 L150.0 56.0 L187.5 44.7 L225.0 31.5 L262.5 24.5 L300.0 108.0" fill="none" stroke="#8B9BAE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="0.0" cy="108.0" r="4" fill="#8B9BAE" onclick="App.showChartSheet('month','2026-01')"></circle><circle cx="37.5" cy="108.0" r="4" fill="#8B9BAE" onclick="App.showChartSheet('month','2026-02')"></circle><circle cx="75.0" cy="108.0" r="4" fill="#8B9BAE" onclick="App.showChartSheet('month','2026-03')"></circle><circle cx="112.5" cy="108.0" r="4" fill="#8B9BAE" onclick="App.showChartSheet('month','2026-04')"></circle><circle cx="150.0" cy="56.0" r="4" fill="#8B9BAE" onclick="App.showChartSheet('month','2026-05')"></circle><circle cx="187.5" cy="44.7" r="4" fill="#8B9BAE" onclick="App.showChartSheet('month','2026-06')"></circle><circle cx="225.0" cy="31.5" r="4" fill="#8B9BAE" onclick="App.showChartSheet('month','2026-07')"></circle><circle cx="262.5" cy="24.5" r="4" fill="#8B9BAE" onclick="App.showChartSheet('month','2026-08')"></circle><circle cx="300.0" cy="108.0" r="5" fill="#8B9BAE" stroke="rgba(255,255,255,0.5)" stroke-width="2" onclick="App.showChartSheet('month','2026-09')"></circle></svg></div><div class="line-chart-dark" style="height:auto;"><div class="x-labels"><span>1月</span><span>3月</span><span>4月</span><span>6月</span><span>7月</span><span>9月</span></div></div></div><div class="donut-dark"><div class="dc-title">快慢充比例</div><div class="donut-row-dark"><svg class="donut-svg-dark" viewBox="0 0 100 100" onclick="App.showChartSheet('donut','')"><circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12"></circle><circle cx="50" cy="50" r="40" fill="none" stroke="#8B9BAE" stroke-width="12" stroke-dasharray="207.0 251.3" transform="rotate(-90 50 50)"></circle><circle cx="50" cy="50" r="40" fill="none" stroke="#2DD4BF" stroke-width="12" stroke-dasharray="44.4 251.3" stroke-dashoffset="-207.0" transform="rotate(-90 50 50)"></circle></svg><div class="donut-legend-dark"><div class="legend-item"><span class="dot" style="background:#8B9BAE;"></span><span class="ll-label">快充</span><span class="ll-value">82%</span></div><div class="legend-item"><span class="dot" style="background:#2DD4BF;"></span><span class="ll-label">慢充</span><span class="ll-value">18%</span></div></div></div></div><div class="battery-dark"><div class="bh-title">电池健康评估</div><div class="battery-ring-row-dark"><svg class="battery-ring-svg-dark" viewBox="0 0 120 120" onclick="App.showChartSheet('battery','')"><circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"></circle><circle cx="60" cy="60" r="50" fill="none" stroke="#F59E0B" stroke-width="8" stroke-dasharray="207.3 314.2" transform="rotate(-90 60 60)" stroke-linecap="round"></circle></svg><div class="battery-ring-info-dark"><div class="bh-score">66</div><div class="bh-label">健康指数</div><div class="bh-status" style="color:#F59E0B;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> 一般</div></div></div><div class="battery-metrics-dark"><div class="battery-metric-dark"><span class="bm-label">容量健康</span><div class="bm-bar"><div class="bm-bar-fill" style="width:100%;background:#F59E0B;"></div></div><span class="bm-value">100%</span></div><div class="battery-metric-dark"><span class="bm-label">充电习惯</span><div class="bm-bar"><div class="bm-bar-fill" style="width:14%;background:#8B9BAE;"></div></div><span class="bm-value">14%</span></div><div class="battery-metric-dark"><span class="bm-label">深放频率</span><div class="bm-bar"><div class="bm-bar-fill" style="width:100%;background:#F59E0B;"></div></div><span class="bm-value">100%</span></div></div></div><div style="height:24px;"></div></section>
     <section class="tab-panel" id="panel-profile"><div class="home-nav-dark"><span class="nav-title">我的</span><button class="nav-btn" onclick="App.openVehicleModal()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19" stroke-linecap="round"></line><line x1="5" y1="12" x2="19" y2="12" stroke-linecap="round"></line></svg></button></div><div class="profile-header-dark"><div class="profile-avatar-dark">冲</div><div class="profile-info-dark"><div class="pi-name">冲冲用户</div><div class="pi-sub">当前 · 智己 L6 · 累计 691.8 度</div></div></div><div class="vehicle-card-dark" onclick="App.detailVehicle('mu0xynfhqdjctz')"><div class="vehicle-header-dark"><div class="vehicle-icon-dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11M5 11h14M5 11v6a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-6" stroke-linecap="round"></path><circle cx="8" cy="14" r="1" fill="currentColor"></circle><circle cx="16" cy="14" r="1" fill="currentColor"></circle></svg></div><div class="vehicle-info-dark"><div class="vi-name">智己 L6</div><div class="vi-detail">智己 L6 max 标准版 · 当前</div></div><span style="color:rgba(255,255,255,0.15);font-size:20px;">›</span></div><div class="vehicle-stat-row-dark"><div class="vehicle-stat-item-dark"><div class="vsi-value">—</div><div class="vsi-label">电耗 kWh/100km</div></div><div class="vehicle-stat-item-dark"><div class="vsi-value">691.8</div><div class="vsi-label">累计度数</div></div><div class="vehicle-stat-item-dark"><div class="vsi-value">—</div><div class="vsi-label">电池健康</div></div></div></div><div class="profile-section-title-dark">车辆</div><div class="profile-list-dark"><div class="settings-list-dark"><div class="settings-row-dark" onclick="App.detailVehicle('mu0xynfhqdjctz')"><div class="sr-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11M5 11h14M5 11v6a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-6" stroke-linecap="round"></path><circle cx="8" cy="14" r="1" fill="currentColor"></circle><circle cx="16" cy="14" r="1" fill="currentColor"></circle></svg></div><span class="sr-label">智己 L6</span><span class="sr-value" style="color:var(--sys-green);">当前</span><span class="sr-chevron">›</span></div><div class="settings-row-dark" onclick="App.openVehicleModal()"><div class="sr-icon ic-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19" stroke-linecap="round"></line><line x1="5" y1="12" x2="19" y2="12" stroke-linecap="round"></line></svg></div><span class="sr-label">添加车辆</span><span class="sr-chevron">›</span></div></div></div><div class="profile-section-title-dark">数据管理</div><div class="profile-list-dark"><div class="settings-list-dark"><div class="settings-row-dark" onclick="Store.exportJSON();App.toast('已导出备份文件','success')"><div class="sr-icon ic-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span class="sr-label">导出数据</span><span class="sr-value">JSON</span><span class="sr-chevron">›</span></div><label class="settings-row-dark" style="cursor:pointer;"><div class="sr-icon ic-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span class="sr-label">导入数据</span><span class="sr-value">JSON</span><span class="sr-chevron">›</span><input type="file" id="importInput" accept=".json" style="display:none;"></label><div class="settings-row-dark" onclick="App.toggleSync()"><div class="sr-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19a4.5 4.5 0 0 0 .42-8.98 5.5 5.5 0 0 0-10.6 1.76A4 4 0 0 0 7 19h10.5z" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span class="sr-label">云同步备份</span><div class="toggle-dark off" id="syncToggle"></div></div><div class="settings-row-dark"><div class="sr-icon ic-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15 8 18 11 21 8l-3-3" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span class="sr-label">GitHub 令牌</span><input type="password" id="syncToken" placeholder="github_pat_…" value="" style="width:120px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:12px;font-family:var(--font-mono);padding:6px 8px;border-radius:8px;text-align:right;"></div><div class="settings-row-dark" onclick="App.syncNow()" style="position: relative;"><div class="sr-icon ic-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10" stroke-linecap="round" stroke-linejoin="round"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span class="sr-label">立即备份 / 同步</span><span class="sr-value" id="syncStatus">未启用</span><span class="sr-chevron">›</span></div></div></div><div class="profile-section-title-dark">设置</div><div class="profile-list-dark"><div class="settings-list-dark"><div class="settings-row-dark" onclick="App.toggleMigrationNote()" id="migrationToggle"><div class="sr-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12" stroke-linecap="round"></line><line x1="12" y1="8" x2="12.01" y2="8" stroke-linecap="round"></line></svg></div><span class="sr-label">小程序 / App 迁移说明</span><span class="sr-chevron">›</span></div></div></div><div class="form-section-collapse" id="migrationCollapse"><div class="migration-note"><p>本应用采用<strong>数据层与渲染层分离</strong>的架构，便于迁移：</p><p style="margin-top:8px;"><strong>1. 微信小程序：</strong>将 <code>charging-tracker.js</code> 中的 <code>localStorage</code> 替换为 <code>wx.setStorageSync</code> / <code>wx.getStorageSync</code>，渲染层将 DOM 操作替换为 WXML + <code>setData</code>。</p><p style="margin-top:8px;"><strong>2. 原生 App：</strong>将 <code>Store</code> 的存储替换为 SQLite 或 AsyncStorage（React Native）。</p><p style="margin-top:8px;"><strong>3. 云同步：</strong>数据结构已含 <code>id</code> / <code>createdAt</code> 字段，可直接作为数据库 Schema。</p><p style="margin-top:8px;"><strong>4. 车型库扩展：</strong>当前为手动填写，后续可新增 <code>vehicles_db</code> 表预置主流车型参数。</p></div></div><div class="profile-section-title-dark" style="color:var(--sys-red);">危险操作</div><div class="profile-list-dark"><div class="settings-list-dark"><div class="settings-row-dark" onclick="App.showConfirm('清空所有数据','确定清空所有数据？此操作不可恢复，建议先导出备份。',function(){Store.clearAll();location.reload();})"><div class="sr-icon ic-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18 M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke-linecap="round" stroke-linejoin="round"></path></svg></div><span class="sr-label" style="color:var(--sys-red);">清空所有数据</span><span class="sr-chevron">›</span></div></div></div><div style="text-align:center;padding:var(--sp-4) 0 var(--sp-6);"><span style="font-size:12px;color:rgba(255,255,255,0.15);">冲充电 v2.0 · Dark Liquid Glass</span></div></section>
   </main>
 
-  <!-- 底部浮空玻璃导航（设计稿 tabbar-dark） -->
+  <!-- 底部浮空玻璃导航（设计稿 tabbar-dark · 中央+按钮） -->
   <nav class="tabbar-dark">
-    <button class="tab-item active" data-tab="home">
+    <button class="tab-item" data-tab="home">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10"></path></svg>
       <span class="tab-label">首页</span>
     </button>
-    <button class="tab-item" data-tab="records">
+    <button class="tab-item active" data-tab="records">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6a2 2 0 0 1 2 2v18l-5-3-5 3V4a2 2 0 0 1 2-2z"></path></svg>
       <span class="tab-label">记录</span>
+    </button>
+    <button class="tab-add-btn" onclick="App.openChargePage()" aria-label="新增充电记录">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
     </button>
     <button class="tab-item" data-tab="analysis">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M7 14l4-4 4 4 6-6"></path></svg>
@@ -2244,131 +2384,100 @@
   </nav>
 
   <!-- 充电记录表单独立页面 -->
-  <div class="page-overlay" id="chargeFormPage">
+  <div class="page-overlay show" id="chargeFormPage">
     <div class="page-header">
       <button class="page-back-btn" onclick="App.closeChargePage()" aria-label="返回">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
       </button>
       <h2 id="chargeFormPageTitle">添加充电记录</h2>
+      <span class="page-header-spacer" aria-hidden="true"></span>
     </div>
     <div class="page-body">
       <form id="chargeFormPage-form">
-        <input type="hidden" id="cf_vehicleId" value="mtmstpuv4iyb4h">
+        <input type="hidden" id="cf_vehicleId" value="mu0xynfhqdjctz">
         <input type="hidden" id="cf_chargeType" value="fast">
 
-        <!-- 段1: 基本信息（充电类型置顶单独一行） -->
-        <div class="form-section-card">
-          <div class="form-section-title">
-            <span class="fst-bar"></span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
-            基本信息
-          </div>
-          <div class="form-grid">
-            <div class="form-group full">
-              <label for="cf_chargeType">充电类型</label>
-              <div class="form-segment" id="cf_chargeTypeSegment">
-                <button type="button" class="form-segment-btn" data-val="slow">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0 M12 2v10" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                  慢充
-                </button>
-                <button type="button" class="form-segment-btn active" data-val="fast">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"></polygon></svg>
-                  快充
-                </button>
-              </div>
-            </div>
-            <div class="form-group full">
-              <label for="cf_date">充电日期</label>
-              <input type="date" id="cf_date" required="">
-            </div>
+        <!-- 充电类型：快充/慢充 分段选择 -->
+        <div class="form-group-dark">
+          <div class="form-group-title-dark">充电类型</div>
+          <div class="form-segment" id="cf_chargeTypeSegment">
+            <button type="button" class="form-segment-btn" data-val="slow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0 M12 2v10" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              慢充
+            </button>
+            <button type="button" class="form-segment-btn active" data-val="fast">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"></polygon></svg>
+              快充
+            </button>
           </div>
         </div>
 
-        <!-- 段2: 充电数据 -->
-        <div class="form-section-card">
-          <div class="form-section-title">
-            <span class="fst-bar"></span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-linecap="round" stroke-linejoin="round"></polygon></svg>
-            充电数据
+        <!-- 充电信息：日期 + 电量/单价/费用 收支行 -->
+        <div class="form-group-dark">
+          <div class="form-group-title-dark">充电信息</div>
+          <div class="form-list-dark">
+            <div class="form-row-dark">
+              <span class="fr-label">日期</span>
+              <input type="date" id="cf_date" class="fr-input" required="">
+            </div>
+            <div class="form-row-dark">
+              <span class="fr-label">充电电量</span>
+              <input type="number" id="cf_kWh" step="0.1" class="fr-input" placeholder="如 45.5" required="">
+              <span class="fr-suffix">kWh</span>
+            </div>
+            <div class="form-row-dark" style="">
+              <span class="fr-label">总费用</span>
+              <input type="number" id="cf_totalCost" step="0.01" class="fr-input" placeholder="自动计算" style="">
+              <span class="fr-suffix">¥</span>
+            </div><div class="form-row-dark" style="">
+              <span class="fr-label">充电单价</span>
+              <input type="number" id="cf_unitPrice" step="0.01" class="fr-input" placeholder="如 1.20">
+              <span class="fr-suffix">¥/度</span>
+            </div>
             
           </div>
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="cf_totalCost">总费用</label>
-              <div class="input-wrap">
-                <input type="number" class="with-suffix" id="cf_totalCost" step="0.01" placeholder="自动计算或直接填写">
-                <span class="input-suffix">¥</span>
-              </div>
+          <div class="auto-calc-hint" id="autoCalcHint" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+            <span id="autoCalcText"></span>
+          </div>
+        </div>
+
+        <!-- 车辆状态（选填） -->
+        <div class="form-group-dark">
+          <div class="form-group-title-dark">车辆状态</div>
+          <div class="form-list-dark">
+            <div class="form-row-dark">
+              <span class="fr-label">充电前电量</span>
+              <input type="number" id="cf_socBefore" min="0" max="100" class="fr-input" placeholder="如 20">
+              <span class="fr-suffix">%</span>
             </div>
-            <div class="form-group">
-              <label for="cf_kWh">充电度数</label>
-              <div class="input-wrap">
-                <input type="number" class="with-suffix" id="cf_kWh" step="0.1" placeholder="如 45.5" required="">
-                <span class="input-suffix">度</span>
-              </div>
+            <div class="form-row-dark">
+              <span class="fr-label">充电后电量</span>
+              <input type="number" id="cf_socAfter" min="0" max="100" class="fr-input" placeholder="如 80">
+              <span class="fr-suffix">%</span>
             </div>
-            <div class="auto-calc-hint" id="autoCalcHint" style="display:none;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
-              <span id="autoCalcText"></span>
-            </div>
-            <div class="form-group full">
-              <label for="cf_unitPrice">充电单价</label>
-              <div class="input-wrap">
-                <input type="number" class="with-suffix" id="cf_unitPrice" step="0.01" placeholder="如 1.20">
-                <span class="input-suffix">元/度</span>
-              </div>
+            <div class="form-row-dark">
+              <span class="fr-label">里程表</span>
+              <input type="number" id="cf_odometer" step="0.1" class="fr-input" placeholder="如 15200">
+              <span class="fr-suffix">km</span>
             </div>
           </div>
         </div>
 
-        <!-- 段3: 车辆状态（选填） -->
-        <div class="form-section-card">
-          <div class="form-section-title">
-            <span class="fst-bar"></span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11M5 11h14M5 11v6a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-6" stroke-linecap="round"></path><circle cx="8" cy="14" r="1" fill="currentColor"></circle><circle cx="16" cy="14" r="1" fill="currentColor"></circle></svg>
-            车辆状态
-            
-          </div>
-          <div class="form-grid">
-            <div class="form-group full">
-              <label for="cf_odometer">里程表读数</label>
-              <div class="input-wrap">
-                <input type="number" class="with-suffix" id="cf_odometer" step="0.1" placeholder="如 15200">
-                <span class="input-suffix">km</span>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="cf_socBefore">充电前电量</label>
-              <div class="input-wrap">
-                <input type="number" class="with-suffix" id="cf_socBefore" min="0" max="100" placeholder="如 20">
-                <span class="input-suffix">%</span>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="cf_socAfter">充电后电量</label>
-              <div class="input-wrap">
-                <input type="number" class="with-suffix" id="cf_socAfter" min="0" max="100" placeholder="如 80">
-                <span class="input-suffix">%</span>
-              </div>
+        <!-- 备注 -->
+        <div class="form-group-dark">
+          <div class="form-group-title-dark">备注</div>
+          <div class="form-list-dark">
+            <div class="form-row-dark" style="flex-direction:column;align-items:stretch;gap:6px;padding:14px 16px;">
+              <textarea id="cf_note" placeholder="如 充电站名称、地点等"></textarea>
             </div>
           </div>
         </div>
 
-        <!-- 段4: 备注 -->
-        <div class="form-section-card">
-          <div class="form-section-title">
-            <span class="fst-bar"></span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M8 13h8 M8 17h5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-            备注
-            
-          </div>
-          <div class="form-group full">
-            <textarea id="cf_note" placeholder="如 充电站名称、地点等"></textarea>
-          </div>
-        </div>
+        
 
-        <div class="form-submit">
-          <button type="submit" class="btn btn-primary btn-block">
+        <div class="record-btn-row">
+          <button type="submit" class="btn-accent shake" style="position: relative;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 12 10 17 19 7" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
             保存记录
           </button>
@@ -2552,4 +2661,6 @@
 <div class="chart-tooltip" style="transform: translate(-50%, -100%); margin-top: -8px; left: 713.1px; top: 390.835px;">6月: ¥77.82 · 264.8 度</div>
 <div class="chart-tooltip" style="transform: translate(-50%, -100%); margin-top: -8px; left: 687.5px; top: 657.835px;">6月: ¥77.82 · 264.8 度</div>
 <div class="chart-tooltip"></div>
+
+
 </body></html>
