@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>冲充电 · 首页</title><link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="home">
+  <div class="phone">
+    <header class="topbar">
+      <button class="topbar__back icon-btn" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h1 class="topbar__title">冲充电<small>智己 L6 · 当前车辆</small></h1>
+      <span class="topbar__right"></span>
+    </header>
+
+    <main class="content">
+
+      <div class="reveal">
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px">
+          <span class="chip chip--ink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l2.5 2.5"/><circle cx="12" cy="12" r="10"/></svg>下午好，今天也元气满满</span>
+        </div>
+      </div>
+
+      <!-- 电量总览 hero -->
+      <div class="card reveal">
+        <div class="card-head">
+          <h3>电量总览</h3>
+          <span class="chip chip--fast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>可快充</span>
+        </div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px">
+          <div>
+            <div class="hero-val">62<small>%</small></div>
+            <div class="hero-sub">当前电量 · 预估可行驶约 310 km</div>
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="width:40px;height:40px;color:var(--disabled)"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>
+        </div>
+        <!-- 电量条：净面进度条示意 62% -->
+        <div style="height:15px;border-radius:999px;background:var(--panel);border:1px solid var(--border-strong);overflow:hidden;margin-top:16px">
+          <div id="batteryFill" style="width:62%;height:100%;background:linear-gradient(180deg,#F56C6F,var(--red));border-radius:inherit;transition:width .8s cubic-bezier(.2,.7,.2,1)"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:5px">
+          <span>0%</span><span>62%</span><span>100%</span>
+        </div>
+      </div>
+
+      <!-- 本月账单 -->
+      <div class="card reveal">
+        <div class="card-head">
+          <h3>本月账单</h3>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;color:var(--muted)"><path d="M8 2v4M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+        </div>
+        <div class="hero-val">¥156.7<small>元</small></div>
+        <div class="hero-sub">9 月 · 已充电 3 次，日均约 ¥5.6</div>
+      </div>
+
+      <!-- 记录本次充电 -->
+      <div class="reveal">
+        <button class="btn btn--brand btn--block btn--lg" id="btnRecord">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg>
+          记录本次充电
+        </button>
+      </div>
+
+      <!-- 指标宫格 -->
+      <div class="stat-grid reveal">
+        <div class="stat-card t-red">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg></div>
+          <div class="st-label">本月费用</div>
+          <div class="st-val">¥156.7<small></small></div>
+          <span class="st-delta up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>8.6%</span>
+        </div>
+        <div class="stat-card t-gold">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="10" x="2" y="7" rx="2"/><line x1="22" x2="22" y1="11" y2="13"/><line x1="6" x2="6" y1="11" y2="13"/><line x1="10" x2="10" y1="11" y2="13"/><line x1="14" x2="14" y1="11" y2="13"/></svg></div>
+          <div class="st-label">本月补能</div>
+          <div class="st-val">104.9<small>kWh</small></div>
+          <span class="st-delta up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>12.4%</span>
+        </div>
+        <div class="stat-card t-green">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></div>
+          <div class="st-label">平均电耗</div>
+          <div class="st-val">13.2<small>度/100km</small></div>
+          <span class="st-delta down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>0.8%</span>
+        </div>
+        <div class="stat-card t-ink">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></div>
+          <div class="st-label">快充占比</div>
+          <div class="st-val">40<small>%</small></div>
+          <span class="st-delta up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>5%</span>
+        </div>
+      </div>
+
+      <!-- 电池健康入口 -->
+      <a class="card reveal" href="health.html" style="display:flex;align-items:center;gap:14px;text-decoration:none">
+        <div style="width:44px;height:44px;border-radius:13px;display:grid;place-items:center;color:var(--success);background:var(--green-soft);flex:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:21px;height:21px"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></svg>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700;color:var(--ink)">电池健康</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">容量保持率 76% · 近三月持平</div>
+        </div>
+        <span style="color:var(--disabled);display:inline-flex">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="m9 18 6-6-6-6"/></svg>
+        </span>
+      </a>
+
+      <div style="text-align:center;color:var(--disabled);font-size:10.5px;letter-spacing:.02em">演示原型 · 数据为示例非真实</div>
+
+    </main>
+
+    <nav class="tabbar">
+    <a class="tabbar__item" data-nav="home" href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>首页</span>
+    </a>
+    <a class="tabbar__item" data-nav="records" href="records.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      <span>记录</span>
+    </a>
+    <a class="tabbar__item" data-nav="analysis" href="analysis.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
+      <span>分析</span>
+    </a>
+    <a class="tabbar__item" data-nav="profile" href="profile.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>我的</span>
+    </a>
+  </nav>
+  </div>
+
+  <!-- 记录充电 底部 sheet -->
+  <div class="sheet-mask" id="sheetMask"></div>
+  <div class="sheet" id="sheet">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head">
+      <h3>记录本次充电</h3>
+      <button class="icon-btn" id="sheetClose" aria-label="关闭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="field">
+      <label>充电方式</label>
+      <div class="segmented" id="segCharge">
+        <button type="button" data-t="fast">快充</button>
+        <button type="button" data-t="slow" class="on">慢充</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>充电金额（元）</label>
+      <input id="chargeAmount" type="number" inputmode="decimal" placeholder="例如 40.2" value="40.2">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button class="btn btn--ghost" style="flex:1" id="sheetCancel">取消</button>
+      <button class="btn btn--brand" style="flex:2" id="sheetSave">保存并记账</button>
+    </div>
+  </div>
+
+  <script src="mock.js"></script><script src="api.js"></script><script src="nav-active.js"></script>
+  <script>
+  (function () {
+    var mask = document.getElementById('sheetMask');
+    var sheet = document.getElementById('sheet');
+    var btnRecord = document.getElementById('btnRecord');
+    var closeBtn = document.getElementById('sheetClose');
+    var cancelBtn = document.getElementById('sheetCancel');
+    var saveBtn = document.getElementById('sheetSave');
+    var seg = document.getElementById('segCharge');
+    var amount = document.getElementById('chargeAmount');
+    var curType = 'slow';
+
+    function openSheet() { mask.classList.add('open'); sheet.classList.add('open'); }
+    function closeSheet() { mask.classList.remove('open'); sheet.classList.remove('open'); }
+
+    btnRecord.addEventListener('click', openSheet);
+    closeBtn.addEventListener('click', closeSheet);
+    cancelBtn.addEventListener('click', closeSheet);
+    mask.addEventListener('click', closeSheet);
+
+    seg.querySelectorAll('button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        seg.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        curType = b.getAttribute('data-t');
+      });
+    });
+
+    saveBtn.addEventListener('click', function () {
+      closeSheet();
+      // 演示：读一次实时月度汇总，展示数据走 mock/api
+      fetchSummary('2026-09').then(function (r) {
+        var s = r.data;
+        console.log('[冲充电] 本次记账成功 ·', curType, '· ¥' + amount.value, '· 本月累计 ' + s.count + ' 次');
+      });
+      var t = document.createElement('div');
+      t.textContent = '已保存 · 本次充电已记账';
+      t.style.cssText = 'position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:120;background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;box-shadow:0 8px 20px -8px rgba(0,0,0,.3);opacity:0;transition:opacity .25s';
+      document.body.appendChild(t);
+      requestAnimationFrame(function () { t.style.opacity = '1'; });
+      setTimeout(function () { t.style.opacity = '0'; setTimeout(function () { t.remove(); }, 260); }, 1800);
+    });
+
+    // 电量条入场：展示拟物液面示意
+    requestAnimationFrame(function () {
+      var fill = document.getElementById('batteryFill');
+      if (fill) fill.style.width = '62%';
+    });
+  })();
+  </script>
+</body>
+</html>
