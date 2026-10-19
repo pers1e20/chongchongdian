@@ -1076,6 +1076,7 @@
         { d: '8月16日', cost: 31, kwh: 52, fast: true },
         { d: '8月26日', cost: 18.4, kwh: 30, fast: true },
         { d: '8月30日', cost: 29.3, kwh: 52, fast: true },
+        { d: '9月15日', cost: 30, kwh: 40, fast: false },
         { d: '9月30日', cost: 14.54, kwh: 19.7, fast: true },
         { d: '9月30日', cost: 98.05, kwh: 53.872, fast: true },
         { d: '10月1日', cost: 49.93, kwh: 51.399, fast: true },
