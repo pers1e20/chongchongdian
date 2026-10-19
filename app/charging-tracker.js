@@ -2689,7 +2689,8 @@
         + '<div class="toggle-dark' + (syncCfg.enabled ? ' on' : ' off') + '" id="syncToggle"></div></div>';
       html += '<div class="settings-row-dark">'
         + '<div class="sr-icon ic-purple">' + Icons.keyIcon + '</div><span class="sr-label">GitHub 令牌</span>'
-        + '<input type="password" id="syncToken" placeholder="github_pat_…" value="' + esc(syncCfg.token || '') + '" style="width:120px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:12px;font-family:var(--font-mono);padding:6px 8px;border-radius:8px;text-align:right;"></div>';
+        + '<input type="password" id="syncToken" placeholder="github_pat_…" value="' + esc(syncCfg.token || '') + '" style="width:110px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:12px;font-family:var(--font-mono);padding:6px 8px;border-radius:8px;text-align:right;">'
+        + '<button type="button" onclick="App.copyToken()" style="flex-shrink:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);font-size:11px;padding:6px 9px;border-radius:8px;margin-left:6px;">复制</button></div>';
       html += '<div class="settings-row-dark" onclick="App.syncNow()">'
         + '<div class="sr-icon ic-orange">' + Icons.syncIcon + '</div><span class="sr-label">立即备份 / 同步</span><span class="sr-value" id="syncStatus">' + Sync.statusLine() + '</span><span class="sr-chevron">›</span></div>';
       html += '</div></div>';
@@ -2732,6 +2733,25 @@
       this.toast(cfg.enabled ? '已启用云同步备份' : '已关闭云同步备份', 'success');
       var st = document.getElementById('syncStatus');
       if (st) st.textContent = Sync.statusLine();
+    },
+
+    copyToken: function () {
+      var el = document.getElementById('syncToken');
+      var v = (el && el.value.trim()) || (Sync.loadCfg().token || '');
+      if (!v) { this.toast('尚未填写令牌', 'error'); return; }
+      var done = function () { if (App && App.toast) App.toast('令牌已复制到剪贴板', 'success'); };
+      var fallback = function () {
+        var ta = document.createElement('textarea');
+        ta.value = v;
+        ta.style.cssText = 'position:fixed;opacity:0;left:-999px;';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) { if (App && App.toast) App.toast('复制失败，请长按输入框手动选择', 'error'); }
+        document.body.removeChild(ta);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(v).then(done, fallback);
+      } else { fallback(); }
     },
 
     syncNow: function () {
