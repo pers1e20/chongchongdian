@@ -1075,7 +1075,17 @@
         { d: '8月9日', cost: 23.89, kwh: 48, fast: true },
         { d: '8月16日', cost: 31, kwh: 52, fast: true },
         { d: '8月26日', cost: 18.4, kwh: 30, fast: true },
-        { d: '8月30日', cost: 29.3, kwh: 52, fast: true }
+        { d: '8月30日', cost: 29.3, kwh: 52, fast: true },
+        { d: '9月30日', cost: 14.54, kwh: 19.7, fast: true },
+        { d: '9月30日', cost: 98.05, kwh: 53.872, fast: true },
+        { d: '10月1日', cost: 49.93, kwh: 51.399, fast: true },
+        { d: '10月1日', cost: 22.97, kwh: 19.036, fast: true },
+        { d: '10月1日', cost: 25.11, kwh: 31.613, fast: true },
+        { d: '10月2日', cost: 49.25, kwh: 42.452, fast: true },
+        { d: '10月2日', cost: 14.52, kwh: 12.514, fast: true },
+        { d: '10月3日', cost: 5.12, kwh: 7.819, fast: true },
+        { d: '10月3日', cost: 43.75, kwh: 43.7676, fast: true },
+        { d: '10月3日', cost: 19.07, kwh: 15.4971, fast: true }
       ];
       var year = new Date().getFullYear();
       var months = { '5': '05', '6': '06', '7': '07', '8': '08' };
