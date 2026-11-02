@@ -115,7 +115,7 @@
 <header>
   <div class="kicker">冲充电 / 交接留档</div>
   <h1>改动记录与后续任务</h1>
-  <p class="sub">2026-11-02 · 基线 <span class="mono">f6b4ae0</span> 起共 13 次提交 · P0 数据修正、P1 结构重排、P2 视觉重写、P3 缓存与配置均已完成，尚未部署到线上</p>
+  <p class="sub">2026-11-02 · 基线 <span class="mono">f6b4ae0</span> 起共 15 次提交 · P0 数据修正、P1 结构重排、P2 视觉重写、P3 缓存与配置均已完成，<strong>并已上线</strong>：<a href="https://pers1e20.github.io/chongchongdian/">pers1e20.github.io/chongchongdian</a></p>
   <div class="facts">
     <div class="fact"><b>−647</b><span>HTML 行数 2852 → 2205</span></div>
     <div class="fact"><b>0</b><span>渐变 / 模糊 / 阴影残留</span></div>
@@ -291,8 +291,8 @@
     <thead><tr><th style="width:26%">场景</th><th>做法</th></tr></thead>
     <tbody>
       <tr><td>电脑上预览</td><td><code>cd app &amp;&amp; python3 -m http.server 8000</code>，浏览器打开 <code>http://localhost:8000</code></td></tr>
-      <tr><td>手机上用</td><td>打开线上地址 → 浏览器菜单「添加到主屏幕」，之后从桌面图标进入，全屏无地址栏</td></tr>
-      <tr><td>改完代码看效果</td><td>本地改完刷新即可。<strong>手机上看线上版</strong>需先把 <code>app/sw.js</code> 里的 <code>CACHE_NAME</code> 版本号 +1 再部署，否则读到旧缓存（P3 会消掉这个动作）</td></tr>
+      <tr><td>手机上用</td><td>打开 <code>https://pers1e20.github.io/chongchongdian/</code> → 浏览器菜单「添加到主屏幕」，之后从桌面图标进入，全屏无地址栏；断网也能打开</td></tr>
+      <tr><td>改完代码看效果</td><td>本地改完刷新即可。<strong>手机上看线上版</strong>：<code>git push</code> 后约 1 分钟 Pages 自动重建，直接下拉刷新即可看到新版（SW 已改 network-first，不用再手动改 <code>CACHE_NAME</code>）</td></tr>
     </tbody>
   </table>
 
@@ -495,6 +495,7 @@
 
   <h3 id="t-device">交给真机验收的 9 条</h3>
   <p>下面这些<strong>我没有能力验证</strong>，不假装验过。拿到手机后按顺序点一遍，每项只需答「正常 / 有问题」。</p>
+  <p>线上地址已就绪，直接打开 <code>https://pers1e20.github.io/chongchongdian/</code> 逐条过即可；第 9 条（断网）要先把应用完整打开一次，让 Service Worker 装上，再开飞行模式。</p>
   <ol class="check">
     <li>底部导航三个元素是否完整，有没有被 iPhone 底部横条压住</li>
     <li>记录页里金额与日期是否在同一行，有没有互相压住</li>
