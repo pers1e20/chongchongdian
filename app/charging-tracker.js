@@ -709,18 +709,6 @@
       return html;
     },
 
-    closeStatDetail: function () {
-      this.closeChartSheet();
-      var head = document.querySelector('.data-sheet-head');
-      if (head) {
-        head.innerHTML = '<div>'
-          + '<h3 id="dsTitle">数据明细</h3>'
-          + '<div class="ds-sub" id="dsSub"></div></div>'
-          + '<button type="button" class="ds-close-btn" onclick="App.closeChartSheet()" aria-label="关闭">'
-          + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/><line x1="6" y1="18" x2="18" y2="6" stroke-linecap="round"/></svg></button>';
-      }
-    },
-
     /* ---- 趋势图容器（左侧固定Y轴 + 右侧可横滑图表） ---- */
     recordsFilter: 'all',
     recordsMonthFilter: '',
