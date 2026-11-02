@@ -1,0 +1,6 @@
+.DS_Store
+*.log
+.workbuddy/
+node_modules/
+.ssh_keys/
+*.pem
