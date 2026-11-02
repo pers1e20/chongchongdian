@@ -1150,15 +1150,14 @@
         html += '<button class="metric-seg-item' + (metric === o[0] ? ' active' : '') + '" onclick="App.setStatsTrend(\'' + o[0] + '\')">' + o[1] + '</button>';
       });
       html += '</div></div>';
-      html += '<div class="line-chart-dark"><svg viewBox="0 0 300 120" preserveAspectRatio="none">';
-      html += '<defs><linearGradient id="dgTrend' + metric + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8B9BAE" stop-opacity="0.25"/><stop offset="100%" stop-color="#8B9BAE" stop-opacity="0"/></linearGradient></defs>';
-      html += '<path d="' + line.area + '" fill="url(#dgTrend' + metric + ')"/>';
-      html += '<path d="' + line.d + '" fill="none" stroke="#8B9BAE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+      html += '<div class="line-chart-dark"><svg class="line-svg" viewBox="0 0 300 120" preserveAspectRatio="none">';
+      html += '<path class="line-area" d="' + line.area + '"/>';
+      html += '<path class="line-stroke" d="' + line.d + '" vector-effect="non-scaling-stroke"/>';
       line.pts.forEach(function (p, i) {
-        var r = i === line.pts.length - 1 ? 5 : 4;
+        var last = i === line.pts.length - 1;
         var mk = md.monthly[i] ? md.monthly[i].monthKey : '';
         var tip = md.monthly[i] ? (md.monthly[i].label + ' · ' + md.fmt(md.monthly[i].value) + md.unit) : '';
-        html += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + r + '" fill="#8B9BAE" onclick="App.showChartSheet(\'month\',\'' + mk + '\')"><title>' + tip + '</title></circle>';
+        html += '<rect class="pt' + (last ? ' pt-last' : '') + '" x="' + (p[0] - 2.5) + '" y="' + (p[1] - 1) + '" width="5" height="2" rx="1" onclick="App.showChartSheet(\'month\',\'' + mk + '\')"><title>' + tip + '</title></rect>';
       });
       html += '</svg></div>';
       html += '<div class="line-chart-dark" style="height:auto;"><div class="x-labels">' + line.xlabels + '</div></div>';
@@ -1169,8 +1168,8 @@
       html += '<div class="donut-dark"><div class="dc-title">快慢充比例</div><div class="donut-row-dark">';
       html += this.buildDonut(scope.fastCount, scope.slowCount);
       html += '<div class="donut-legend-dark">';
-      html += '<div class="legend-item"><span class="dot" style="background:#8B9BAE;"></span><span class="ll-label">快充</span><span class="ll-value">' + fPct + '%</span></div>';
-      html += '<div class="legend-item"><span class="dot" style="background:#2DD4BF;"></span><span class="ll-label">慢充</span><span class="ll-value">' + (100 - fPct) + '%</span></div>';
+      html += '<div class="legend-item"><span class="dot dot-fast"></span><span class="ll-label">快充</span><span class="ll-value">' + fPct + '%</span></div>';
+      html += '<div class="legend-item"><span class="dot dot-slow"></span><span class="ll-label">慢充</span><span class="ll-value">' + (100 - fPct) + '%</span></div>';
       html += '</div></div></div>';
 
       var fa = 0, sa = 0, fc = 0, sc = 0;
@@ -1347,11 +1346,11 @@
       var total = fast + slow;
       var C = Math.round(2 * Math.PI * 40 * 100) / 100;
       var html = '<svg class="donut-svg-dark" viewBox="0 0 100 100" onclick="App.showChartSheet(\'donut\',\'\')">'
-        + '<circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12"/>';
+        + '<circle class="donut-track" cx="50" cy="50" r="40" fill="none" stroke-width="12"/>';
       if (total > 0) {
         var dfast = fast / total * C;
-        if (fast > 0) html += '<circle cx="50" cy="50" r="40" fill="none" stroke="#8B9BAE" stroke-width="12" stroke-dasharray="' + dfast.toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 50 50)"/>';
-        if (slow > 0) html += '<circle cx="50" cy="50" r="40" fill="none" stroke="#2DD4BF" stroke-width="12" stroke-dasharray="' + (C - dfast).toFixed(1) + ' ' + C.toFixed(1) + '" stroke-dashoffset="' + (-dfast).toFixed(1) + '" transform="rotate(-90 50 50)"/>';
+        if (fast > 0) html += '<circle class="donut-seg donut-fast" cx="50" cy="50" r="40" fill="none" stroke-width="12" stroke-dasharray="' + dfast.toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 50 50)"/>';
+        if (slow > 0) html += '<circle class="donut-seg donut-slow" cx="50" cy="50" r="40" fill="none" stroke-width="12" stroke-dasharray="' + (C - dfast).toFixed(1) + ' ' + C.toFixed(1) + '" stroke-dashoffset="' + (-dfast).toFixed(1) + '" transform="rotate(-90 50 50)"/>';
       }
       html += '</svg>';
       return html;
