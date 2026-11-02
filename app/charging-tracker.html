@@ -103,7 +103,6 @@
       background-attachment: fixed;
       color: var(--text);
       line-height: 1.5;
-      padding-bottom: 76px;
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
     }
@@ -149,7 +148,7 @@
     .tab-add-btn:active { transform: scale(.94); }
 
     /* ===== 主内容 ===== */
-    .main { max-width: 600px; margin: 0 auto; padding: 14px 14px 116px; }
+    .main { max-width: 600px; margin: 0 auto; padding: 14px 14px calc(74px + env(safe-area-inset-bottom)); }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; animation: fadeIn .25s ease; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
@@ -521,7 +520,13 @@
     /* ===== 响应式 ===== */
     @media (min-width: 600px) {
 
-      .main { padding: 16px 20px 24px; }
+      .main { padding: 16px 20px calc(74px + env(safe-area-inset-bottom)); }
+      .tabbar-dark {
+        left: 50%; right: auto; transform: translateX(-50%);
+        width: 600px;
+        border-left: 0.5px solid rgba(255,255,255,0.06);
+        border-right: 0.5px solid rgba(255,255,255,0.06);
+      }
     }
 
     /* ===== 充电表单独立页面 ===== */
@@ -557,7 +562,7 @@
     .page-back-btn:active { background: rgba(255,255,255,.28); }
     .page-back-btn svg { width: 20px; height: 20px; color: #fff; }
     .page-header h2 { font-size: 17px; font-weight: 700; }
-    .page-body { max-width: 600px; margin: 0 auto; padding: 16px 14px calc(112px + env(safe-area-inset-bottom)); }
+    .page-body { max-width: 600px; margin: 0 auto; padding: 16px 14px calc(76px + env(safe-area-inset-bottom)); }
 
     /* ===== 表单分段标题 ===== */
 
@@ -787,15 +792,14 @@
       pointer-events: none; z-index: 0;
     }
     .page-header {
-      position: sticky; top: 4px; z-index: 12;
+      position: sticky; top: 0; z-index: 12;
       display: flex; align-items: center; gap: 8px;
-      margin: 4px 12px; padding: 8px 16px;
-      border-radius: var(--r-2xl);
+      margin: 0; padding: calc(env(safe-area-inset-top) + 8px) 16px 8px;
+      border-radius: 0;
       background: rgba(18,18,22,0.60);
-      backdrop-filter: blur(24px) saturate(160%);
-      -webkit-backdrop-filter: blur(24px) saturate(160%);
-      border: 0.5px solid rgba(255,255,255,0.05);
-      box-shadow: var(--shadow-sm), var(--specular-top);
+      border: 0;
+      border-bottom: 0.5px solid rgba(255,255,255,0.05);
+      box-shadow: none;
     }
     .page-header h2 { flex: 1; text-align: center; font-size: 17px; font-weight: 600; color: rgba(255,255,255,0.90); }
     .page-back-btn {
@@ -1061,16 +1065,15 @@
     
 
     .tabbar-dark {
-      position: fixed; bottom: 12px; left: 12px; right: 12px; z-index: 50;
-      height: 74px;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+      min-height: 56px;
       display: flex; align-items: center; justify-content: space-around;
-      margin: 0; padding: 0;
-      border-radius: var(--r-2xl);
-      background: rgba(18,18,22,0.72);
-      backdrop-filter: blur(32px) saturate(180%);
-      -webkit-backdrop-filter: blur(32px) saturate(180%);
-      border: 0.5px solid rgba(255,255,255,0.06);
-      box-shadow: var(--shadow-float), var(--specular-strong);
+      margin: 0; padding: 0 8px env(safe-area-inset-bottom);
+      border-radius: 0;
+      background: var(--bg-surface);
+      border: 0;
+      border-top: 0.5px solid rgba(255,255,255,0.06);
+      box-shadow: none;
     }
     .tabbar-dark .tab-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; flex: 1; cursor: pointer; background: none; border: none; padding: 6px 0; color: rgba(255,255,255,0.30); transition: color .18s ease; }
     .tabbar-dark .tab-item svg { width: 24px; height: 24px; }
@@ -1097,19 +1100,21 @@
 
     /* 页面顶部毛玻璃导航 */
     .home-nav-dark {
-      display: flex; justify-content: center; align-items: center;
-      padding: 8px 16px; margin: 0 12px;
-      border-radius: var(--r-2xl);
-      background: rgba(18,18,22,0.60);
-      backdrop-filter: blur(24px) saturate(160%);
-      -webkit-backdrop-filter: blur(24px) saturate(160%);
-      border: 0.5px solid rgba(255,255,255,0.05);
-      box-shadow: var(--shadow-sm), var(--specular-top);
-      position: sticky; top: 4px; z-index: 8;
+      display: flex; align-items: center; gap: 8px;
+      padding: calc(env(safe-area-inset-top) + 8px) 16px 8px;
+      margin: 0 -2px;
+      border-radius: 0;
+      background: var(--bg-base);
+      border: 0;
+      border-bottom: 0.5px solid rgba(255,255,255,0.05);
+      box-shadow: none;
+      position: sticky; top: 0; z-index: 8;
     }
-    .home-nav-dark .nav-title { font-size: 17px; font-weight: 600; color: rgba(255,255,255,0.9); text-align: center; align-self: center; }
+    .home-nav-dark .nav-btn[aria-hidden="true"] { visibility: hidden; }
+    .home-nav-dark .nav-btn[aria-hidden="true"] { visibility: hidden; }
+    .home-nav-dark .nav-title { flex: 1; font-size: 17px; font-weight: 600; color: rgba(255,255,255,0.9); text-align: center; }
     .home-nav-dark .nav-btn {
-      position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+      position: static;
       min-width: 32px; height: 32px;
       display: inline-flex; align-items: center; justify-content: center;
       color: rgba(255,255,255,0.5);
@@ -1300,14 +1305,14 @@
     .ah-delta { margin-left: 8px; padding: 3px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; vertical-align: 1px; font-family: var(--font-mono); }
     .ah-delta b { font-weight: 700; }
     .ah-delta em { font-style: normal; opacity: 0.65; font-weight: 500; }
-    .ah-delta.up { color: var(--sys-green); background: rgba(34,197,94,0.10); }
-    .ah-delta.down { color: var(--sys-orange); background: rgba(245,158,11,0.10); }
+    .ah-delta.up { color: rgba(255,255,255,0.62); background: rgba(255,255,255,0.06); }
+    .ah-delta.down { color: var(--sys-green); background: rgba(34,197,94,0.10); }
     .ah-delta.flat { color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.06); }
 
     /* === 统计页 · 关键指标条 === */
     .stats-summary-dark {
       margin: 0 var(--sp-4) var(--sp-3);
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-1);
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2);
       border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-2);
       background: rgba(20,20,24,0.50);
       backdrop-filter: blur(20px) saturate(140%);
@@ -1511,7 +1516,7 @@
     }
 
     /* 月份分组列表 + 区间统计 */
-    .records-list-wrap { padding: 0 var(--sp-4) calc(96px + env(safe-area-inset-bottom)); margin-top: var(--sp-2); }
+    .records-list-wrap { padding: 0 var(--sp-4); margin-top: var(--sp-2); }
     .records-year-group { margin-top: var(--sp-5); }
     .records-year-group:first-child { margin-top: var(--sp-3); }
     .records-year-title {
@@ -1639,6 +1644,36 @@
     .metric-seg { flex-shrink: 0; align-self: flex-start; }
     .metric-seg-item { white-space: nowrap; }
     .price-diff-hint span { flex: 1; min-width: 0; }
+
+    /* ===== 充电建议列表（P2 新增） ===== */
+    .advice-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 0.5px solid rgba(255,255,255,0.06); }
+    .advice-item:last-child { border-bottom: 0; }
+    .advice-icon { flex: 0 0 20px; width: 20px; height: 20px; color: rgba(255,255,255,0.5); }
+    .advice-icon svg { width: 20px; height: 20px; }
+    .advice-title { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); }
+    .advice-text { font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.55); margin-top: 3px; }
+    .advice-warn .advice-icon { color: var(--warning); }
+    .advice-ok .advice-icon { color: var(--success); }
+
+    /* 桌面端底栏与内容对齐（放在末尾，避免被基础规则覆盖） */
+    @media (min-width: 600px) {
+      .tabbar-dark {
+        left: 50%; right: auto; transform: translateX(-50%);
+        width: 600px;
+        border-left: 0.5px solid rgba(255,255,255,0.06);
+        border-right: 0.5px solid rgba(255,255,255,0.06);
+      }
+    }
+
+    /* 桌面端底栏与内容对齐（放在末尾，避免被基础规则覆盖） */
+    @media (min-width: 600px) {
+      .tabbar-dark {
+        left: 50%; right: auto; transform: translateX(-50%);
+        width: 600px;
+        border-left: 0.5px solid rgba(255,255,255,0.06);
+        border-right: 0.5px solid rgba(255,255,255,0.06);
+      }
+    }
   </style>
 </head>
 <body>

@@ -1301,13 +1301,18 @@
       return { title: '充电建议', sub: rec.summary || '', body: this.buildAdvicePanel(vid) };
     },
 
-    stepAdviceSwap: function (delta) {
-      var vid = VehicleMgr.current() ? VehicleMgr.current().id : null;
-      var max = vid ? (Stats.chargeTypeRatio(vid).fastCount || 0) : 0;
-      var cur = (this.adviceSwapN !== undefined && this.adviceSwapN !== null) ? this.adviceSwapN : Math.max(1, Math.round(max * 0.3));
-      this.adviceSwapN = Math.max(0, Math.min(max, (cur || 0) + delta));
-      this.renderAnalysis();
-      this.showChartSheet('advice', '');
+    /* 渲染充电建议列表（此前只有调用没有实现，点击必抛 TypeError） */
+    buildAdvicePanel: function (vid) {
+      var rec = Recommender.generate(vid);
+      var tips = (rec && rec.tips) || [];
+      if (!tips.length) return '<div class="ds-empty">当前没有需要调整的地方。</div>';
+      return '<div class="advice-list">' + tips.map(function (t) {
+        var kind = t.icon === 'alert' ? 'warn' : (t.icon === 'check' ? 'ok' : 'info');
+        return '<div class="advice-item advice-' + kind + '">'
+          + '<span class="advice-icon">' + (Icons[t.icon] || Icons.info || '') + '</span>'
+          + '<div class="advice-body"><div class="advice-title">' + (t.title || '') + '</div>'
+          + '<div class="advice-text">' + (t.text || '') + '</div></div></div>';
+      }).join('') + '</div>';
     },
 
     buildAnalysisLine: function (monthly) {
