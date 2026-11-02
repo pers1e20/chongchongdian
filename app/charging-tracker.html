@@ -520,7 +520,7 @@
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
     }
-    .page-overlay.show { display: block; animation: slideInRight .25s ease; }
+    .page-overlay.show { display: block; transform: translateX(0); animation: slideInRight .25s ease; }
     @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
     .page-header {
       background: var(--gradient-primary);
@@ -1828,6 +1828,12 @@ transition: color .18s, background .18s;
 
     .records-empty .re-btn { background: transparent; border: 1px solid var(--c-line-strong);
       color: var(--c-text); border-radius: var(--r-2); padding: 8px 16px; font-weight: 500; }
+
+    /* 表单页直接呈现，避免低端机/省电模式下动画停在起始帧导致整屏空白 */
+    .page-overlay.show { animation: none; transform: none; }
+
+    /* 表单页直接呈现，避免低端机/省电模式下动画停在起始帧导致整屏空白 */
+    .page-overlay.show { animation: none; transform: none; }
   </style>
 </head>
 <body>
