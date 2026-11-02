@@ -4,7 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>冲充电</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#050508">
+  <meta name="theme-color" content="#0A0A0B">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2193,7 +2193,8 @@ transition: color .18s, background .18s;
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
         navigator.serviceWorker.register('sw.js').then(function (reg) {
-          console.log('SW 注册成功', reg.scope);
+          // 每次启动主动检查一次，避免长期停在旧缓存
+          if (reg.update) reg.update().catch(function () {});
         }).catch(function (err) {
           console.warn('SW 注册失败', err);
         });
