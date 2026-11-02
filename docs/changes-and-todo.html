@@ -91,6 +91,11 @@
   ol.check li::before{content:counter(c);position:absolute;left:0;top:9px;width:20px;height:20px;
     border:1px solid var(--line);border-radius:50%;font:500 11px/20px var(--mono);text-align:center;color:var(--ink-3)}
 
+  .shots{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0 8px}
+  .shots figure{margin:0}
+  .shots img{width:100%;display:block;border:1px solid var(--line);border-radius:6px}
+  .shots figcaption{font-size:11.5px;color:var(--ink-3);margin-top:6px;text-align:center}
+
   footer{border-top:1px solid var(--line);padding-top:20px;font-size:12px;color:var(--ink-3);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 
   @media (max-width:820px){
@@ -110,11 +115,11 @@
 <header>
   <div class="kicker">冲充电 / 交接留档</div>
   <h1>改动记录与后续任务</h1>
-  <p class="sub">2026-11-02 · 基线提交 <span class="mono">f6b4ae0</span> → 当前 <span class="mono">6025fb7</span> · 本轮完成 P0 数据修正与 P1 结构重排，尚未部署到线上</p>
+  <p class="sub">2026-11-02 · 基线 <span class="mono">f6b4ae0</span> → 当前 <span class="mono">7fea904</span> · P0 数据修正、P1 结构重排、P2 视觉重写均已完成，尚未部署到线上</p>
   <div class="facts">
-    <div class="fact"><b>−1297</b><span>净减少代码行（+512 / −1809）</span></div>
-    <div class="fact"><b>1790</b><span>charging-tracker.js 现有行数（原 3000）</span></div>
-    <div class="fact"><b>12 / 19</b><span>任务清单完成数</span></div>
+    <div class="fact"><b>−846</b><span>HTML 行数 2852 → 2006</span></div>
+    <div class="fact"><b>0</b><span>渐变 / 模糊 / 阴影残留</span></div>
+    <div class="fact"><b>16 / 20</b><span>任务清单完成数</span></div>
     <div class="fact"><b>0</b><span>数据结构与存储键变更</span></div>
   </div>
 </header>
@@ -134,7 +139,7 @@
   <a href="#u-data" class="sub">数据与备份</a>
   <a href="#usage-limit" class="sub">当前限制</a>
   <a href="#tasks">三 · 下次做什么</a>
-  <a href="#t-p2" class="sub">P2 视觉</a>
+  <a href="#t-p2" class="sub">P2 视觉（已完成）</a>
   <a href="#t-p3" class="sub">P3 部署</a>
   <a href="#t-observe" class="sub">使用观察清单</a>
   <a href="#notes">四 · 注意事项</a>
@@ -373,52 +378,53 @@
     <tbody>
       <tr><td>P0 数据可信</td><td>7 项修正</td><td>无</td><td><span class="tag done">已完成</span></td></tr>
       <tr><td>P1 结构</td><td>6 项重排与清理</td><td>P0</td><td><span class="tag done">已完成</span></td></tr>
-      <tr><td>P2 视觉</td><td>4 项，设计令牌 + 组件样式重写</td><td>你的使用反馈</td><td><span class="tag wait">待启动</span></td></tr>
-      <tr><td>P3 部署</td><td>3 项，缓存策略与托管迁移</td><td>P2 或你的部署决定</td><td><span class="tag wait">待启动</span></td></tr>
+      <tr><td>P2 视觉</td><td>4 项，设计令牌 + 组件样式重写</td><td>无</td><td><span class="tag done">已完成</span></td></tr>
+      <tr><td>P3 部署</td><td>3 项，缓存策略与托管迁移</td><td>你的部署决定</td><td><span class="tag wait">待启动</span></td></tr>
     </tbody>
   </table>
 
-  <h3 id="t-p2">P2 · 视觉重写（4 项）</h3>
-  <div class="tasks">
+  <h3 id="t-p2">P2 · 视觉重写（已完成）</h3>
+  <p>四项已全部落地。核心变化：<strong>先删掉 1430 行死样式，再在干净底子上重写</strong>，而不是在旧层上打补丁。</p>
 
-    <div class="task">
-      <div class="task-h"><b>替换设计令牌</b><span class="id">P2-1</span><span class="tag wait">待启动</span></div>
-      <dl>
-        <dt>目标</dt><dd>用一套克制的深色体系替掉现有玻璃配色：三层底色（页底 / 卡面 / 次级面）+ 一档分隔线，主按钮白底黑字，全站正文对比度 ≥7:1</dd>
-        <dt>落点</dt><dd><code>charging-tracker.html</code> 顶部 <code>:root</code> 变量区与所有颜色引用点</dd>
-        <dt>验收</dt><dd>全局搜索不到 <code>backdrop-filter</code>；无渐变；正文在强光下可读</dd>
-        <dt>风险</dt><dd>变量被 170 多处规则硬编码覆盖，只换变量不生效，必须逐规则改</dd>
-      </dl>
-    </div>
+  <table>
+    <thead><tr><th style="width:22%">项</th><th style="width:30%">做法</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>设计令牌</td><td>石墨体系：底 #0A0A0B、面 #141416、线 #2A2A2E、主文 #EDEDEF</td><td>一次替换 168 处颜色字面量；<code>gradient()</code> 与 <code>backdrop-filter</code> 归零</td></tr>
+      <tr><td>组件样式</td><td>卡片统一「面 + 1px 线 + 12px 圆角」，列表行 60 高，图表 1.5px 细线</td><td>阴影只剩 focus 的 inset；圆角全部走令牌；字号收敛为 5 级</td></tr>
+      <tr><td>图标体系</td><td>设置页六种彩色底块统一为单色</td><td>界面内不再有装饰性彩色，颜色只表达状态（正常 / 警示 / 危险）</td></tr>
+      <tr><td>文案与空态</td><td>空态改可执行提示，数值统一等宽</td><td>金额、度数、日期全部等宽并右对齐；无效值统一「—」</td></tr>
+    </tbody>
+  </table>
 
-    <div class="task">
-      <div class="task-h"><b>重写组件样式</b><span class="id">P2-2</span><span class="tag wait">待启动</span></div>
-      <dl>
-        <dt>目标</dt><dd>卡片统一为「面 + 1px 线」，无阴影无模糊；列表改行式分隔线；图表改 1.5px 细线 + 仅横向网格；底栏贴底并留安全区</dd>
-        <dt>落点</dt><dd>CSS 主体约 2500 行，重点在卡片、列表、图表、底栏四类</dd>
-        <dt>验收</dt><dd>一屏不超过 3 张卡；≥600px 宽时内容不被底栏压住；375px 宽下图表刻度可读</dd>
-        <dt>现状</dt><dd><code>backdrop-filter</code> 102 处、渐变 56 处、<code>box-shadow</code> 101 处、<code>border-radius</code> 172 处</dd>
-      </dl>
-    </div>
-
-    <div class="task">
-      <div class="task-h"><b>统一图标体系</b><span class="id">P2-3</span><span class="tag wait">待启动</span></div>
-      <dl>
-        <dt>目标</dt><dd>41 个 SVG 图标统一为 20×20、1.5px 描边、颜色继承文字色；去掉设置页的彩色方块底（蓝 / 青 / 绿 / 橙 / 金 / 红）</dd>
-        <dt>落点</dt><dd><code>charging-tracker.js</code> 顶部 <code>Icons</code> 对象；<code>.sr-icon</code> 相关 CSS</dd>
-        <dt>验收</dt><dd>界面中不再出现六种彩色托底；图标粗细一致</dd>
-      </dl>
-    </div>
-
-    <div class="task">
-      <div class="task-h"><b>文案瘦身与空态重写</b><span class="id">P2-4</span><span class="tag wait">待启动</span></div>
-      <dl>
-        <dt>目标</dt><dd>删掉主屏上的口径解释（「健康指数构成 容量×60%+习惯×40%」这类），一律移入 <code>ⓘ</code> 弹层；空态改成可执行提示（「再记 2 次就能算出电耗」）；单位去重</dd>
-        <dt>落点</dt><dd>各页面渲染函数中的提示文案与空态分支</dd>
-        <dt>验收</dt><dd>任意一屏自然语言不超过 2 句；<code>—</code> 与 <code>--</code> 不再混用；金额统一 2 位、电量 1 位</dd>
-      </dl>
-    </div>
+  <div class="shots">
+    <figure><img src="screenshots/p2/records.png" alt="记录页"><figcaption>记录：本月汇总 + 按月分组</figcaption></figure>
+    <figure><img src="screenshots/p2/stats.png" alt="统计页"><figcaption>统计：三卡 + 白灰图表</figcaption></figure>
+    <figure><img src="screenshots/p2/settings.png" alt="设置页"><figcaption>设置：三段 + 单色图标</figcaption></figure>
   </div>
+
+  <h3>顺带修掉的三个缺陷</h3>
+  <table>
+    <thead><tr><th style="width:30%">问题</th><th>原因与处理</th></tr></thead>
+    <tbody>
+      <tr><td>空库白屏</td><td>多层渐变背景被替换成纯色后，<code>background: 色,色,色</code> 是非法值，整条声明被浏览器丢弃。改为单色</td></tr>
+      <tr><td>表单页可能整屏空白</td><td>滑入动画在低端机或省电模式下可能停在起始帧，元素卡在屏幕外。补上静态终态并去掉该动画</td></tr>
+      <tr><td>空态按钮像禁用</td><td>旧样式用强调色填充，改色后成了灰底灰字。改为透明底 + 描边</td></tr>
+    </tbody>
+  </table>
+
+  <h3>验收结果</h3>
+  <table>
+    <thead><tr><th style="width:34%">项</th><th style="width:22%">目标</th><th>实测</th></tr></thead>
+    <tbody>
+      <tr><td><code>backdrop-filter</code></td><td>0</td><td>0</td></tr>
+      <tr><td>渐变</td><td>0</td><td>0</td></tr>
+      <tr><td>字面量阴影</td><td>0</td><td>0（仅保留 focus 内描边）</td></tr>
+      <tr><td>固定圆角值</td><td>0</td><td>仅剩 50%（圆形头像/圆点）与 0</td></tr>
+      <tr><td>字号种类</td><td>5</td><td>5（11 / 13 / 15 / 20 / 32）</td></tr>
+      <tr><td>JS 颜色字面量</td><td>0</td><td>0（图表取色全部移入 CSS）</td></tr>
+      <tr><td>交互回归</td><td>20 项通过</td><td>20 / 20</td></tr>
+    </tbody>
+  </table>
 
   <h3 id="t-p3">P3 · 部署与更新（3 项）</h3>
   <div class="tasks">
