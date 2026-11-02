@@ -757,9 +757,6 @@
     /* ===== 卡片光影统一：同类卡片光影一致（统一顶部细高光，不差异化错位） ===== */
 
     /* 窄屏：4 张 KPI 信息卡改为 2×2，避免窄格内数值溢出/截断 */
-    @media (max-width: 420px) {
-
-    }
 
     /* ===== 添加/编辑记录页：全要素类玻璃材质 + 光效（与首页统一，同类元素一致） ===== */
     .page-overlay::before {
@@ -1860,6 +1857,125 @@ transition: color .18s, background .18s;
     }
     #vehicleFormPage .vf-check:checked { background: var(--c-text); border-color: var(--c-text); }
     #vehicleFormPage .vf-check:checked::after { transform: translateX(18px); background: var(--c-bg); }
+
+    /* ============================================================
+     * 窄屏防御层
+     * 目标：把「溢出 / 重叠」这类不可控失效，统一改成「省略号」
+     * 说明：前面几代样式存在同名类互相覆盖，因此本层置于最末，
+     *       以相同或更高特异性覆盖，不改动历史规则。
+     * ============================================================ */
+
+    /* ---- 1. 全局横向兜底 ---- */
+    html, body { overflow-x: hidden; max-width: 100%; }
+    @supports (overflow-x: clip) {
+      html, body { overflow-x: clip; }
+    }
+    body { min-height: 100dvh; }
+
+    /* ---- 2. 顶栏：长车名走省略号，不换行不撑破 ---- */
+    .home-nav-dark .nav-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .home-nav-dark .nav-btn { position: relative; }
+    .home-nav-dark .nav-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .home-nav-dark .nav-btn::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 100%; height: 44px; transform: translate(-50%, -50%);
+    }
+
+    /* ---- 3. Toast：长文案不超出视口 ---- */
+    .toast {
+      max-width: calc(100vw - 32px);
+      white-space: normal;
+      text-align: left;
+      line-height: 1.45;
+    }
+    .toast span { min-width: 0; }
+
+    /* ---- 4. 表单行：标签自适应，不再被截成「充电前 SO…」 ---- */
+    .form-row-dark .fr-label {
+      width: auto;
+      min-width: 64px;
+      max-width: 42%;
+      white-space: normal;
+      text-overflow: clip;
+      line-height: 1.35;
+    }
+    .form-row-dark .fr-suffix { min-width: 1.4em; text-align: right; }
+
+    /* ---- 5. 记录行：内容与金额互不挤压 ---- */
+    .history-item-dark .hi-info { overflow: hidden; }
+    .history-item-dark .hi-main {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .history-item-dark .hi-amount { min-width: 0; max-width: 46%; }
+
+    /* ---- 6. 统计指标条：三格互不串位 ---- */
+    .stats-summary-dark .ss-item { min-width: 0; }
+    .stats-summary-dark .ss-v {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stats-summary-dark .ss-v em { display: block; margin-left: 0; }
+
+    /* ---- 7. 月份组头：统计项收缩而非被硬裁 ---- */
+    .records-month-head .rm-stat {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ---- 8. 弹层：两列网格可收缩，圆形按钮不被压扁 ---- */
+    .ds-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ds-cell, .dc-value, .dc-label { min-width: 0; overflow-wrap: anywhere; }
+    .ds-icon-btn { flex-shrink: 0; position: relative; }
+    .ds-icon-btn::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 44px; height: 44px; transform: translate(-50%, -50%);
+    }
+    .data-sheet-head > div:first-child { min-width: 0; }
+    .data-sheet-content { max-height: 82dvh; }
+
+    /* ---- 9. 覆盖页：去掉负偏移装饰，避免产生横向滚动区 ---- */
+    .page-overlay { overflow-x: hidden; }
+    .page-overlay::before { left: 0; width: 100%; }
+
+    /* ---- 10. 触摸目标：小控件扩到 44px 点击区，不改变视觉 ---- */
+    .filter-toggle-btn, .sr-switch, .re-btn { position: relative; }
+    .filter-toggle-btn::after, .sr-switch::after, .re-btn::after,
+    .page-back-btn::after, .year-chip-dark::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 100%; height: 44px;
+      transform: translate(-50%, -50%);
+    }
+    .page-back-btn, .year-chip-dark { position: relative; }
+    .ds-close-btn { position: relative; }
+    .ds-close-btn::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 100%; height: 44px; transform: translate(-50%, -50%);
+    }
+    .metric-seg-item { padding-top: 10px; padding-bottom: 10px; }
+    .metric-seg-item { padding-top: 8px; padding-bottom: 8px; }
+    .form-row-dark .fr-input { min-height: 40px; align-self: stretch; }
+    .form-row-dark .fr-label { cursor: default; }
+
+    /* ---- 11. 消除 2px 横向溢出与零散点击区 ---- */
+    .home-nav-dark { margin-left: 0; margin-right: 0; }
+    #cfMoreBtn { min-height: 44px; }
+    #cfLastHint { position: relative; }
+    #cfLastHint::after {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 100%; height: 44px; transform: translate(-50%, -50%);
+    }
+    #vehicleFormPage .vf-check { height: 28px; }
+    #vehicleFormPage .vf-check::after { top: 3px; left: 3px; width: 20px; height: 20px; }
+    #vehicleFormPage .vf-check:checked::after { transform: translateX(16px); }
   </style>
 </head>
 <body>
@@ -2022,7 +2138,7 @@ transition: color .18s, background .18s;
   <!-- 车辆详情（半屏） -->
   <div class="modal" id="vehicleDetailModal">
     <div class="modal-overlay"></div>
-    <div class="modal-content" style="max-height:46vh;">
+    <div class="modal-content" style="max-height:46vh;max-height:46dvh;">
       <div class="modal-header">
         <h2>车辆详情</h2>
         <button class="modal-close" aria-label="关闭">
