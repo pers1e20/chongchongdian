@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>冲充电 · 电池健康</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="health">
+<div class="phone">
+  <header class="topbar">
+    <button class="topbar__back icon-btn" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <h1 class="topbar__title">电池健康</h1>
+    <span class="topbar__right"></span>
+  </header>
+
+  <main class="content">
+
+    <section class="card reveal">
+      <div class="gauge" id="gauge">
+        <svg viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="#F0F0F2" stroke-width="11"/>
+          <circle id="gArc" cx="60" cy="60" r="52" fill="none" stroke="#E5484D" stroke-width="11"
+            stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+        </svg>
+        <div class="g-val"><div><b id="gVal">76%</b><span>健康指数</span></div></div>
+      </div>
+      <p class="gauge-cap">电池健康度由实测容量 × 0.6 + 充放电习惯 × 0.4 综合评估</p>
+    </section>
+
+    <section class="card reveal">
+      <div class="card-head">
+        <h3>容量概览</h3>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card t-red">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></svg></div>
+          <div class="st-label">当前实测容量</div>
+          <div class="st-val" data-k="currentCapacity">62.3<small> kWh</small></div>
+        </div>
+        <div class="stat-card t-ink">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="10" x="2" y="7" rx="2"/><line x1="22" x2="22" y1="11" y2="13"/><line x1="6" x2="6" y1="11" y2="13"/><line x1="10" x2="10" y1="11" y2="13"/><line x1="14" x2="14" y1="11" y2="13"/></svg></div>
+          <div class="st-label">标称容量</div>
+          <div class="st-val" data-k="ratedCapacity">82.0<small> kWh</small></div>
+        </div>
+        <div class="stat-card t-green">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg></div>
+          <div class="st-label">容量保持率</div>
+          <div class="st-val" data-k="keep">76%</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card reveal">
+      <div class="card-head">
+        <h3>容量月度趋势</h3>
+        <span class="chip chip--slow" id="trendChip">缓慢下滑</span>
+      </div>
+      <div class="chart-wrap">
+        <svg class="line-chart" id="lineChart" viewBox="0 0 300 120" preserveAspectRatio="none">
+          <line id="thr" class="gridline" x1="0" y1="130" x2="300" y2="130"/>
+          <text class="axis-label" id="thrLab"></text>
+        </svg>
+      </div>
+      <div class="legend">
+        <span class="lg"><i style="background:#E5484D"></i>实测容量</span>
+        <span class="lg"><i style="background:#D1D1D6;height:2px;border-radius:1px"></i>85%×标称 警示阈值</span>
+      </div>
+    </section>
+
+    <section class="card reveal">
+      <div class="card-head">
+        <h3>容量估算明细</h3>
+      </div>
+      <table class="tbl" id="tbl">
+        <thead><tr><th>项目</th><th>数值</th><th>说明</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <div class="note reveal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <span>近 5 次有效样本中位数，SOC 跨度 ≥30% 才计入；实测低于 85% 需关注。</span>
+    </div>
+
+  </main>
+
+  <nav class="tabbar">
+    <a class="tabbar__item" data-nav="home" href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>首页</span>
+    </a>
+    <a class="tabbar__item" data-nav="records" href="records.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      <span>记录</span>
+    </a>
+    <a class="tabbar__item" data-nav="analysis" href="analysis.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
+      <span>分析</span>
+    </a>
+    <a class="tabbar__item" data-nav="profile" href="profile.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>我的</span>
+    </a>
+  </nav>
+</div>
+<script src="mock.js"></script>
+<script src="api.js"></script>
+<script src="nav-active.js"></script>
+<script>
+(function () {
+  var health = DB.health;
+  var rated = health.ratedCapacity;
+  var keep = Math.round(health.currentCapacity / rated * 100);
+  document.querySelector('[data-k="currentCapacity"]').innerHTML = health.currentCapacity + '<small> kWh</small>';
+  document.querySelector('[data-k="ratedCapacity"]').innerHTML = rated.toFixed(1) + '<small> kWh</small>';
+  document.querySelector('[data-k="keep"]').innerHTML = keep + '%';
+
+  /* 拨盘：红弧 */
+  var arc = document.getElementById('gArc');
+  var C = 2 * Math.PI * 52;
+  arc.style.transition = 'stroke-dashoffset .8s ease';
+  requestAnimationFrame(function () {
+    arc.setAttribute('stroke-dashoffset', String(C * (1 - health.socPercent / 100)));
+  });
+  document.getElementById('gVal').innerHTML = health.socPercent + '%<span>健康指数</span>';
+
+  /* 折线：容量月度趋势 + 警示阈值虚线 */
+  var W = 300, H = 120, padL = 34, padR = 8, padT = 8, padB = 20;
+  var yMin = 56, yMax = 72;
+  function y(v) { return padT + (yMax - v) / (yMax - yMin) * (H - padT - padB); }
+  var trend = health.trend;
+  var n = trend.length;
+  var stepX = (W - padL - padR) / (n - 1);
+  var pts = trend.map(function (t, i) { return [padL + i * stepX, y(t.kWh)]; });
+  var d = pts.map(function (p, i) { return (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
+
+  var svg = document.getElementById('lineChart');
+  var ns = 'http://www.w3.org/2000/svg';
+  /* 警示阈值线：85% × 标称 */
+  var thrKWh = rated * 0.85;
+  var thrY = y(thrKWh);
+  var tr = document.getElementById('thr');
+  tr.setAttribute('y1', thrY); tr.setAttribute('y2', thrY);
+  tr.setAttribute('stroke-dasharray', '5 4'); tr.setAttribute('stroke', '#F0A020');
+  tr.style.stroke = '#F0A020'; tr.setAttribute('stroke-width', '1');
+  var thrLab = document.getElementById('thrLab');
+  thrLab.setAttribute('x', padL);
+  thrLab.setAttribute('y', thrY + (thrY < 25 ? 12 : -5));
+  thrLab.textContent = '85%×标称 ≈ ' + thrKWh.toFixed(1) + ' kWh 警示阈值';
+
+  /* 纵轴刻度 */
+  [72, 66, 60].forEach(function (v) {
+    var t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', padL - 4); t.setAttribute('y', y(v) + 3);
+    t.setAttribute('text-anchor', 'end');
+    t.setAttribute('class', 'axis-label');
+    t.textContent = v;
+    svg.appendChild(t);
+  });
+  var lb = trend.map(function (t) { return t.m.slice(5); });
+  lb.forEach(function (m, i) {
+    var t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', padL + i * stepX); t.setAttribute('y', H - 6);
+    t.setAttribute('text-anchor', 'middle'); t.setAttribute('class', 'axis-label');
+    t.textContent = m;
+    svg.appendChild(t);
+  });
+  /* 网格横线 */
+  [72, 66, 60].forEach(function (v) {
+    var g = document.createElementNS(ns, 'line');
+    g.setAttribute('x1', padL); g.setAttribute('x2', W); g.setAttribute('y1', y(v)); g.setAttribute('y2', y(v));
+    g.setAttribute('class', 'gridline'); svg.appendChild(g);
+  });
+  var poly = document.createElementNS(ns, 'polyline');
+  poly.setAttribute('points', pts.map(function (p) { return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' '));
+  poly.setAttribute('fill', 'none'); poly.setAttribute('stroke', '#E5484D');
+  poly.setAttribute('stroke-width', '2.2'); poly.setAttribute('stroke-linecap', 'round'); poly.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(poly);
+  /* 点 */
+  pts.forEach(function (p) {
+    var c = document.createElementNS(ns, 'circle');
+    c.setAttribute('cx', p[0]); c.setAttribute('cy', p[1]); c.setAttribute('r', '2.6');
+    c.setAttribute('fill', '#E5484D'); svg.appendChild(c);
+  });
+
+  /* 明细表 */
+  var tbody = document.querySelector('#tbl tbody');
+  health.items.forEach(function (it) {
+    var tr2 = document.createElement('tr');
+    tr2.innerHTML = '<td>' + it.label + '</td><td class="metric">' + it.val + '</td><td>' + it.note + '</td>';
+    tbody.appendChild(tr2);
+  });
+
+  document.querySelector('.topbar__back').addEventListener('click', function () {
+    if (window.history.length > 1) window.history.back(); else location.href = 'analysis.html';
+  });
+
+  var last = trend[n - 1].kWh, prev = trend[n - 2].kWh;
+  var chip = document.getElementById('trendChip');
+  if (last < prev) { chip.textContent = '近月 ' + (prev - last).toFixed(1) + ' kWh ↓'; }
+})();
+</script>
+</body>
+</html>

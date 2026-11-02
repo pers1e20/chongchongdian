@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>冲充电 · 充电建议</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="advice">
+<div class="phone">
+  <header class="topbar">
+    <button class="topbar__back icon-btn" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <h1 class="topbar__title">充电建议</h1>
+    <span class="topbar__right"></span>
+  </header>
+
+  <main class="content">
+
+    <section class="card reveal">
+      <div class="card-head">
+        <h3>现状概览</h3>
+      </div>
+      <div class="stat-grid" id="overview"></div>
+    </section>
+
+    <section class="card reveal">
+      <div class="card-head">
+        <h3>建议清单</h3>
+      </div>
+      <div id="sugList"></div>
+    </section>
+
+    <section class="card reveal">
+      <div class="card-head">
+        <h3>成本优化模拟</h3>
+      </div>
+      <div id="compare"></div>
+      <p class="note" style="margin-top:12px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+        <span>切换慢充 + 谷电，每月约省 <b style="color:var(--gold-deep)">9.7 元</b>，并减少过充对电池的压力。</span>
+      </p>
+      <div class="legend">
+        <span class="lg"><i style="background:#C9982E"></i>慢充策略</span>
+        <span class="lg"><i style="background:#E5484D"></i>快充策略</span>
+      </div>
+    </section>
+
+    <div class="note reveal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <span>估算按本月 4 次充电的均值推算，实际受电价时段与天气波动影响，仅供参考。</span>
+    </div>
+
+  </main>
+
+  <nav class="tabbar">
+    <a class="tabbar__item" data-nav="home" href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>首页</span>
+    </a>
+    <a class="tabbar__item" data-nav="records" href="records.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      <span>记录</span>
+    </a>
+    <a class="tabbar__item" data-nav="analysis" href="analysis.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
+      <span>分析</span>
+    </a>
+    <a class="tabbar__item" data-nav="profile" href="profile.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>我的</span>
+    </a>
+  </nav>
+</div>
+<script src="mock.js"></script>
+<script src="api.js"></script>
+<script src="nav-active.js"></script>
+<script>
+(function () {
+  var advice = DB.advice;
+
+  /* 现状概览：四宫格 */
+  var themes = ['t-gold', 't-red', 't-warn', 't-green'];
+  var icons = [
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>',
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>',
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6M10 22h4"/></svg>',
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>'
+  ];
+  var ov = document.getElementById('overview');
+  advice.overview.forEach(function (o, i) {
+    var d = document.createElement('div');
+    d.className = 'stat-card ' + themes[i];
+    d.innerHTML =
+      '<div class="ic">' + icons[i] + '</div>' +
+      '<div class="st-label">' + o.label + '</div>' +
+      '<div class="st-val">' + o.val + '</div>' +
+      '<div class="st-delta">' + o.note + '</div>';
+    ov.appendChild(d);
+  });
+
+  /* 建议清单 */
+  var chipMap = { good: 'chip--ok', ok: 'chip--ink', warn: 'chip--warn' };
+  var chipText = { good: '继续保持', ok: '略有改进', warn: '尽快改善' };
+  var list = document.getElementById('sugList');
+  advice.suggestions.forEach(function (s) {
+    var d = document.createElement('div');
+    d.className = 'listrow';
+    d.style.alignItems = 'flex-start';
+    d.innerHTML =
+      '<div class="li-main">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+          '<span class="chip ' + chipMap[s.level] + '">' + chipText[s.level] + '</span>' +
+          '<span class="li-title">' + s.title + '</span>' +
+        '</div>' +
+        '<p style="font-size:12px;color:var(--muted);margin-top:5px">' + s.desc + '</p>' +
+      '</div>' +
+      '<button class="btn btn--ghost" style="padding:8px 12px;font-size:12.5px;flex:none;margin-top:2px" data-action="' + s.action + '">' + s.action + '</button>';
+    list.appendChild(d);
+  });
+
+  /* 成本优化对比条形 */
+  var c = advice.compare;
+  var fast = c.fast, slow = c.slow;
+  var maxCost = Math.max(slow.cost, fast.cost);
+  var maxPu = Math.max(slow.costPu, fast.costPu);
+  function barRow(label, sv, fv, max) {
+    var row = document.createElement('div');
+    row.style.marginBottom = '14px';
+    row.innerHTML =
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">' + label + '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:6px">' +
+        rowBar('gold', '慢充策略 ' + sv, sv / max) +
+        rowBar('red', '快充策略 ' + fv, fv / max) +
+      '</div>';
+    return row;
+  }
+  function rowBar(color, label, ratio) {
+    var hex = color === 'gold' ? '#C9982E' : '#E5484D';
+    return '<div style="display:flex;align-items:center;gap:8px">' +
+      '<span style="flex:none;font-size:11.5px;color:var(--muted);width:64px">' + label.split(' ').pop() + '</span>' +
+      '<div style="flex:1;height:18px;background:var(--panel);border-radius:8px;overflow:hidden">' +
+        '<div style="width:' + Math.round(ratio * 100) + '%;height:100%;border-radius:8px;background:' + hex + '"></div>' +
+      '</div>' +
+    '</div>';
+  }
+  var comp = document.getElementById('compare');
+  comp.appendChild(barRow('电价梯度（元/度）', slow.costPu.toFixed(2), fast.costPu.toFixed(2), maxPu));
+  comp.appendChild(barRow('预计费用（元/次）', '¥' + slow.cost, '¥' + fast.cost, maxCost));
+
+  /* 采纳 → toast */
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.textContent = '已采纳建议：' + msg;
+    t.style.cssText = 'position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:999;max-width:320px;padding:10px 16px;border-radius:999px;background:#1D1D1F;color:#fff;font-size:13px;font-weight:600;box-shadow:0 8px 20px -8px rgba(0,0,0,.3);animation:rise .3s forwards';
+    document.body.appendChild(t);
+    setTimeout(function () { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(function () { t.remove(); }, 320); }, 1800);
+  }
+  document.querySelectorAll('button[data-action]').forEach(function (b) {
+        b.addEventListener('click', function () { toast(this.dataset.action || ''); });
+      });
+
+      document.querySelector('.topbar__back').addEventListener('click', function () {
+        if (window.history.length > 1) window.history.back(); else location.href = 'analysis.html';
+      });
+})();
+</script>
+</body>
+</html>

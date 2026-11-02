@@ -1,0 +1,2471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>冲充电 · Apple 风格设计方案</title>
+<style>
+/* ============================================================
+   冲充电 Apple 风格设计系统 — Design Tokens
+   ============================================================ */
+:root {
+  /* — Light Mode — */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F2F2F7;
+  --bg-tertiary: #FFFFFF;
+  --bg-elevated: #FFFFFF;
+
+  --label-primary: #000000;
+  --label-secondary: rgba(60, 60, 67, 0.6);
+  --label-tertiary: rgba(60, 60, 67, 0.3);
+  --label-quaternary: rgba(60, 60, 67, 0.18);
+
+  --separator: rgba(60, 60, 67, 0.29);
+  --separator-opaque: #C6C6C8;
+
+  /* System Colors */
+  --sys-blue: #007AFF;
+  --sys-blue-2: #4A9DFF;
+  --sys-green: #34C759;
+  --sys-orange: #FF9500;
+  --sys-red: #FF3B30;
+  --sys-yellow: #FFCC00;
+  --sys-purple: #AF52DE;
+  --sys-teal: #5AC8FA;
+  --sys-indigo: #5856D6;
+
+  /* Charging App Brand */
+  --brand: #007AFF;
+  --brand-soft: rgba(0, 122, 255, 0.08);
+  --brand-soft-2: rgba(0, 122, 255, 0.12);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
+
+  /* Spacing — 8pt grid */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+
+  /* Radius — Apple continuous corners */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-2xl: 24px;
+  --r-full: 9999px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 0.2s;
+  --dur-normal: 0.35s;
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #000000;
+    --bg-secondary: #1C1C1E;
+    --bg-tertiary: #2C2C2E;
+    --bg-elevated: #1C1C1E;
+
+    --label-primary: #FFFFFF;
+    --label-secondary: rgba(235, 235, 245, 0.6);
+    --label-tertiary: rgba(235, 235, 245, 0.3);
+    --label-quaternary: rgba(235, 235, 245, 0.18);
+
+    --separator: rgba(84, 84, 88, 0.65);
+    --separator-opaque: #38383A;
+
+    --sys-blue: #0A84FF;
+    --sys-green: #30D158;
+    --sys-orange: #FF9F0A;
+    --sys-red: #FF453A;
+    --sys-yellow: #FFD60A;
+    --sys-purple: #BF5AF2;
+    --sys-teal: #64D2FF;
+    --sys-indigo: #5E5CE6;
+
+    --brand: #0A84FF;
+    --brand-soft: rgba(10, 132, 255, 0.12);
+    --brand-soft-2: rgba(10, 132, 255, 0.18);
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* — Reset — */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-secondary);
+  color: var(--label-primary);
+  line-height: 1.5;
+  font-feature-settings: 'tnum' 1;
+}
+a { color: var(--sys-blue); text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+/* ============================================================
+   Design Proposal Layout
+   ============================================================ */
+.proposal-header {
+  background: var(--bg-primary);
+  padding: var(--sp-16) var(--sp-6) var(--sp-8);
+  text-align: center;
+  border-bottom: 1px solid var(--separator);
+}
+.proposal-header h1 {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--sp-2);
+}
+.proposal-header .subtitle {
+  font-size: 17px;
+  color: var(--label-secondary);
+}
+.proposal-header .tags {
+  display: flex;
+  gap: var(--sp-2);
+  justify-content: center;
+  margin-top: var(--sp-4);
+  flex-wrap: wrap;
+}
+.proposal-header .tag {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--brand);
+  background: var(--brand-soft);
+  padding: 4px 12px;
+  border-radius: var(--r-full);
+}
+
+.section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--sp-12) var(--sp-6);
+}
+.section-title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin-bottom: var(--sp-2);
+}
+.section-desc {
+  font-size: 17px;
+  color: var(--label-secondary);
+  margin-bottom: var(--sp-8);
+}
+
+/* — Design Principles — */
+.principle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--sp-4);
+}
+.principle-card {
+  background: var(--bg-primary);
+  border-radius: var(--r-lg);
+  padding: var(--sp-6);
+  box-shadow: var(--shadow-sm);
+}
+.principle-card .icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-md);
+  background: var(--brand-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--sp-4);
+}
+.principle-card .icon svg { width: 24px; height: 24px; }
+.principle-card h3 {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: var(--sp-1);
+}
+.principle-card p {
+  font-size: 15px;
+  color: var(--label-secondary);
+  line-height: 1.5;
+}
+
+/* — Color Tokens — */
+.color-section { margin-bottom: var(--sp-8); }
+.color-section h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: var(--sp-4);
+}
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--sp-3);
+}
+.color-chip {
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.color-chip .swatch {
+  height: 72px;
+}
+.color-chip .info {
+  background: var(--bg-primary);
+  padding: var(--sp-2) var(--sp-3);
+}
+.color-chip .name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label-primary);
+}
+.color-chip .hex {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--label-secondary);
+}
+
+/* — Typography Scale — */
+.type-table {
+  background: var(--bg-primary);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.type-row {
+  display: flex;
+  align-items: baseline;
+  padding: var(--sp-3) var(--sp-5);
+  border-bottom: 1px solid var(--separator);
+  gap: var(--sp-6);
+}
+.type-row:last-child { border-bottom: none; }
+.type-row .label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label-secondary);
+  width: 120px;
+  flex-shrink: 0;
+}
+.type-row .sample { flex: 1; }
+.type-row .meta {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--label-tertiary);
+  width: 140px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.tp-large-title { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; }
+.tp-title1 { font-size: 28px; font-weight: 700; letter-spacing: -0.015em; }
+.tp-title2 { font-size: 22px; font-weight: 700; }
+.tp-title3 { font-size: 20px; font-weight: 600; }
+.tp-headline { font-size: 17px; font-weight: 600; }
+.tp-body { font-size: 17px; font-weight: 400; }
+.tp-callout { font-size: 16px; font-weight: 400; }
+.tp-subhead { font-size: 15px; font-weight: 400; color: var(--label-secondary); }
+.tp-footnote { font-size: 13px; font-weight: 400; color: var(--label-secondary); }
+.tp-caption { font-size: 12px; font-weight: 400; color: var(--label-tertiary); }
+.tp-data { font-size: 28px; font-weight: 700; font-family: var(--font-mono); letter-spacing: -0.02em; }
+
+/* — Spacing — */
+.spacing-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+}
+.spacing-row .bar {
+  height: 24px;
+  background: var(--brand);
+  border-radius: 4px;
+}
+.spacing-row .name {
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--label-secondary);
+  width: 80px;
+}
+
+/* — Radius — */
+.radius-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-3) 0;
+}
+.radius-row .box {
+  width: 56px;
+  height: 56px;
+  background: var(--brand-soft);
+  border: 2px solid var(--brand);
+}
+.radius-row .name {
+  font-size: 13px;
+  font-weight: 500;
+  width: 80px;
+}
+.radius-row .value {
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: var(--label-secondary);
+}
+
+/* — Component Showcases — */
+.component-showcase {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--sp-4);
+}
+.demo-card {
+  background: var(--bg-primary);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-sm);
+}
+.demo-card .demo-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--label-secondary);
+  margin-bottom: var(--sp-3);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Button */
+.btn-primary {
+  background: var(--sys-blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-sm);
+  padding: 12px 24px;
+  font-size: 17px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.btn-primary:hover { opacity: 0.88; }
+.btn-primary:active { opacity: 0.7; }
+
+.btn-secondary {
+  background: var(--brand-soft);
+  color: var(--sys-blue);
+  border: none;
+  border-radius: var(--r-sm);
+  padding: 12px 24px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.btn-secondary:hover { background: var(--brand-soft-2); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--sys-blue);
+  border: none;
+  padding: 8px 16px;
+  font-size: 17px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+/* Segmented Control */
+.seg-control {
+  background: rgba(118, 118, 118, 0.12);
+  border-radius: var(--r-sm);
+  padding: 2px;
+  display: inline-flex;
+  gap: 0;
+  position: relative;
+}
+.seg-item {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--label-primary);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all var(--dur-fast) var(--ease-out);
+}
+.seg-item.active {
+  background: var(--bg-primary);
+  box-shadow: var(--shadow-sm);
+  font-weight: 600;
+}
+
+/* Tag */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+}
+.tag-green { background: rgba(52, 199, 89, 0.12); color: var(--sys-green); }
+.tag-orange { background: rgba(255, 149, 0, 0.12); color: var(--sys-orange); }
+.tag-blue { background: rgba(0, 122, 255, 0.12); color: var(--sys-blue); }
+.tag-red { background: rgba(255, 59, 48, 0.12); color: var(--sys-red); }
+
+/* List Item */
+.list-group {
+  background: var(--bg-primary);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.list-item {
+  display: flex;
+  align-items: center;
+  padding: var(--sp-3) var(--sp-4);
+  gap: var(--sp-3);
+  border-bottom: 1px solid var(--separator);
+}
+.list-item:last-child { border-bottom: none; }
+.list-item .li-icon {
+  width: 29px;
+  height: 29px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.list-item .li-icon svg { width: 17px; height: 17px; color: #fff; }
+.list-item .li-label {
+  font-size: 17px;
+  flex: 1;
+}
+.list-item .li-value {
+  font-size: 17px;
+  color: var(--label-secondary);
+}
+.list-item .li-chevron {
+  color: var(--label-tertiary);
+  font-size: 20px;
+}
+
+/* ============================================================
+   Phone Mockup Frame
+   ============================================================ */
+.mockup-section {
+  background: var(--bg-secondary);
+  padding: var(--sp-12) var(--sp-4);
+}
+.mockup-section .section-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.mockup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(375px, 1fr));
+  gap: var(--sp-8);
+  justify-items: center;
+}
+.phone-frame {
+  width: 375px;
+  background: var(--bg-primary);
+  border-radius: 44px;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--separator);
+  position: relative;
+}
+.phone-screen {
+  background: var(--bg-secondary);
+  min-height: 720px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.phone-statusbar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-5);
+  background: var(--bg-primary);
+  flex-shrink: 0;
+}
+.phone-statusbar .time {
+  font-size: 15px;
+  font-weight: 600;
+}
+.phone-statusbar .status-icons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.phone-statusbar .status-icons svg { width: 16px; height: 16px; fill: var(--label-primary); }
+.phone-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.phone-tabbar {
+  height: 83px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  padding-top: 8px;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--separator);
+  flex-shrink: 0;
+}
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+.tab-item svg { width: 24px; height: 24px; }
+.tab-item .tab-label {
+  font-size: 10px;
+  font-weight: 500;
+}
+.tab-item .tab-icon { color: var(--sys-blue); }
+.tab-item .tab-label-active { color: var(--sys-blue); }
+.tab-item .tab-icon-inactive { color: var(--label-tertiary); }
+.tab-item .tab-label-inactive { color: var(--label-tertiary); }
+
+.mockup-label {
+  text-align: center;
+  margin-top: var(--sp-4);
+}
+.mockup-label h3 {
+  font-size: 17px;
+  font-weight: 600;
+}
+.mockup-label p {
+  font-size: 13px;
+  color: var(--label-secondary);
+  margin-top: 4px;
+}
+
+/* ============================================================
+   Home Page Mockup
+   ============================================================ */
+.home-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-2) var(--sp-4) 0;
+  background: var(--bg-primary);
+}
+.home-nav .nav-title {
+  font-size: 17px;
+  font-weight: 600;
+}
+.home-nav .nav-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--sys-blue);
+}
+
+.home-hero {
+  background: var(--bg-primary);
+  padding: var(--sp-2) var(--sp-5) var(--sp-6);
+}
+.home-hero .month-label {
+  font-size: 13px;
+  color: var(--label-secondary);
+  margin-bottom: 4px;
+}
+.home-hero .amount {
+  font-size: 40px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: -0.03em;
+}
+.home-hero .amount .unit {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+.home-hero .hero-sub {
+  display: flex;
+  gap: var(--sp-4);
+  margin-top: var(--sp-2);
+}
+.home-hero .hero-sub .sub-item {
+  font-size: 13px;
+  color: var(--label-secondary);
+}
+.home-hero .hero-sub .sub-item strong {
+  color: var(--label-primary);
+  font-weight: 600;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--separator);
+  margin: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.kpi-cell {
+  background: var(--bg-primary);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kpi-cell .kpi-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--sp-1);
+}
+.kpi-cell .kpi-icon svg { width: 16px; height: 16px; color: #fff; }
+.kpi-cell .kpi-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+}
+.kpi-cell .kpi-label {
+  font-size: 12px;
+  color: var(--label-secondary);
+}
+
+.home-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--sp-5);
+  margin-bottom: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+.home-section-header h4 {
+  font-size: 20px;
+  font-weight: 700;
+}
+.home-section-header .see-all {
+  font-size: 15px;
+  color: var(--sys-blue);
+}
+
+.chart-card {
+  background: var(--bg-primary);
+  margin: 0 var(--sp-4) var(--sp-3);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+.chart-card .chart-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--label-secondary);
+  margin-bottom: var(--sp-3);
+}
+.mini-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 100px;
+}
+.mini-chart .bar {
+  flex: 1;
+  background: var(--brand);
+  border-radius: 3px 3px 0 0;
+  opacity: 0.85;
+  position: relative;
+  min-height: 8px;
+}
+.mini-chart .bar.muted { background: var(--label-quaternary); opacity: 1; }
+.mini-chart .bar-label {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--label-tertiary);
+  white-space: nowrap;
+}
+
+.stat-grid-2x2 {
+  margin: 0 var(--sp-4);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+}
+.stat-mini {
+  background: var(--bg-primary);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+.stat-mini .sm-icon-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+.stat-mini .sm-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stat-mini .sm-icon svg { width: 14px; height: 14px; color: #fff; }
+.stat-mini .sm-label {
+  font-size: 13px;
+  color: var(--label-secondary);
+}
+.stat-mini .sm-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: -0.01em;
+}
+.stat-mini .sm-trend {
+  font-size: 12px;
+  color: var(--label-tertiary);
+  margin-top: 2px;
+}
+
+.recent-list {
+  margin: 0 var(--sp-4) var(--sp-4);
+}
+.recent-item {
+  display: flex;
+  align-items: center;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--bg-primary);
+  gap: var(--sp-3);
+  border-bottom: 1px solid var(--separator);
+}
+.recent-item:first-child { border-radius: var(--r-md) var(--r-md) 0 0; }
+.recent-item:last-child { border-radius: 0 0 var(--r-md) var(--r-md); border-bottom: none; }
+.recent-item:only-child { border-radius: var(--r-md); }
+.recent-item .ri-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.recent-item .ri-icon svg { width: 18px; height: 18px; color: #fff; }
+.recent-item .ri-info { flex: 1; }
+.recent-item .ri-title { font-size: 15px; font-weight: 500; }
+.recent-item .ri-sub { font-size: 13px; color: var(--label-secondary); }
+.recent-item .ri-amount {
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   Record Page Mockup
+   ============================================================ */
+.record-header {
+  background: var(--bg-primary);
+  padding: var(--sp-2) var(--sp-4);
+}
+.record-header .seg-control {
+  display: flex;
+  width: 100%;
+}
+.record-header .seg-item {
+  flex: 1;
+  text-align: center;
+}
+
+.form-group {
+  margin: var(--sp-3) var(--sp-4) 0;
+}
+.form-group-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--label-secondary);
+  margin-bottom: var(--sp-2);
+  padding-left: var(--sp-2);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.form-list {
+  background: var(--bg-primary);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.form-row {
+  display: flex;
+  align-items: center;
+  padding: var(--sp-3) var(--sp-4);
+  gap: var(--sp-3);
+  border-bottom: 1px solid var(--separator);
+}
+.form-row:last-child { border-bottom: none; }
+.form-row .fr-label {
+  font-size: 17px;
+  width: 100px;
+  flex-shrink: 0;
+}
+.form-row .fr-input {
+  font-size: 17px;
+  border: none;
+  background: transparent;
+  outline: none;
+  flex: 1;
+  text-align: right;
+  color: var(--label-primary);
+  font-family: var(--font-mono);
+}
+.form-row .fr-suffix {
+  font-size: 15px;
+  color: var(--label-secondary);
+}
+.form-row .fr-placeholder {
+  font-size: 17px;
+  color: var(--label-tertiary);
+  flex: 1;
+  text-align: right;
+}
+
+.record-summary {
+  margin: var(--sp-4) var(--sp-4) var(--sp-6);
+  background: var(--brand-soft);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  text-align: center;
+}
+.record-summary .rs-label {
+  font-size: 13px;
+  color: var(--label-secondary);
+  margin-bottom: 4px;
+}
+.record-summary .rs-amount {
+  font-size: 32px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--sys-blue);
+  letter-spacing: -0.02em;
+}
+
+.record-btn-row {
+  padding: 0 var(--sp-4) var(--sp-4);
+}
+.record-btn-row .btn-primary {
+  width: 100%;
+  font-size: 17px;
+  padding: 15px;
+}
+
+.history-section {
+  margin: var(--sp-4) var(--sp-4);
+}
+.history-section h4 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: var(--sp-2);
+  padding-left: var(--sp-2);
+}
+.history-item {
+  display: flex;
+  align-items: center;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--bg-primary);
+  gap: var(--sp-3);
+  border-bottom: 1px solid var(--separator);
+}
+.history-item:first-child { border-radius: var(--r-md) var(--r-md) 0 0; }
+.history-item:last-child { border-radius: 0 0 var(--r-md) var(--r-md); border-bottom: none; }
+.history-item:only-child { border-radius: var(--r-md); }
+.history-item .hi-date {
+  text-align: center;
+  flex-shrink: 0;
+}
+.history-item .hi-date .day { font-size: 20px; font-weight: 700; }
+.history-item .hi-date .month { font-size: 12px; color: var(--label-secondary); }
+.history-item .hi-info { flex: 1; }
+.history-item .hi-title { font-size: 15px; font-weight: 500; }
+.history-item .hi-sub { font-size: 13px; color: var(--label-secondary); }
+.history-item .hi-amount {
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   Analysis Page Mockup
+   ============================================================ */
+.analysis-header {
+  background: var(--bg-primary);
+  padding: var(--sp-2) var(--sp-4);
+}
+.analysis-header .seg-control {
+  display: flex;
+  width: 100%;
+}
+.analysis-header .seg-item { flex: 1; text-align: center; }
+
+.analysis-hero {
+  background: var(--bg-primary);
+  margin: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-sm);
+}
+.analysis-hero .ah-label {
+  font-size: 13px;
+  color: var(--label-secondary);
+  margin-bottom: var(--sp-1);
+}
+.analysis-hero .ah-value {
+  font-size: 34px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+}
+.analysis-hero .ah-trend {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-top: var(--sp-2);
+}
+.analysis-hero .ah-trend .trend-val {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sys-green);
+}
+.analysis-hero .ah-trend .trend-label {
+  font-size: 13px;
+  color: var(--label-secondary);
+}
+
+.trend-chart-card {
+  background: var(--bg-primary);
+  margin: 0 var(--sp-4) var(--sp-3);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+.trend-chart-card .tc-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--label-secondary);
+  margin-bottom: var(--sp-3);
+}
+.line-chart {
+  height: 120px;
+  position: relative;
+}
+.line-chart svg { width: 100%; height: 100%; }
+.line-chart .x-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--sp-2);
+}
+.line-chart .x-labels span {
+  font-size: 10px;
+  color: var(--label-tertiary);
+}
+
+.donut-card {
+  background: var(--bg-primary);
+  margin: 0 var(--sp-4) var(--sp-3);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+.donut-card .dc-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--label-secondary);
+  margin-bottom: var(--sp-3);
+}
+.donut-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+.donut-svg { width: 100px; height: 100px; flex-shrink: 0; }
+.donut-legend { flex: 1; }
+.donut-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) 0;
+}
+.donut-legend .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.donut-legend .ll-label { font-size: 15px; }
+.donut-legend .ll-value {
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  margin-left: auto;
+}
+
+.battery-health-card {
+  background: var(--bg-primary);
+  margin: 0 var(--sp-4) var(--sp-4);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-sm);
+}
+.battery-health-card .bh-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: var(--sp-4);
+}
+.battery-ring-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+.battery-ring-svg { width: 120px; height: 120px; flex-shrink: 0; }
+.battery-ring-info .bh-score {
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.battery-ring-info .bh-label {
+  font-size: 13px;
+  color: var(--label-secondary);
+}
+.battery-ring-info .bh-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sys-green);
+  margin-top: 4px;
+}
+
+.battery-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.battery-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-2) 0;
+  border-top: 1px solid var(--separator);
+}
+.battery-metric .bm-label {
+  font-size: 15px;
+  color: var(--label-primary);
+}
+.battery-metric .bm-bar {
+  flex: 1;
+  max-width: 80px;
+  height: 6px;
+  background: var(--label-quaternary);
+  border-radius: 3px;
+  margin: 0 var(--sp-3);
+  overflow: hidden;
+}
+.battery-metric .bm-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+}
+.battery-metric .bm-value {
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   Profile Page Mockup
+   ============================================================ */
+.profile-header {
+  background: var(--bg-primary);
+  padding: var(--sp-5) var(--sp-4);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--sys-blue), var(--sys-indigo));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+}
+.profile-info .pi-name {
+  font-size: 22px;
+  font-weight: 700;
+}
+.profile-info .pi-sub {
+  font-size: 15px;
+  color: var(--label-secondary);
+}
+
+.vehicle-card {
+  background: var(--bg-primary);
+  margin: 0 var(--sp-4) var(--sp-3);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.vehicle-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border-bottom: 1px solid var(--separator);
+}
+.vehicle-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-md);
+  background: linear-gradient(135deg, var(--sys-blue), var(--sys-teal));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.vehicle-icon svg { width: 24px; height: 24px; color: #fff; }
+.vehicle-info { flex: 1; }
+.vehicle-info .vi-name { font-size: 17px; font-weight: 600; }
+.vehicle-info .vi-detail { font-size: 13px; color: var(--label-secondary); }
+
+.vehicle-stat-row {
+  display: flex;
+  padding: var(--sp-3) var(--sp-4);
+  gap: var(--sp-3);
+}
+.vehicle-stat-item {
+  flex: 1;
+  text-align: center;
+}
+.vehicle-stat-item .vsi-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+.vehicle-stat-item .vsi-label {
+  font-size: 11px;
+  color: var(--label-secondary);
+}
+
+.profile-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--label-secondary);
+  margin: var(--sp-4) var(--sp-6) var(--sp-2);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.profile-list {
+  margin: 0 var(--sp-4) var(--sp-3);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--bg-primary);
+  gap: var(--sp-3);
+  border-bottom: 1px solid var(--separator);
+}
+.settings-row:first-child { border-radius: var(--r-md) var(--r-md) 0 0; }
+.settings-row:last-child { border-radius: 0 0 var(--r-md) var(--r-md); border-bottom: none; }
+.settings-row:only-child { border-radius: var(--r-md); }
+.settings-row .sr-icon {
+  width: 29px;
+  height: 29px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.settings-row .sr-icon svg { width: 17px; height: 17px; color: #fff; }
+.settings-row .sr-label {
+  font-size: 17px;
+  flex: 1;
+}
+.settings-row .sr-value {
+  font-size: 15px;
+  color: var(--label-secondary);
+}
+.settings-row .sr-toggle {
+  width: 51px;
+  height: 31px;
+  border-radius: 16px;
+  background: var(--sys-green);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.settings-row .sr-toggle.off { background: var(--label-quaternary); }
+.settings-row .sr-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.settings-row .sr-toggle.off::after { transform: translateX(0); }
+.settings-row .sr-toggle:not(.off)::after { transform: translateX(20px); }
+
+/* ============================================================
+   Comparison Section
+   ============================================================ */
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4);
+  margin-top: var(--sp-6);
+}
+@media (max-width: 768px) {
+  .comparison-grid { grid-template-columns: 1fr; }
+}
+.compare-card {
+  border-radius: var(--r-lg);
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-sm);
+}
+.compare-card.old {
+  background: #050508;
+  color: #D8DDE4;
+  border: 1px solid #181820;
+}
+.compare-card.new {
+  background: var(--bg-primary);
+  border: 1px solid var(--separator);
+}
+.compare-card .cc-tag {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--sp-3);
+}
+.compare-card.old .cc-tag { color: #5B8FA8; }
+.compare-card.new .cc-tag { color: var(--sys-blue); }
+.compare-card .cc-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: var(--sp-2);
+}
+.compare-card .cc-list {
+  list-style: none;
+  padding: 0;
+}
+.compare-card .cc-list li {
+  font-size: 14px;
+  padding: var(--sp-1) 0;
+  padding-left: var(--sp-4);
+  position: relative;
+}
+.compare-card.old .cc-list li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: #5A6470;
+}
+.compare-card.new .cc-list li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--sys-green);
+  font-weight: 700;
+}
+
+/* Icon colors */
+.ic-blue { background: var(--sys-blue); }
+.ic-green { background: var(--sys-green); }
+.ic-orange { background: var(--sys-orange); }
+.ic-red { background: var(--sys-red); }
+.ic-purple { background: var(--sys-purple); }
+.ic-teal { background: var(--sys-teal); }
+.ic-indigo { background: var(--sys-indigo); }
+.ic-yellow { background: var(--sys-yellow); }
+
+/* — Responsive — */
+@media (max-width: 768px) {
+  .section { padding: var(--sp-8) var(--sp-4); }
+  .proposal-header { padding: var(--sp-8) var(--sp-4) var(--sp-6); }
+  .proposal-header h1 { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     PROPOSAL HEADER
+     ============================================================ -->
+<header class="proposal-header">
+  <h1>冲充电 · 新设计方案</h1>
+  <p class="subtitle">Apple Human Interface 风格 · 扁平化 · 简洁高效</p>
+  <div class="tags">
+    <span class="tag">iOS 18 设计语言</span>
+    <span class="tag">Light / Dark 双模式</span>
+    <span class="tag">SF Pro 字体系统</span>
+    <span class="tag">8pt 间距网格</span>
+    <span class="tag">系统语义色</span>
+  </div>
+</header>
+
+<!-- ============================================================
+     SECTION 1: Design Principles
+     ============================================================ -->
+<section class="section">
+  <h2 class="section-title">设计原则</h2>
+  <p class="section-desc">从「清冷科幻 · 深空色调」转向「清晰自然 · 苹果质感」，核心目标：简洁、高效、易用。</p>
+
+  <div class="principle-grid">
+    <div class="principle-card">
+      <div class="icon" style="background: rgba(0,122,255,0.1);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--sys-blue)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 9h18"/></svg>
+      </div>
+      <h3>扁平克制</h3>
+      <p>去除磨砂玻璃、渐变光效和发光阴影。用背景色层级和间距区分内容，而非装饰性效果。</p>
+    </div>
+    <div class="principle-card">
+      <div class="icon" style="background: rgba(52,199,89,0.1);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--sys-green)" stroke-width="2"><path d="M3 12l4 4L21 4"/></svg>
+      </div>
+      <h3>信息优先</h3>
+      <p>核心数据（费用、电量、电耗）使用 SF Mono 等宽字体，大字号呈现，辅助信息退让到 secondary/tertiary 层级。</p>
+    </div>
+    <div class="principle-card">
+      <div class="icon" style="background: rgba(255,149,0,0.1);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--sys-orange)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      </div>
+      <h3>操作高效</h3>
+      <p>关键操作（记录充电、查看分析）在一步内可达。表单分组使用 iOS Inset Grouped 风格，减少认知负荷。</p>
+    </div>
+    <div class="principle-card">
+      <div class="icon" style="background: rgba(175,82,222,0.1);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--sys-purple)" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 2v10l7 7"/></svg>
+      </div>
+      <h3>系统一致</h3>
+      <p>统一使用 Apple 系统语义色：蓝色表示费用/默认操作，绿色表示成功/健康，橙色表示警告，红色表示错误。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 2: Color System
+     ============================================================ -->
+<section class="section">
+  <h2 class="section-title">色彩系统</h2>
+  <p class="section-desc">采用 Apple System Colors，支持 Light / Dark 双模式自动切换。从深空黑转向清晰的白/浅灰背景。</p>
+
+  <div class="color-section">
+    <h3>背景层级</h3>
+    <div class="color-grid">
+      <div class="color-chip">
+        <div class="swatch" style="background: #FFFFFF; border: 1px solid #E5E5EA;"></div>
+        <div class="info"><div class="name">bg-primary</div><div class="hex">#FFFFFF</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="swatch" style="background: #F2F2F7;"></div>
+        <div class="info"><div class="name">bg-secondary</div><div class="hex">#F2F2F7</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="swatch" style="background: #FFFFFF; border: 1px solid #E5E5EA;"></div>
+        <div class="info"><div class="name">bg-tertiary</div><div class="hex">#FFFFFF</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="color-section">
+    <h3>语义色（Light / Dark）</h3>
+    <div class="color-grid">
+      <div class="color-chip">
+        <div class="swatch" style="background: #007AFF;"></div>
+        <div class="info"><div class="name">Blue · 费用/主操作</div><div class="hex">#007AFF / #0A84FF</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="swatch" style="background: #34C759;"></div>
+        <div class="info"><div class="name">Green · 成功/健康</div><div class="hex">#34C759 / #30D158</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="swatch" style="background: #FF9500;"></div>
+        <div class="info"><div class="name">Orange · 警告</div><div class="hex">#FF9500 / #FF9F0A</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="swatch" style="background: #FF3B30;"></div>
+        <div class="info"><div class="name">Red · 错误/删除</div><div class="hex">#FF3B30 / #FF453A</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="swatch" style="background: #5AC8FA;"></div>
+        <div class="info"><div class="name">Teal · 电量</div><div class="hex">#5AC8FA / #64D2FF</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="swatch" style="background: #5856D6;"></div>
+        <div class="info"><div class="name">Indigo · 分析</div><div class="hex">#5856D6 / #5E5CE6</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="swatch" style="background: #AF52DE;"></div>
+        <div class="info"><div class="name">Purple · 电池</div><div class="hex">#AF52DE / #BF5AF2</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="swatch" style="background: #FFCC00;"></div>
+        <div class="info"><div class="name">Yellow · 提示</div><div class="hex">#FFCC00 / #FFD60A</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="color-section">
+    <h3>文字与分割线</h3>
+    <div class="color-grid">
+      <div class="color-chip">
+        <div class="swatch" style="background: #000000;"></div>
+        <div class="info"><div class="name">label-primary</div><div class="hex">#000 / #FFF</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="swatch" style="background: rgba(60,60,67,0.6);"></div>
+        <div class="info"><div class="name">label-secondary</div><div class="hex">3C3C43 60%</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="swatch" style="background: rgba(60,60,67,0.3);"></div>
+        <div class="info"><div class="name">label-tertiary</div><div class="hex">3C3C43 30%</div></div>
+      </div>
+      <div class="color-chip">
+        <div class="swatch" style="background: rgba(60,60,67,0.29);"></div>
+        <div class="info"><div class="name">separator</div><div class="hex">3C3C43 29%</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 3: Typography
+     ============================================================ -->
+<section class="section">
+  <h2 class="section-title">字体系统</h2>
+  <p class="section-desc">全面采用 SF Pro / -apple-system 字体栈。数据使用 SF Mono 等宽字体确保位数对齐。</p>
+
+  <div class="type-table">
+    <div class="type-row">
+      <div class="label">Large Title</div>
+      <div class="sample tp-large-title">¥248.50</div>
+      <div class="meta">34px / 700</div>
+    </div>
+    <div class="type-row">
+      <div class="label">Title 1</div>
+      <div class="sample tp-title1">本月充电总览</div>
+      <div class="meta">28px / 700</div>
+    </div>
+    <div class="type-row">
+      <div class="label">Title 2</div>
+      <div class="sample tp-title2">充电记录</div>
+      <div class="meta">22px / 700</div>
+    </div>
+    <div class="type-row">
+      <div class="label">Title 3</div>
+      <div class="sample tp-title3">电池健康</div>
+      <div class="meta">20px / 600</div>
+    </div>
+    <div class="type-row">
+      <div class="label">Headline</div>
+      <div class="sample tp-headline">本月充电费用</div>
+      <div class="meta">17px / 600</div>
+    </div>
+    <div class="type-row">
+      <div class="label">Body</div>
+      <div class="sample tp-body">本月已充电 4 次，累计 182.3 度</div>
+      <div class="meta">17px / 400</div>
+    </div>
+    <div class="type-row">
+      <div class="label">Data (Mono)</div>
+      <div class="sample tp-data">14.2 kWh/100km</div>
+      <div class="meta">28px / 700 SF Mono</div>
+    </div>
+    <div class="type-row">
+      <div class="label">Subheadline</div>
+      <div class="sample tp-subhead">平均电价 ¥1.23/度</div>
+      <div class="meta">15px / 400</div>
+    </div>
+    <div class="type-row">
+      <div class="label">Caption</div>
+      <div class="sample tp-caption">数据更新于 2 分钟前</div>
+      <div class="meta">12px / 400</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 4: Spacing & Radius
+     ============================================================ -->
+<section class="section">
+  <h2 class="section-title">间距与圆角</h2>
+  <p class="section-desc">8pt 基准网格，连续圆角（Continuous Corners）风格。</p>
+
+  <div class="demo-card" style="margin-bottom: var(--sp-5);">
+    <div class="demo-title">间距系统（8pt Grid）</div>
+    <div class="spacing-row"><div class="bar" style="width:4px;"></div><div class="name">--sp-1</div><span style="font-size:13px;color:var(--label-secondary)">4px · 图标与文字间距</span></div>
+    <div class="spacing-row"><div class="bar" style="width:8px;"></div><div class="name">--sp-2</div><span style="font-size:13px;color:var(--label-secondary)">8px · 紧凑内边距</span></div>
+    <div class="spacing-row"><div class="bar" style="width:12px;"></div><div class="name">--sp-3</div><span style="font-size:13px;color:var(--label-secondary)">12px · 按钮内边距</span></div>
+    <div class="spacing-row"><div class="bar" style="width:16px;"></div><div class="name">--sp-4</div><span style="font-size:13px;color:var(--label-secondary)">16px · 卡片内边距</span></div>
+    <div class="spacing-row"><div class="bar" style="width:20px;"></div><div class="name">--sp-5</div><span style="font-size:13px;color:var(--label-secondary)">20px · 卡片标题区</span></div>
+    <div class="spacing-row"><div class="bar" style="width:24px;"></div><div class="name">--sp-6</div><span style="font-size:13px;color:var(--label-secondary)">24px · 页面边距</span></div>
+    <div class="spacing-row"><div class="bar" style="width:32px;"></div><div class="name">--sp-8</div><span style="font-size:13px;color:var(--label-secondary)">32px · 区块分隔</span></div>
+    <div class="spacing-row"><div class="bar" style="width:48px;"></div><div class="name">--sp-12</div><span style="font-size:13px;color:var(--label-secondary)">48px · 大区块间距</span></div>
+  </div>
+
+  <div class="demo-card">
+    <div class="demo-title">圆角系统（Continuous Corners）</div>
+    <div class="radius-row"><div class="box" style="border-radius: 8px;"></div><div class="name">--r-sm</div><div class="value">8px · 按钮、标签、输入框</div></div>
+    <div class="radius-row"><div class="box" style="border-radius: 12px;"></div><div class="name">--r-md</div><div class="value">12px · 列表项、小卡片</div></div>
+    <div class="radius-row"><div class="box" style="border-radius: 16px;"></div><div class="name">--r-lg</div><div class="value">16px · 标准卡片、面板</div></div>
+    <div class="radius-row"><div class="box" style="border-radius: 20px;"></div><div class="name">--r-xl</div><div class="value">20px · 大卡片、底部浮层</div></div>
+    <div class="radius-row"><div class="box" style="border-radius: 9999px;"></div><div class="name">--r-full</div><div class="value">9999px · 胶囊、头像</div></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 5: Component Showcase
+     ============================================================ -->
+<section class="section">
+  <h2 class="section-title">组件规范</h2>
+  <p class="section-desc">遵循 iOS Human Interface Guidelines 的标准组件，确保用户直觉操作。</p>
+
+  <div class="component-showcase">
+    <!-- Buttons -->
+    <div class="demo-card">
+      <div class="demo-title">按钮</div>
+      <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start;">
+        <button class="btn-primary">保存充电记录</button>
+        <button class="btn-secondary">查看详情</button>
+        <button class="btn-ghost">取消</button>
+      </div>
+    </div>
+
+    <!-- Segmented Control -->
+    <div class="demo-card">
+      <div class="demo-title">分段控制器</div>
+      <div class="seg-control">
+        <button class="seg-item active">快充</button>
+        <button class="seg-item">家充</button>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="seg-control">
+          <button class="seg-item active">本月</button>
+          <button class="seg-item">本年</button>
+          <button class="seg-item">全部</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div class="demo-card">
+      <div class="demo-title">状态标签</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <span class="tag tag-green">充电完成</span>
+        <span class="tag tag-blue">进行中</span>
+        <span class="tag tag-orange">低电量</span>
+        <span class="tag tag-red">异常</span>
+      </div>
+    </div>
+
+    <!-- List -->
+    <div class="demo-card">
+      <div class="demo-title">列表项</div>
+      <div class="list-group">
+        <div class="list-item">
+          <div class="li-icon ic-blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          </div>
+          <span class="li-label">充电记录</span>
+          <span class="li-value">128 条</span>
+          <span class="li-chevron">›</span>
+        </div>
+        <div class="list-item">
+          <div class="li-icon ic-indigo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/></svg>
+          </div>
+          <span class="li-label">成本分析</span>
+          <span class="li-chevron">›</span>
+        </div>
+        <div class="list-item">
+          <div class="li-icon ic-purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/><path d="M6 10v4M10 10v4M14 10v4"/></svg>
+          </div>
+          <span class="li-label">电池健康</span>
+          <span class="li-value">92 分</span>
+          <span class="li-chevron">›</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toggle -->
+    <div class="demo-card">
+      <div class="demo-title">开关</div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:17px;">云同步备份</span>
+          <div class="sr-toggle" style="position:relative;width:51px;height:31px;border-radius:16px;background:var(--sys-green);"></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:17px;">充电提醒</span>
+          <div class="sr-toggle off" style="position:relative;width:51px;height:31px;border-radius:16px;background:var(--label-quaternary);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="demo-card">
+      <div class="demo-title">输入框</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="background:var(--bg-secondary);border-radius:var(--r-sm);padding:12px 16px;">
+          <div style="font-size:13px;color:var(--label-tertiary);margin-bottom:4px;">充电电量</div>
+          <div style="display:flex;align-items:baseline;gap:4px;">
+            <span style="font-size:22px;font-weight:600;font-family:var(--font-mono);">42.5</span>
+            <span style="font-size:15px;color:var(--label-secondary);">kWh</span>
+          </div>
+        </div>
+        <div style="background:var(--bg-secondary);border-radius:var(--r-sm);padding:12px 16px;">
+          <div style="font-size:13px;color:var(--label-tertiary);margin-bottom:4px;">充电单价</div>
+          <div style="display:flex;align-items:baseline;gap:4px;">
+            <span style="font-size:22px;font-weight:600;font-family:var(--font-mono);">1.28</span>
+            <span style="font-size:15px;color:var(--label-secondary);">¥/度</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 6: Page Mockups
+     ============================================================ -->
+<section class="mockup-section">
+  <div class="section-inner">
+    <h2 class="section-title" style="text-align:center;">页面设计稿</h2>
+    <p class="section-desc" style="text-align:center;">四大核心页面完整设计方案 · 375pt 宽度（iPhone 标准）</p>
+
+    <div class="mockup-grid">
+
+      <!-- ========== HOME PAGE ========== -->
+      <div>
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <!-- Status Bar -->
+            <div class="phone-statusbar">
+              <span class="time">9:41</span>
+              <div class="status-icons">
+                <svg viewBox="0 0 18 12"><rect x="0" y="4" width="3" height="4" rx="1"/><rect x="5" y="2" width="3" height="6" rx="1"/><rect x="10" y="0" width="3" height="8" rx="1"/><rect x="15" y="0" width="3" height="8" opacity="0.4" rx="1"/></svg>
+                <svg viewBox="0 0 16 12"><path d="M8 0C5 0 2.5 1 0.5 3l1.5 1.5C3.5 3 5.5 2 8 2s4.5 1 6 2.5L15.5 3C13.5 1 11 0 8 0zm0 4C6 4 4.5 4.8 3 6l1.5 1.5C5.5 6.5 6.5 6 8 6s2.5 0.5 3.5 1.5L13 6C11.5 4.8 10 4 8 4zm0 4L5.5 10.5 7 12h2l1.5-1.5z"/></svg>
+                <svg viewBox="0 0 27 12"><rect x="0" y="0" width="24" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1"/><rect x="2" y="2" width="18" height="8" rx="1.5"/><rect x="25" y="4" width="2" height="4" rx="1"/></svg>
+              </div>
+            </div>
+
+            <div class="phone-content" style="background:var(--bg-secondary);">
+              <!-- Nav Bar -->
+              <div class="home-nav">
+                <span class="nav-btn" style="font-size:32px;line-height:0;margin-top:-4px;">‹</span>
+                <span class="nav-title">冲充电</span>
+                <span class="nav-btn">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                </span>
+              </div>
+
+              <!-- Hero Card -->
+              <div class="home-hero">
+                <div class="month-label">2026年9月 · 本月费用</div>
+                <div class="amount">¥248<span class="unit">.50</span></div>
+                <div class="hero-sub">
+                  <span class="sub-item">充入 <strong>182.3</strong> 度</span>
+                  <span class="sub-item">均价 <strong>¥1.36</strong>/度</span>
+                  <span class="sub-item"><strong>4</strong> 次</span>
+                </div>
+              </div>
+
+              <!-- KPI Grid -->
+              <div class="kpi-grid">
+                <div class="kpi-cell">
+                  <div class="kpi-icon ic-blue">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M5 8l7-7 7 7M19 16l-7 7-7-7"/></svg>
+                  </div>
+                  <div class="kpi-value">¥3,284</div>
+                  <div class="kpi-label">累计费用</div>
+                </div>
+                <div class="kpi-cell">
+                  <div class="kpi-icon ic-teal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  </div>
+                  <div class="kpi-value">2,415</div>
+                  <div class="kpi-label">累计度数</div>
+                </div>
+                <div class="kpi-cell">
+                  <div class="kpi-icon ic-indigo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16"/></svg>
+                  </div>
+                  <div class="kpi-value">128</div>
+                  <div class="kpi-label">充电次数</div>
+                </div>
+                <div class="kpi-cell">
+                  <div class="kpi-icon ic-orange">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  </div>
+                  <div class="kpi-value">¥0.14</div>
+                  <div class="kpi-label">每公里费用</div>
+                </div>
+              </div>
+
+              <!-- Trend Chart -->
+              <div class="home-section-header">
+                <h4>费用趋势</h4>
+                <span class="see-all">2026 年 ›</span>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">近 6 个月充电费用</div>
+                <div class="mini-chart">
+                  <div class="bar muted" style="height: 35%;"><span class="bar-label">4月</span></div>
+                  <div class="bar muted" style="height: 50%;"><span class="bar-label">5月</span></div>
+                  <div class="bar muted" style="height: 42%;"><span class="bar-label">6月</span></div>
+                  <div class="bar muted" style="height: 60%;"><span class="bar-label">7月</span></div>
+                  <div class="bar muted" style="height: 48%;"><span class="bar-label">8月</span></div>
+                  <div class="bar" style="height: 72%;"><span class="bar-label">9月</span></div>
+                </div>
+              </div>
+
+              <!-- Stats 2x2 -->
+              <div class="home-section-header" style="margin-top: var(--sp-6);">
+                <h4>关键指标</h4>
+              </div>
+              <div class="stat-grid-2x2">
+                <div class="stat-mini">
+                  <div class="sm-icon-row">
+                    <div class="sm-icon ic-teal">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
+                    </div>
+                    <span class="sm-label">平均电耗</span>
+                  </div>
+                  <div class="sm-value">14.2</div>
+                  <div class="sm-trend">kWh/100km</div>
+                </div>
+                <div class="stat-mini">
+                  <div class="sm-icon-row">
+                    <div class="sm-icon ic-blue">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M5 8l7-7 7 7"/></svg>
+                    </div>
+                    <span class="sm-label">平均电价</span>
+                  </div>
+                  <div class="sm-value">¥1.36</div>
+                  <div class="sm-trend">元/度</div>
+                </div>
+                <div class="stat-mini">
+                  <div class="sm-icon-row">
+                    <div class="sm-icon ic-orange">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+                    </div>
+                    <span class="sm-label">快慢充比</span>
+                  </div>
+                  <div class="sm-value">6:4</div>
+                  <div class="sm-trend">快充 60%</div>
+                </div>
+                <div class="stat-mini">
+                  <div class="sm-icon-row">
+                    <div class="sm-icon ic-purple">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/></svg>
+                    </div>
+                    <span class="sm-label">电池健康</span>
+                  </div>
+                  <div class="sm-value">92</div>
+                  <div class="sm-trend">优秀</div>
+                </div>
+              </div>
+
+              <!-- Recent -->
+              <div class="home-section-header" style="margin-top: var(--sp-6);">
+                <h4>最近充电</h4>
+                <span class="see-all">查看全部 ›</span>
+              </div>
+              <div class="recent-list">
+                <div class="recent-item">
+                  <div class="ri-icon ic-blue">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  </div>
+                  <div class="ri-info">
+                    <div class="ri-title">国网快充 · 朝阳站</div>
+                    <div class="ri-sub">9月12日 · 42.5 度 · 快充</div>
+                  </div>
+                  <div class="ri-amount">¥54.40</div>
+                </div>
+                <div class="recent-item">
+                  <div class="ri-icon ic-teal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
+                  </div>
+                  <div class="ri-info">
+                    <div class="ri-title">家充 · 私桩</div>
+                    <div class="ri-sub">9月10日 · 28.0 度 · 慢充</div>
+                  </div>
+                  <div class="ri-amount">¥33.60</div>
+                </div>
+                <div class="recent-item">
+                  <div class="ri-icon ic-blue">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  </div>
+                  <div class="ri-info">
+                    <div class="ri-title">特来电 · 奥莱站</div>
+                    <div class="ri-sub">9月7日 · 55.3 度 · 快充</div>
+                  </div>
+                  <div class="ri-amount">¥71.85</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab Bar -->
+            <div class="phone-tabbar">
+              <div class="tab-item">
+                <div class="tab-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 12l9-9 9 9v9a2 2 0 0 1-2 2h-4v-7H10v7H6a2 2 0 0 1-2-2v-9z" transform="translate(-1,-1)"/></svg>
+                </div>
+                <span class="tab-label tab-label-active">首页</span>
+              </div>
+              <div class="tab-item">
+                <div class="tab-icon-inactive">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2h6a2 2 0 0 1 2 2v18l-5-3-5 3V4a2 2 0 0 1 2-2z"/></svg>
+                </div>
+                <span class="tab-label tab-label-inactive">记录</span>
+              </div>
+              <div class="tab-item">
+                <div class="tab-icon-inactive">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/></svg>
+                </div>
+                <span class="tab-label tab-label-inactive">分析</span>
+              </div>
+              <div class="tab-item">
+                <div class="tab-icon-inactive">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>
+                </div>
+                <span class="tab-label tab-label-inactive">我的</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mockup-label">
+          <h3>首页 · 成本总览</h3>
+          <p>大数字费用展示 + KPI 网格 + 趋势图表</p>
+        </div>
+      </div>
+
+      <!-- ========== RECORD PAGE ========== -->
+      <div>
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-statusbar">
+              <span class="time">9:41</span>
+              <div class="status-icons">
+                <svg viewBox="0 0 18 12"><rect x="0" y="4" width="3" height="4" rx="1"/><rect x="5" y="2" width="3" height="6" rx="1"/><rect x="10" y="0" width="3" height="8" rx="1"/><rect x="15" y="0" width="3" height="8" opacity="0.4" rx="1"/></svg>
+                <svg viewBox="0 0 16 12"><path d="M8 0C5 0 2.5 1 0.5 3l1.5 1.5C3.5 3 5.5 2 8 2s4.5 1 6 2.5L15.5 3C13.5 1 11 0 8 0z"/></svg>
+                <svg viewBox="0 0 27 12"><rect x="0" y="0" width="24" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1"/><rect x="2" y="2" width="18" height="8" rx="1.5"/><rect x="25" y="4" width="2" height="4" rx="1"/></svg>
+              </div>
+            </div>
+
+            <div class="phone-content" style="background:var(--bg-secondary);">
+              <!-- Nav -->
+              <div class="home-nav">
+                <span class="nav-btn" style="font-size:32px;line-height:0;margin-top:-4px;">‹</span>
+                <span class="nav-title">充电记录</span>
+                <span class="nav-btn" style="font-size:17px;font-weight:600;">编辑</span>
+              </div>
+
+              <!-- Segmented Control -->
+              <div class="record-header" style="padding-top: var(--sp-2);">
+                <div class="seg-control">
+                  <button class="seg-item active">公共快充</button>
+                  <button class="seg-item">家充私桩</button>
+                </div>
+              </div>
+
+              <!-- Form -->
+              <div class="form-group" style="margin-top: var(--sp-4);">
+                <div class="form-group-title">充电信息</div>
+                <div class="form-list">
+                  <div class="form-row">
+                    <span class="fr-label">日期</span>
+                    <span class="fr-placeholder">2026-09-13</span>
+                    <span style="color:var(--label-tertiary);font-size:20px;">›</span>
+                  </div>
+                  <div class="form-row">
+                    <span class="fr-label">充电电量</span>
+                    <input class="fr-input" type="text" value="42.5">
+                    <span class="fr-suffix">kWh</span>
+                  </div>
+                  <div class="form-row">
+                    <span class="fr-label">充电单价</span>
+                    <input class="fr-input" type="text" value="1.28">
+                    <span class="fr-suffix">¥/度</span>
+                  </div>
+                  <div class="form-row">
+                    <span class="fr-label">总费用</span>
+                    <input class="fr-input" type="text" value="54.40">
+                    <span class="fr-suffix">¥</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <div class="form-group-title">车辆状态</div>
+                <div class="form-list">
+                  <div class="form-row">
+                    <span class="fr-label">充电前 SOC</span>
+                    <input class="fr-input" type="text" value="22">
+                    <span class="fr-suffix">%</span>
+                  </div>
+                  <div class="form-row">
+                    <span class="fr-label">充电后 SOC</span>
+                    <input class="fr-input" type="text" value="85">
+                    <span class="fr-suffix">%</span>
+                  </div>
+                  <div class="form-row">
+                    <span class="fr-label">里程表</span>
+                    <input class="fr-input" type="text" value="18,420">
+                    <span class="fr-suffix">km</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Summary -->
+              <div class="record-summary">
+                <div class="rs-label">预计充电费用</div>
+                <div class="rs-amount">¥54.40</div>
+                <div style="font-size:13px;color:var(--label-secondary);margin-top:4px;">42.5 度 × ¥1.28/度</div>
+              </div>
+
+              <!-- Save Button -->
+              <div class="record-btn-row">
+                <button class="btn-primary">保存记录</button>
+              </div>
+
+              <!-- History -->
+              <div class="history-section">
+                <h4>最近记录</h4>
+                <div>
+                  <div class="history-item">
+                    <div class="hi-date">
+                      <div class="day">12</div>
+                      <div class="month">9月</div>
+                    </div>
+                    <div class="hi-info">
+                      <div class="hi-title">国网快充 · 朝阳站</div>
+                      <div class="hi-sub">42.5 度 · 快充 · SOC 22%→85%</div>
+                    </div>
+                    <div class="hi-amount">¥54.40</div>
+                  </div>
+                  <div class="history-item">
+                    <div class="hi-date">
+                      <div class="day">10</div>
+                      <div class="month">9月</div>
+                    </div>
+                    <div class="hi-info">
+                      <div class="hi-title">家充 · 私桩</div>
+                      <div class="hi-sub">28.0 度 · 慢充 · SOC 35%→80%</div>
+                    </div>
+                    <div class="hi-amount">¥33.60</div>
+                  </div>
+                  <div class="history-item">
+                    <div class="hi-date">
+                      <div class="day">07</div>
+                      <div class="month">9月</div>
+                    </div>
+                    <div class="hi-info">
+                      <div class="hi-title">特来电 · 奥莱站</div>
+                      <div class="hi-sub">55.3 度 · 快充 · SOC 15%→90%</div>
+                    </div>
+                    <div class="hi-amount">¥71.85</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="phone-tabbar">
+              <div class="tab-item">
+                <div class="tab-icon-inactive">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9v9a2 2 0 0 1-2 2h-4v-7H10v7H6a2 2 0 0 1-2-2v-9z" transform="translate(-1,-1)"/></svg>
+                </div>
+                <span class="tab-label tab-label-inactive">首页</span>
+              </div>
+              <div class="tab-item">
+                <div class="tab-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 2h6a2 2 0 0 1 2 2v18l-5-3-5 3V4a2 2 0 0 1 2-2z"/></svg>
+                </div>
+                <span class="tab-label tab-label-active">记录</span>
+              </div>
+              <div class="tab-item">
+                <div class="tab-icon-inactive">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/></svg>
+                </div>
+                <span class="tab-label tab-label-inactive">分析</span>
+              </div>
+              <div class="tab-item">
+                <div class="tab-icon-inactive">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>
+                </div>
+                <span class="tab-label tab-label-inactive">我的</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mockup-label">
+          <h3>记录页 · 充电记录</h3>
+          <p>iOS Inset Grouped 表单 + 实时费用预览</p>
+        </div>
+      </div>
+
+      <!-- ========== ANALYSIS PAGE ========== -->
+      <div>
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-statusbar">
+              <span class="time">9:41</span>
+              <div class="status-icons">
+                <svg viewBox="0 0 18 12"><rect x="0" y="4" width="3" height="4" rx="1"/><rect x="5" y="2" width="3" height="6" rx="1"/><rect x="10" y="0" width="3" height="8" rx="1"/><rect x="15" y="0" width="3" height="8" opacity="0.4" rx="1"/></svg>
+                <svg viewBox="0 0 16 12"><path d="M8 0C5 0 2.5 1 0.5 3l1.5 1.5C3.5 3 5.5 2 8 2s4.5 1 6 2.5L15.5 3C13.5 1 11 0 8 0z"/></svg>
+                <svg viewBox="0 0 27 12"><rect x="0" y="0" width="24" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1"/><rect x="2" y="2" width="18" height="8" rx="1.5"/><rect x="25" y="4" width="2" height="4" rx="1"/></svg>
+              </div>
+            </div>
+
+            <div class="phone-content" style="background:var(--bg-secondary);">
+              <div class="home-nav">
+                <span class="nav-btn" style="font-size:32px;line-height:0;margin-top:-4px;">‹</span>
+                <span class="nav-title">数据分析</span>
+                <span class="nav-btn">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </span>
+              </div>
+
+              <!-- Segmented Control -->
+              <div class="analysis-header">
+                <div class="seg-control">
+                  <button class="seg-item active">本月</button>
+                  <button class="seg-item">本年</button>
+                  <button class="seg-item">全部</button>
+                </div>
+              </div>
+
+              <!-- Hero -->
+              <div class="analysis-hero">
+                <div class="ah-label">本月充电总费用</div>
+                <div class="ah-value">¥248.50</div>
+                <div class="ah-trend">
+                  <span class="trend-val">↓ 12.3%</span>
+                  <span class="trend-label">较上月</span>
+                </div>
+              </div>
+
+              <!-- Trend Chart -->
+              <div class="trend-chart-card">
+                <div class="tc-title">月度费用趋势</div>
+                <div class="line-chart">
+                  <svg viewBox="0 0 300 120" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#007AFF" stop-opacity="0.2"/>
+                        <stop offset="100%" stop-color="#007AFF" stop-opacity="0"/>
+                      </linearGradient>
+                    </defs>
+                    <path d="M 10 80 L 60 60 L 110 75 L 160 40 L 210 55 L 260 35" fill="none" stroke="#007AFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M 10 80 L 60 60 L 110 75 L 160 40 L 210 55 L 260 35 L 260 120 L 10 120 Z" fill="url(#lineGrad)"/>
+                    <circle cx="10" cy="80" r="4" fill="#007AFF"/>
+                    <circle cx="60" cy="60" r="4" fill="#007AFF"/>
+                    <circle cx="110" cy="75" r="4" fill="#007AFF"/>
+                    <circle cx="160" cy="40" r="4" fill="#007AFF"/>
+                    <circle cx="210" cy="55" r="4" fill="#007AFF"/>
+                    <circle cx="260" cy="35" r="5" fill="#007AFF" stroke="#fff" stroke-width="2"/>
+                  </svg>
+                </div>
+                <div class="line-chart" style="height:auto;">
+                  <div class="x-labels">
+                    <span>4月</span><span>5月</span><span>6月</span><span>7月</span><span>8月</span><span>9月</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Donut -->
+              <div class="donut-card">
+                <div class="dc-title">快慢充比例</div>
+                <div class="donut-row">
+                  <svg class="donut-svg" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="#E5E5EA" stroke-width="12"/>
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="#007AFF" stroke-width="12" stroke-dasharray="150.8 251.3" stroke-dashoffset="0" transform="rotate(-90 50 50)"/>
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="#5AC8FA" stroke-width="12" stroke-dasharray="100.5 251.3" stroke-dashoffset="-150.8" transform="rotate(-90 50 50)"/>
+                  </svg>
+                  <div class="donut-legend">
+                    <div class="legend-item">
+                      <span class="dot" style="background:#007AFF;"></span>
+                      <span class="ll-label">快充</span>
+                      <span class="ll-value">60%</span>
+                    </div>
+                    <div class="legend-item">
+                      <span class="dot" style="background:#5AC8FA;"></span>
+                      <span class="ll-label">慢充</span>
+                      <span class="ll-value">40%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Battery Health -->
+              <div class="battery-health-card">
+                <div class="bh-title">电池健康评估</div>
+                <div class="battery-ring-row">
+                  <svg class="battery-ring-svg" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="#E5E5EA" stroke-width="8"/>
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="#34C759" stroke-width="8" stroke-dasharray="289 314.2" stroke-dashoffset="0" transform="rotate(-90 60 60)" stroke-linecap="round"/>
+                  </svg>
+                  <div class="battery-ring-info">
+                    <div class="bh-score">92</div>
+                    <div class="bh-label">健康指数</div>
+                    <div class="bh-status">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                      优秀
+                    </div>
+                  </div>
+                </div>
+                <div class="battery-metrics">
+                  <div class="battery-metric">
+                    <span class="bm-label">容量健康</span>
+                    <div class="bm-bar"><div class="bm-bar-fill" style="width:92%;background:var(--sys-green);"></div></div>
+                    <span class="bm-value">92%</span>
+                  </div>
+                  <div class="battery-metric">
+                    <span class="bm-label">充电习惯</span>
+                    <div class="bm-bar"><div class="bm-bar-fill" style="width:85%;background:var(--sys-blue);"></div></div>
+                    <span class="bm-value">85%</span>
+                  </div>
+                  <div class="battery-metric">
+                    <span class="bm-label">深放频率</span>
+                    <div class="bm-bar"><div class="bm-bar-fill" style="width:30%;background:var(--sys-orange);"></div></div>
+                    <span class="bm-value">偏低</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="phone-tabbar">
+              <div class="tab-item">
+                <div class="tab-icon-inactive">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9v9a2 2 0 0 1-2 2h-4v-7H10v7H6a2 2 0 0 1-2-2v-9z" transform="translate(-1,-1)"/></svg>
+                </div>
+                <span class="tab-label tab-label-inactive">首页</span>
+              </div>
+              <div class="tab-item">
+                <div class="tab-icon-inactive">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2h6a2 2 0 0 1 2 2v18l-5-3-5 3V4a2 2 0 0 1 2-2z"/></svg>
+                </div>
+                <span class="tab-label tab-label-inactive">记录</span>
+              </div>
+              <div class="tab-item">
+                <div class="tab-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                </div>
+                <span class="tab-label tab-label-active">分析</span>
+              </div>
+              <div class="tab-item">
+                <div class="tab-icon-inactive">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>
+                </div>
+                <span class="tab-label tab-label-inactive">我的</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mockup-label">
+          <h3>分析页 · 成本与电池健康</h3>
+          <p>趋势折线图 + 环形图 + 电池健康评分</p>
+        </div>
+      </div>
+
+      <!-- ========== PROFILE PAGE ========== -->
+      <div>
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-statusbar">
+              <span class="time">9:41</span>
+              <div class="status-icons">
+                <svg viewBox="0 0 18 12"><rect x="0" y="4" width="3" height="4" rx="1"/><rect x="5" y="2" width="3" height="6" rx="1"/><rect x="10" y="0" width="3" height="8" rx="1"/><rect x="15" y="0" width="3" height="8" opacity="0.4" rx="1"/></svg>
+                <svg viewBox="0 0 16 12"><path d="M8 0C5 0 2.5 1 0.5 3l1.5 1.5C3.5 3 5.5 2 8 2s4.5 1 6 2.5L15.5 3C13.5 1 11 0 8 0z"/></svg>
+                <svg viewBox="0 0 27 12"><rect x="0" y="0" width="24" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1"/><rect x="2" y="2" width="18" height="8" rx="1.5"/><rect x="25" y="4" width="2" height="4" rx="1"/></svg>
+              </div>
+            </div>
+
+            <div class="phone-content" style="background:var(--bg-secondary);">
+              <div class="home-nav">
+                <span class="nav-title" style="font-size:17px;font-weight:600;">我的</span>
+              </div>
+
+              <!-- Profile Header -->
+              <div class="profile-header">
+                <div class="profile-avatar">CC</div>
+                <div class="profile-info">
+                  <div class="pi-name">冲冲用户</div>
+                  <div class="pi-sub">已使用 128 天 · 累计充电 2,415 度</div>
+                </div>
+              </div>
+
+              <!-- Vehicle Card -->
+              <div class="vehicle-card">
+                <div class="vehicle-header">
+                  <div class="vehicle-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14l-2-7H7l-2 7z"/><circle cx="8" cy="19" r="2"/><circle cx="16" cy="19" r="2"/><path d="M5 10l1-3h12l1 3"/></svg>
+                  </div>
+                  <div class="vehicle-info">
+                    <div class="vi-name">小鹏 G6</div>
+                    <div class="vi-detail">2024款 · 电池 66 kWh · 当前车辆</div>
+                  </div>
+                  <span style="color:var(--label-tertiary);font-size:20px;">›</span>
+                </div>
+                <div class="vehicle-stat-row">
+                  <div class="vehicle-stat-item">
+                    <div class="vsi-value">18,420</div>
+                    <div class="vsi-label">总里程 km</div>
+                  </div>
+                  <div class="vehicle-stat-item">
+                    <div class="vsi-value">14.2</div>
+                    <div class="vsi-label">电耗 kWh/100km</div>
+                  </div>
+                  <div class="vehicle-stat-item">
+                    <div class="vsi-value">92%</div>
+                    <div class="vsi-label">电池健康</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Data Management -->
+              <div class="profile-section-title">数据管理</div>
+              <div class="profile-list">
+                <div class="settings-row">
+                  <div class="sr-icon ic-blue">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </div>
+                  <span class="sr-label">导出数据</span>
+                  <span class="sr-value">JSON</span>
+                  <span style="color:var(--label-tertiary);font-size:20px;">›</span>
+                </div>
+                <div class="settings-row">
+                  <div class="sr-icon ic-teal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  </div>
+                  <span class="sr-label">导入数据</span>
+                  <span style="color:var(--label-tertiary);font-size:20px;">›</span>
+                </div>
+                <div class="settings-row">
+                  <div class="sr-icon ic-green">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+                  </div>
+                  <span class="sr-label">云同步备份</span>
+                  <div class="sr-toggle"></div>
+                </div>
+              </div>
+
+              <!-- Settings -->
+              <div class="profile-section-title">设置</div>
+              <div class="profile-list">
+                <div class="settings-row">
+                  <div class="sr-icon ic-purple">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/><path d="M6 10v4M10 10v4M14 10v4"/></svg>
+                  </div>
+                  <span class="sr-label">充电类型规则</span>
+                  <span style="color:var(--label-tertiary);font-size:20px;">›</span>
+                </div>
+                <div class="settings-row">
+                  <div class="sr-icon ic-orange">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  </div>
+                  <span class="sr-label">充电提醒</span>
+                  <div class="sr-toggle off"></div>
+                </div>
+                <div class="settings-row">
+                  <div class="sr-icon ic-indigo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  </div>
+                  <span class="sr-label">通用设置</span>
+                  <span style="color:var(--label-tertiary);font-size:20px;">›</span>
+                </div>
+              </div>
+
+              <!-- Danger Zone -->
+              <div class="profile-section-title" style="color:var(--sys-red);">危险操作</div>
+              <div class="profile-list">
+                <div class="settings-row">
+                  <div class="sr-icon ic-red">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                  </div>
+                  <span class="sr-label" style="color:var(--sys-red);">清空所有数据</span>
+                  <span style="color:var(--label-tertiary);font-size:20px;">›</span>
+                </div>
+              </div>
+
+              <div style="text-align:center;padding:var(--sp-4) 0 var(--sp-6);">
+                <span style="font-size:13px;color:var(--label-tertiary);">冲充电 v2.0 · Apple Design</span>
+              </div>
+            </div>
+
+            <div class="phone-tabbar">
+              <div class="tab-item">
+                <div class="tab-icon-inactive">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9v9a2 2 0 0 1-2 2h-4v-7H10v7H6a2 2 0 0 1-2-2v-9z" transform="translate(-1,-1)"/></svg>
+                </div>
+                <span class="tab-label tab-label-inactive">首页</span>
+              </div>
+              <div class="tab-item">
+                <div class="tab-icon-inactive">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2h6a2 2 0 0 1 2 2v18l-5-3-5 3V4a2 2 0 0 1 2-2z"/></svg>
+                </div>
+                <span class="tab-label tab-label-inactive">记录</span>
+              </div>
+              <div class="tab-item">
+                <div class="tab-icon-inactive">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/></svg>
+                </div>
+                <span class="tab-label tab-label-inactive">分析</span>
+              </div>
+              <div class="tab-item">
+                <div class="tab-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                </div>
+                <span class="tab-label tab-label-active">我的</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mockup-label">
+          <h3>我的页 · 车辆与设置</h3>
+          <p>车辆卡片 + iOS 设置列表 + 数据管理</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 7: Design Comparison
+     ============================================================ -->
+<section class="section">
+  <h2 class="section-title">设计风格对比</h2>
+  <p class="section-desc">从「清冷科幻 · 深空」到「苹果质感 · 扁平自然」的核心变化。</p>
+
+  <div class="comparison-grid">
+    <div class="compare-card old">
+      <div class="cc-tag">旧方案</div>
+      <div class="cc-title">清冷科幻 · 深空色调</div>
+      <ul class="cc-list">
+        <li>纯黑背景 #000000，OLED 沉浸感</li>
+        <li>低饱和冷色调，强调色 20-40%</li>
+        <li>磨砂玻璃质感 backdrop-filter</li>
+        <li>无发光依赖，清冷灰调质感</li>
+        <li>Inter + JetBrains Mono 字体</li>
+        <li>4px 基网格间距系统</li>
+        <li>14px 圆角，科幻风格</li>
+        <li>自定义 SVG 图标库</li>
+      </ul>
+    </div>
+    <div class="compare-card new">
+      <div class="cc-tag">新方案</div>
+      <div class="cc-title">苹果质感 · 扁平自然</div>
+      <ul class="cc-list">
+        <li>白/浅灰背景 #FFF / #F2F2F7，清晰明亮</li>
+        <li>Apple 系统语义色，语义明确</li>
+        <li>扁平卡片 + 微妙阴影，去除磨砂</li>
+        <li>信息层级靠间距和色彩，非装饰效果</li>
+        <li>SF Pro / -apple-system 字体栈</li>
+        <li>8pt 基网格间距系统</li>
+        <li>8-20px 连续圆角，Apple 风格</li>
+        <li>SF Symbols 风格图标 + 语义色背景</li>
+        <li>支持 Light/Dark 模式自动切换</li>
+        <li>iOS Inset Grouped 列表风格</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 8: Migration Notes
+     ============================================================ -->
+<section class="section">
+  <h2 class="section-title">迁移要点</h2>
+  <p class="section-desc">保持应用功能逻辑不变，仅替换视觉层设计系统。</p>
+
+  <div class="principle-grid">
+    <div class="principle-card">
+      <div class="icon" style="background: rgba(0,122,255,0.1);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--sys-blue)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <h3>CSS 变量替换</h3>
+      <p>将 :root 中的颜色令牌从深空黑替换为 Apple 系统色，一键切换整体配色。新增 prefers-color-scheme 媒体查询实现 Dark Mode。</p>
+    </div>
+    <div class="principle-card">
+      <div class="icon" style="background: rgba(52,199,89,0.1);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--sys-green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h3>组件样式更新</h3>
+      <p>卡片去除 backdrop-filter，改为微妙阴影。圆角从 14px 调整为 8-20px 分级。按钮改为 iOS 标准样式。列表项采用 Inset Grouped 风格。</p>
+    </div>
+    <div class="principle-card">
+      <div class="icon" style="background: rgba(255,149,0,0.1);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--sys-orange)" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      </div>
+      <h3>布局间距调整</h3>
+      <p>间距从 4px 基网格升级为 8pt 基网格。页面边距调整为 16-24px。卡片间距增大，提升呼吸感。</p>
+    </div>
+    <div class="principle-card">
+      <div class="icon" style="background: rgba(175,82,222,0.1);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--sys-purple)" stroke-width="2"><path d="M4 17l6-6 4 4 8-8"/><path d="M14 7h6v6"/></svg>
+      </div>
+      <h3>字体栈更新</h3>
+      <p>Inter 替换为 -apple-system / SF Pro Display。JetBrains Mono 替换为 SF Mono。字号层级对齐 iOS HIG 规范。</p>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

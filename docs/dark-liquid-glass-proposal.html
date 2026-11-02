@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>冲充电 · Dark Liquid Glass 设计方案</title>
+<style>
+/* ============================================================
+   冲充电 Dark Liquid Glass — 极氪 / 特斯拉 / 领克 风格
+   暗黑科技 · 液态玻璃 · 高对比 · 极简克制
+   ============================================================ */
+:root {
+  /* — 品牌强调色 — 冷金属灰 · 极氪/特斯拉风格 */
+  --brand-gold: #8B9BAE;
+  --brand-gold-soft: rgba(139, 155, 174, 0.15);
+  --brand-blue: #3B82F6;
+  --brand-blue-soft: rgba(59, 130, 246, 0.12);
+  --brand-accent: var(--brand-gold);
+
+  /* — 系统语义色（暗色优化） — */
+  --sys-blue: #3B82F6;
+  --sys-green: #22C55E;
+  --sys-orange: #F59E0B;
+  --sys-red: #EF4444;
+  --sys-teal: #2DD4BF;
+  --sys-purple: #8B5CF6;
+  --sys-amber: #F59E0B;
+
+  /* — Dark Glass 材质 — 暗色液态玻璃 */
+  --glass-regular-bg: rgba(20, 20, 24, 0.72);
+  --glass-regular-border: rgba(255, 255, 255, 0.06);
+  --glass-regular-blur: 24px;
+  --glass-regular-saturate: 160%;
+
+  --glass-clear-bg: rgba(20, 20, 24, 0.40);
+  --glass-clear-border: rgba(255, 255, 255, 0.04);
+  --glass-clear-blur: 16px;
+
+  --glass-elevated-bg: rgba(28, 28, 32, 0.80);
+  --glass-elevated-border: rgba(255, 255, 255, 0.08);
+
+  --glass-float-bg: rgba(18, 18, 22, 0.78);
+  --glass-float-border: rgba(255, 255, 255, 0.07);
+
+  /* — 文字色 — 高对比白 */
+  --label-primary: rgba(255, 255, 255, 0.95);
+  --label-secondary: rgba(255, 255, 255, 0.55);
+  --label-tertiary: rgba(255, 255, 255, 0.28);
+  --label-quaternary: rgba(255, 255, 255, 0.12);
+
+  /* — 分割线 — */
+  --separator: rgba(255, 255, 255, 0.06);
+  --separator-strong: rgba(255, 255, 255, 0.10);
+
+  /* — 阴影 — 深空黑不可见，用微弱光晕替代 */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
+  --shadow-float: 0 12px 40px rgba(0, 0, 0, 0.55);
+  --glow-accent: 0 0 24px rgba(139, 155, 174, 0.08);
+
+  /* — 镜面高光 — 暗色玻璃微弱反光 */
+  --specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --specular-edge: inset 0 0 0 0.5px rgba(255, 255, 255, 0.05);
+  --specular-strong: inset 0 1px 0 rgba(255, 255, 255, 0.10), inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+
+  /* — Typography — */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', 'Helvetica Neue', sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, monospace;
+
+  /* — Spacing 8pt — */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px;
+  --sp-12: 48px; --sp-16: 64px;
+
+  /* — Radius — */
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
+  --r-xl: 20px; --r-2xl: 28px; --r-capsule: 9999px;
+
+  /* — Motion — */
+  --ease-liquid: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 0.2s; --dur-normal: 0.35s; --dur-slow: 0.5s;
+}
+
+/* — Reset — */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body {
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  font-feature-settings: 'tnum' 1;
+  /* 极氪/特斯拉式深空黑壁纸背景 */
+  background:
+    radial-gradient(ellipse at 15% 0%, rgba(139, 155, 174, 0.04) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 15%, rgba(59, 130, 246, 0.03) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 90%, rgba(45, 212, 191, 0.02) 0%, transparent 45%),
+    linear-gradient(170deg, #0A0A0C 0%, #0D0D11 30%, #08080A 100%);
+  background-attachment: fixed;
+  color: var(--label-primary);
+  min-height: 100vh;
+}
+a { color: var(--brand-accent); text-decoration: none; }
+
+/* ============================================================
+   Dark Glass 核心材质
+   ============================================================ */
+.glass {
+  background: var(--glass-regular-bg);
+  backdrop-filter: blur(var(--glass-regular-blur)) saturate(var(--glass-regular-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-regular-blur)) saturate(var(--glass-regular-saturate));
+  border: 0.5px solid var(--glass-regular-border);
+  box-shadow: var(--shadow-sm), var(--specular-top), var(--specular-edge);
+}
+.glass-clear {
+  background: var(--glass-clear-bg);
+  backdrop-filter: blur(var(--glass-clear-blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--glass-clear-blur)) saturate(140%);
+  border: 0.5px solid var(--glass-clear-border);
+  box-shadow: var(--shadow-sm), var(--specular-top);
+}
+.glass-elevated {
+  background: var(--glass-elevated-bg);
+  backdrop-filter: blur(28px) saturate(170%);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+  border: 0.5px solid var(--glass-elevated-border);
+  box-shadow: var(--shadow-lg), var(--specular-strong);
+}
+.glass-float {
+  background: var(--glass-float-bg);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 0.5px solid var(--glass-float-border);
+  box-shadow: var(--shadow-float), var(--specular-strong);
+}
+
+/* ============================================================
+   Proposal Layout
+   ============================================================ */
+.proposal-header {
+  text-align: center;
+  padding: var(--sp-16) var(--sp-6) var(--sp-8);
+  position: relative;
+  overflow: hidden;
+  border-bottom: 0.5px solid var(--separator);
+}
+.proposal-header::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(139, 155, 174, 0.06) 0%, transparent 65%);
+  pointer-events: none;
+}
+.proposal-header h1 {
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin-bottom: var(--sp-2);
+  position: relative;
+  color: var(--label-primary);
+}
+.proposal-header .subtitle {
+  font-size: 18px;
+  color: var(--label-secondary);
+  position: relative;
+  letter-spacing: 0.01em;
+}
+.proposal-header .tags {
+  display: flex; gap: var(--sp-2); justify-content: center;
+  margin-top: var(--sp-5); flex-wrap: wrap; position: relative;
+}
+.proposal-header .tag {
+  font-size: 12px; font-weight: 500;
+  color: var(--brand-gold);
+  background: var(--brand-gold-soft);
+  padding: 5px 14px; border-radius: var(--r-capsule);
+  border: 0.5px solid rgba(139, 155, 174, 0.15);
+}
+
+.section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--sp-12) var(--sp-6);
+}
+.section-title {
+  font-size: 32px; font-weight: 700;
+  letter-spacing: -0.025em; margin-bottom: var(--sp-2);
+  color: var(--label-primary);
+}
+.section-desc {
+  font-size: 16px; color: var(--label-secondary);
+  margin-bottom: var(--sp-8);
+}
+
+/* — Principles — */
+.principle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--sp-4);
+}
+.principle-card {
+  border-radius: var(--r-lg);
+  padding: var(--sp-5);
+  transition: border-color var(--dur-fast) var(--ease-liquid);
+}
+.principle-card:hover { border-color: rgba(255, 255, 255, 0.10); }
+.principle-card .icon {
+  width: 44px; height: 44px; border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: var(--sp-3);
+}
+.principle-card .icon svg { width: 22px; height: 22px; }
+.principle-card h3 { font-size: 16px; font-weight: 600; margin-bottom: var(--sp-1); color: var(--label-primary); }
+.principle-card p { font-size: 13px; color: var(--label-secondary); line-height: 1.55; }
+
+/* — Color Chips — */
+.color-section { margin-bottom: var(--sp-8); }
+.color-section h3 { font-size: 18px; font-weight: 600; margin-bottom: var(--sp-4); color: var(--label-primary); }
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--sp-3);
+}
+.color-chip {
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 0.5px solid var(--separator-strong);
+}
+.color-chip .swatch { height: 60px; }
+.color-chip .info {
+  background: rgba(20, 20, 24, 0.6);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  padding: var(--sp-2) var(--sp-3);
+}
+.color-chip .name { font-size: 12px; font-weight: 500; color: var(--label-primary); }
+.color-chip .hex { font-size: 11px; font-family: var(--font-mono); color: var(--label-secondary); }
+
+/* — Typography — */
+.type-table {
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  border: 0.5px solid var(--separator-strong);
+}
+.type-row {
+  display: flex; align-items: baseline;
+  padding: var(--sp-3) var(--sp-5);
+  border-bottom: 0.5px solid var(--separator);
+  gap: var(--sp-6);
+}
+.type-row:last-child { border-bottom: none; }
+.type-row .label { font-size: 13px; font-weight: 500; color: var(--label-secondary); width: 110px; flex-shrink: 0; }
+.type-row .sample { flex: 1; }
+.type-row .meta { font-size: 11px; font-family: var(--font-mono); color: var(--label-tertiary); width: 130px; text-align: right; flex-shrink: 0; }
+
+.tp-large-title { font-size: 36px; font-weight: 700; letter-spacing: -0.03em; }
+.tp-title1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+.tp-title2 { font-size: 22px; font-weight: 700; }
+.tp-title3 { font-size: 20px; font-weight: 600; }
+.tp-headline { font-size: 17px; font-weight: 600; }
+.tp-body { font-size: 17px; font-weight: 400; }
+.tp-data { font-size: 30px; font-weight: 700; font-family: var(--font-mono); letter-spacing: -0.02em; color: var(--brand-gold); }
+.tp-subhead { font-size: 15px; color: var(--label-secondary); }
+.tp-caption { font-size: 12px; color: var(--label-tertiary); }
+
+/* — Spacing & Radius — */
+.demo-panel { border-radius: var(--r-lg); padding: var(--sp-5); margin-bottom: var(--sp-5); }
+.demo-title {
+  font-size: 12px; font-weight: 600; color: var(--label-secondary);
+  margin-bottom: var(--sp-3); text-transform: uppercase; letter-spacing: 0.05em;
+}
+.spacing-row { display: flex; align-items: center; gap: var(--sp-3); padding: 3px 0; }
+.spacing-row .bar { height: 20px; background: var(--brand-gold); border-radius: 3px; opacity: 0.5; }
+.spacing-row .name { font-size: 12px; font-family: var(--font-mono); color: var(--label-secondary); width: 70px; }
+.radius-row { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-2) 0; }
+.radius-row .box { width: 48px; height: 48px; background: var(--brand-gold-soft); border: 1px solid var(--brand-gold); opacity: 0.6; }
+.radius-row .name { font-size: 13px; font-weight: 500; width: 80px; }
+.radius-row .value { font-size: 12px; font-family: var(--font-mono); color: var(--label-secondary); }
+
+/* — Components — */
+.component-showcase { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--sp-4); }
+.demo-card { border-radius: var(--r-lg); padding: var(--sp-5); }
+
+/* Dark Glass Button */
+.btn-accent {
+  background: var(--brand-gold);
+  color: #0A0A0C;
+  border: none;
+  border-radius: var(--r-capsule);
+  padding: 12px 26px;
+  font-size: 16px; font-weight: 600; font-family: var(--font-sans);
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(139, 155, 174, 0.2), var(--specular-top);
+  transition: all var(--dur-fast) var(--ease-liquid);
+}
+.btn-accent:hover { box-shadow: 0 6px 24px rgba(139, 155, 174, 0.3); transform: scale(1.02); }
+.btn-accent:active { transform: scale(0.97); }
+
+.btn-glass {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  color: var(--label-primary);
+  border: 0.5px solid var(--separator-strong);
+  border-radius: var(--r-capsule);
+  padding: 10px 22px;
+  font-size: 15px; font-weight: 500; font-family: var(--font-sans);
+  cursor: pointer;
+  box-shadow: var(--specular-top);
+  transition: all var(--dur-fast) var(--ease-liquid);
+}
+.btn-glass:hover { background: rgba(255, 255, 255, 0.10); border-color: var(--separator-strong); }
+
+/* Segmented */
+.seg-dark {
+  background: rgba(255, 255, 255, 0.04);
+  border: 0.5px solid var(--separator);
+  border-radius: var(--r-capsule);
+  padding: 3px;
+  display: inline-flex;
+}
+.seg-dark .seg-item {
+  padding: 7px 18px;
+  font-size: 14px; font-weight: 500;
+  color: var(--label-secondary);
+  border: none; background: transparent;
+  cursor: pointer;
+  border-radius: var(--r-capsule);
+  transition: all var(--dur-fast) var(--ease-liquid);
+}
+.seg-dark .seg-item.active {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--specular-top), var(--specular-edge);
+  color: var(--label-primary);
+  font-weight: 600;
+}
+
+/* Tags */
+.tag-dark {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 500;
+  padding: 4px 12px; border-radius: var(--r-capsule);
+  border: 0.5px solid var(--separator-strong);
+}
+.tag-dark.green { background: rgba(34, 197, 94, 0.10); color: var(--sys-green); border-color: rgba(34, 197, 94, 0.15); }
+.tag-dark.blue { background: rgba(59, 130, 246, 0.10); color: var(--sys-blue); border-color: rgba(59, 130, 246, 0.15); }
+.tag-dark.orange { background: rgba(245, 158, 11, 0.10); color: var(--sys-orange); border-color: rgba(245, 158, 11, 0.15); }
+.tag-dark.red { background: rgba(239, 68, 68, 0.10); color: var(--sys-red); border-color: rgba(239, 68, 68, 0.15); }
+.tag-dark.gold { background: var(--brand-gold-soft); color: var(--brand-gold); border-color: rgba(139, 155, 174, 0.15); }
+
+/* Toggle */
+.toggle-dark {
+  width: 48px; height: 28px; border-radius: var(--r-capsule);
+  position: relative; cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-liquid);
+}
+.toggle-dark.on { background: var(--brand-gold); }
+.toggle-dark.off { background: rgba(255, 255, 255, 0.08); border: 0.5px solid var(--separator); }
+.toggle-dark::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: transform var(--dur-fast) var(--ease-spring);
+}
+.toggle-dark.on::after { transform: translateX(20px); }
+
+/* ============================================================
+   Phone Mockup — Dark Automotive
+   ============================================================ */
+.mockup-section { padding: var(--sp-12) var(--sp-4); }
+.mockup-section .section-inner { max-width: 1200px; margin: 0 auto; }
+.mockup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(375px, 1fr));
+  gap: var(--sp-10);
+  justify-items: center;
+}
+
+.phone-frame {
+  width: 375px;
+  border-radius: 44px;
+  overflow: hidden;
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  /* 极氪/特斯拉式深黑壁纸 */
+  background:
+    radial-gradient(ellipse at 20% 5%, rgba(139, 155, 174, 0.05) 0%, transparent 40%),
+    radial-gradient(ellipse at 80% 20%, rgba(59, 130, 246, 0.03) 0%, transparent 35%),
+    radial-gradient(ellipse at 30% 70%, rgba(45, 212, 191, 0.02) 0%, transparent 35%),
+    linear-gradient(165deg, #08080A 0%, #0C0C10 50%, #060608 100%);
+  box-shadow: var(--shadow-lg);
+}
+.phone-screen { min-height: 780px; display: flex; flex-direction: column; position: relative; }
+.phone-statusbar {
+  height: 48px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--sp-5); flex-shrink: 0; z-index: 10; position: relative;
+}
+.phone-statusbar .time { font-size: 15px; font-weight: 600; color: rgba(255, 255, 255, 0.9); }
+.phone-statusbar .status-icons { display: flex; align-items: center; gap: 5px; }
+.phone-statusbar .status-icons svg { width: 16px; height: 16px; fill: rgba(255, 255, 255, 0.8); }
+.phone-content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; }
+
+/* Floating Dark Glass Tab Bar */
+.phone-tabbar {
+  height: 78px; display: flex; align-items: flex-start; justify-content: space-around;
+  padding: 10px 16px 0;
+  margin: 0 12px 12px;
+  border-radius: var(--r-2xl);
+  background: rgba(18, 18, 22, 0.72);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-float), var(--specular-strong);
+  flex-shrink: 0; position: relative; z-index: 10;
+}
+.tab-item { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; }
+.tab-item svg { width: 24px; height: 24px; }
+.tab-item .tab-label { font-size: 10px; font-weight: 500; }
+.tab-item .tab-icon-active { color: var(--brand-gold); }
+.tab-item .tab-label-active { color: var(--brand-gold); }
+.tab-item .tab-icon-inactive { color: rgba(255, 255, 255, 0.30); }
+.tab-item .tab-label-inactive { color: rgba(255, 255, 255, 0.25); }
+
+.mockup-label { text-align: center; margin-top: var(--sp-4); }
+.mockup-label h3 { font-size: 17px; font-weight: 600; color: var(--label-primary); }
+.mockup-label p { font-size: 13px; color: var(--label-secondary); margin-top: 4px; }
+
+/* ============================================================
+   HOME PAGE — Dark
+   ============================================================ */
+.home-nav-dark {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 16px; margin: 0 12px;
+  border-radius: var(--r-2xl);
+  background: rgba(18, 18, 22, 0.60);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 0.5px solid rgba(255, 255, 255, 0.05);
+  box-shadow: var(--shadow-sm), var(--specular-top);
+  position: sticky; top: 4px; z-index: 8;
+}
+.home-nav-dark .nav-title { font-size: 17px; font-weight: 600; color: rgba(255, 255, 255, 0.9); }
+.home-nav-dark .nav-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+  border-radius: var(--r-capsule);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Hero — Dark Glass with gold accent */
+.home-hero-dark {
+  margin: var(--sp-3) var(--sp-4) 0;
+  border-radius: var(--r-2xl);
+  padding: var(--sp-5) var(--sp-5) var(--sp-6);
+  background: rgba(20, 20, 24, 0.60);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 0.5px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-md), var(--specular-strong);
+  position: relative;
+  overflow: hidden;
+}
+.home-hero-dark::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(139, 155, 174, 0.3), transparent);
+}
+.home-hero-dark .month-label { font-size: 13px; color: rgba(255, 255, 255, 0.40); margin-bottom: 4px; }
+.home-hero-dark .amount {
+  font-size: 44px; font-weight: 700; font-family: var(--font-mono);
+  letter-spacing: -0.03em;
+  color: rgba(255, 255, 255, 0.98);
+}
+.home-hero-dark .amount .unit { font-size: 26px; font-weight: 600; color: rgba(255, 255, 255, 0.35); }
+.home-hero-dark .hero-sub { display: flex; gap: var(--sp-4); margin-top: var(--sp-2); }
+.home-hero-dark .hero-sub .sub-item { font-size: 13px; color: rgba(255, 255, 255, 0.40); }
+.home-hero-dark .hero-sub .sub-item strong { color: rgba(255, 255, 255, 0.80); font-weight: 600; }
+
+/* KPI — Dark Glass */
+.kpi-grid-dark { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin: var(--sp-3) var(--sp-4) 0; }
+.kpi-dark {
+  border-radius: var(--r-lg);
+  padding: var(--sp-4);
+  background: rgba(20, 20, 24, 0.50);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-sm), var(--specular-top);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.kpi-dark .kpi-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 4px; box-shadow: var(--specular-top);
+}
+.kpi-dark .kpi-icon svg { width: 16px; height: 16px; color: rgba(255, 255, 255, 0.9); }
+.kpi-dark .kpi-value {
+  font-size: 22px; font-weight: 700; font-family: var(--font-mono);
+  letter-spacing: -0.02em; color: rgba(255, 255, 255, 0.90);
+}
+.kpi-dark .kpi-label { font-size: 12px; color: rgba(255, 255, 255, 0.35); }
+
+/* Section Header */
+.home-section-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0 var(--sp-5); margin: var(--sp-5) 0 var(--sp-2);
+}
+.home-section-header h4 { font-size: 20px; font-weight: 700; color: rgba(255, 255, 255, 0.90); }
+.home-section-header .see-all { font-size: 15px; color: var(--brand-gold); }
+
+/* Chart — Dark Glass */
+.chart-card-dark {
+  margin: 0 var(--sp-4) var(--sp-3);
+  border-radius: var(--r-lg); padding: var(--sp-4);
+  background: rgba(20, 20, 24, 0.50);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-sm), var(--specular-top);
+}
+.chart-card-dark .chart-title { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.35); margin-bottom: var(--sp-3); }
+.mini-chart { display: flex; align-items: flex-end; gap: 6px; height: 100px; }
+.mini-chart .bar { flex: 1; border-radius: 3px 3px 0 0; position: relative; min-height: 8px; }
+.mini-chart .bar.muted { background: rgba(255, 255, 255, 0.06); }
+.mini-chart .bar.active { background: linear-gradient(180deg, var(--brand-gold), rgba(139, 155, 174, 0.4)); }
+.mini-chart .bar-label {
+  position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; color: rgba(255, 255, 255, 0.20); white-space: nowrap;
+}
+
+/* Stat Mini — Dark */
+.stat-grid-dark { margin: 0 var(--sp-4); display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+.stat-mini-dark {
+  border-radius: var(--r-lg); padding: var(--sp-4);
+  background: rgba(20, 20, 24, 0.50);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-sm), var(--specular-top);
+}
+.stat-mini-dark .sm-icon-row { display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.stat-mini-dark .sm-icon {
+  width: 24px; height: 24px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--specular-top);
+}
+.stat-mini-dark .sm-icon svg { width: 14px; height: 14px; color: rgba(255, 255, 255, 0.9); }
+.stat-mini-dark .sm-label { font-size: 13px; color: rgba(255, 255, 255, 0.35); }
+.stat-mini-dark .sm-value { font-size: 20px; font-weight: 700; font-family: var(--font-mono); color: rgba(255, 255, 255, 0.90); }
+.stat-mini-dark .sm-trend { font-size: 12px; color: rgba(255, 255, 255, 0.20); margin-top: 2px; }
+
+/* Recent List — Dark Glass */
+.recent-list-dark {
+  margin: 0 var(--sp-4) var(--sp-4);
+  border-radius: var(--r-lg); overflow: hidden;
+  background: rgba(20, 20, 24, 0.50);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-sm), var(--specular-top);
+}
+.recent-item-dark {
+  display: flex; align-items: center; padding: var(--sp-3) var(--sp-4);
+  gap: var(--sp-3); border-bottom: 0.5px solid rgba(255, 255, 255, 0.03);
+}
+.recent-item-dark:last-child { border-bottom: none; }
+.recent-item-dark .ri-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; box-shadow: var(--specular-top);
+}
+.recent-item-dark .ri-icon svg { width: 18px; height: 18px; color: rgba(255, 255, 255, 0.9); }
+.recent-item-dark .ri-info { flex: 1; }
+.recent-item-dark .ri-title { font-size: 15px; font-weight: 500; color: rgba(255, 255, 255, 0.85); }
+.recent-item-dark .ri-sub { font-size: 13px; color: rgba(255, 255, 255, 0.30); }
+.recent-item-dark .ri-amount { font-size: 15px; font-weight: 600; font-family: var(--font-mono); color: rgba(255, 255, 255, 0.80); }
+
+/* ============================================================
+   RECORD PAGE — Dark
+   ============================================================ */
+.record-header-dark {
+  margin: var(--sp-2) var(--sp-4) 0; padding: 8px;
+  border-radius: var(--r-2xl);
+  background: rgba(20, 20, 24, 0.50);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-sm), var(--specular-top);
+}
+.record-header-dark .seg-dark { display: flex; width: 100%; background: rgba(255, 255, 255, 0.03); }
+.record-header-dark .seg-dark .seg-item { flex: 1; text-align: center; }
+
+.form-group-dark { margin: var(--sp-4) var(--sp-4) 0; }
+.form-group-title-dark {
+  font-size: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.30);
+  margin-bottom: var(--sp-2); padding-left: var(--sp-2);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.form-list-dark {
+  border-radius: var(--r-lg); overflow: hidden;
+  background: rgba(20, 20, 24, 0.50);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-sm), var(--specular-top);
+}
+.form-row-dark {
+  display: flex; align-items: center; padding: var(--sp-3) var(--sp-4);
+  gap: var(--sp-3); border-bottom: 0.5px solid rgba(255, 255, 255, 0.03);
+}
+.form-row-dark:last-child { border-bottom: none; }
+.form-row-dark .fr-label { font-size: 16px; width: 100px; flex-shrink: 0; color: rgba(255, 255, 255, 0.70); }
+.form-row-dark .fr-input {
+  font-size: 16px; border: none; background: transparent; outline: none;
+  flex: 1; text-align: right; color: rgba(255, 255, 255, 0.90);
+  font-family: var(--font-mono);
+}
+.form-row-dark .fr-suffix { font-size: 14px; color: rgba(255, 255, 255, 0.30); }
+.form-row-dark .fr-placeholder { font-size: 16px; color: rgba(255, 255, 255, 0.25); flex: 1; text-align: right; }
+
+.record-summary-dark {
+  margin: var(--sp-4) var(--sp-4) var(--sp-6);
+  border-radius: var(--r-2xl); padding: var(--sp-5);
+  background: linear-gradient(135deg, rgba(139, 155, 174, 0.12), rgba(139, 155, 174, 0.04));
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 0.5px solid rgba(139, 155, 174, 0.15);
+  box-shadow: var(--shadow-md), var(--specular-strong), var(--glow-accent);
+  text-align: center;
+}
+.record-summary-dark::before {
+  content: ''; position: absolute;
+}
+.record-summary-dark .rs-label { font-size: 13px; color: rgba(255, 255, 255, 0.45); margin-bottom: 4px; }
+.record-summary-dark .rs-amount {
+  font-size: 34px; font-weight: 700; font-family: var(--font-mono);
+  color: var(--brand-gold); letter-spacing: -0.02em;
+}
+.record-summary-dark .rs-detail { font-size: 13px; color: rgba(255, 255, 255, 0.30); margin-top: 4px; }
+
+.record-btn-row { padding: 0 var(--sp-4) var(--sp-4); }
+.record-btn-row .btn-accent { width: 100%; font-size: 17px; padding: 15px; }
+
+.history-section-dark { margin: var(--sp-4) var(--sp-4); }
+.history-section-dark h4 { font-size: 20px; font-weight: 700; color: rgba(255, 255, 255, 0.90); margin-bottom: var(--sp-2); padding-left: var(--sp-2); }
+.history-list-dark {
+  border-radius: var(--r-lg); overflow: hidden;
+  background: rgba(20, 20, 24, 0.50);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-sm), var(--specular-top);
+}
+.history-item-dark {
+  display: flex; align-items: center; padding: var(--sp-3) var(--sp-4);
+  gap: var(--sp-3); border-bottom: 0.5px solid rgba(255, 255, 255, 0.03);
+}
+.history-item-dark:last-child { border-bottom: none; }
+.history-item-dark .hi-date { text-align: center; flex-shrink: 0; }
+.history-item-dark .hi-date .day { font-size: 20px; font-weight: 700; color: rgba(255, 255, 255, 0.80); }
+.history-item-dark .hi-date .month { font-size: 12px; color: rgba(255, 255, 255, 0.30); }
+.history-item-dark .hi-info { flex: 1; }
+.history-item-dark .hi-title { font-size: 15px; font-weight: 500; color: rgba(255, 255, 255, 0.75); }
+.history-item-dark .hi-sub { font-size: 13px; color: rgba(255, 255, 255, 0.25); }
+.history-item-dark .hi-amount { font-size: 15px; font-weight: 600; font-family: var(--font-mono); color: rgba(255, 255, 255, 0.70); }
+
+/* ============================================================
+   ANALYSIS PAGE — Dark
+   ============================================================ */
+.analysis-hero-dark {
+  margin: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-2xl); padding: var(--sp-5);
+  background: linear-gradient(135deg, rgba(139, 155, 174, 0.10), rgba(59, 130, 246, 0.06));
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 0.5px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-md), var(--specular-strong);
+}
+.analysis-hero-dark .ah-label { font-size: 13px; color: rgba(255, 255, 255, 0.40); margin-bottom: 4px; }
+.analysis-hero-dark .ah-value {
+  font-size: 36px; font-weight: 700; font-family: var(--font-mono);
+  letter-spacing: -0.02em; color: rgba(255, 255, 255, 0.95);
+}
+.analysis-hero-dark .ah-trend { display: flex; align-items: center; gap: 6px; margin-top: var(--sp-2); }
+.analysis-hero-dark .trend-val { font-size: 15px; font-weight: 600; color: var(--sys-green); }
+.analysis-hero-dark .trend-label { font-size: 13px; color: rgba(255, 255, 255, 0.30); }
+
+.trend-chart-dark {
+  margin: 0 var(--sp-4) var(--sp-3);
+  border-radius: var(--r-lg); padding: var(--sp-4);
+  background: rgba(20, 20, 24, 0.50);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-sm), var(--specular-top);
+}
+.trend-chart-dark .tc-title { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.35); margin-bottom: var(--sp-3); }
+.line-chart-dark { height: 120px; position: relative; }
+.line-chart-dark svg { width: 100%; height: 100%; }
+.line-chart-dark .x-labels { display: flex; justify-content: space-between; margin-top: var(--sp-2); }
+.line-chart-dark .x-labels span { font-size: 10px; color: rgba(255, 255, 255, 0.20); }
+
+.donut-dark {
+  margin: 0 var(--sp-4) var(--sp-3);
+  border-radius: var(--r-lg); padding: var(--sp-4);
+  background: rgba(20, 20, 24, 0.50);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-sm), var(--specular-top);
+}
+.donut-dark .dc-title { font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.35); margin-bottom: var(--sp-3); }
+.donut-row-dark { display: flex; align-items: center; gap: var(--sp-4); }
+.donut-svg-dark { width: 100px; height: 100px; flex-shrink: 0; }
+.donut-legend-dark { flex: 1; }
+.donut-legend-dark .legend-item { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-1) 0; }
+.donut-legend-dark .dot { width: 10px; height: 10px; border-radius: 50%; }
+.donut-legend-dark .ll-label { font-size: 15px; color: rgba(255, 255, 255, 0.70); }
+.donut-legend-dark .ll-value { font-size: 15px; font-weight: 600; font-family: var(--font-mono); color: rgba(255, 255, 255, 0.80); margin-left: auto; }
+
+.battery-dark {
+  margin: 0 var(--sp-4) var(--sp-4);
+  border-radius: var(--r-2xl); padding: var(--sp-5);
+  background: rgba(20, 20, 24, 0.60);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 0.5px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-md), var(--specular-top);
+}
+.battery-dark .bh-title { font-size: 17px; font-weight: 600; color: rgba(255, 255, 255, 0.85); margin-bottom: var(--sp-4); }
+.battery-ring-row-dark { display: flex; align-items: center; gap: var(--sp-4); margin-bottom: var(--sp-4); }
+.battery-ring-svg-dark { width: 120px; height: 120px; flex-shrink: 0; }
+.battery-ring-info-dark .bh-score { font-size: 30px; font-weight: 700; font-family: var(--font-mono); color: rgba(255, 255, 255, 0.90); }
+.battery-ring-info-dark .bh-label { font-size: 13px; color: rgba(255, 255, 255, 0.30); }
+.battery-ring-info-dark .bh-status { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; color: var(--sys-green); margin-top: 4px; }
+.battery-metrics-dark { display: flex; flex-direction: column; gap: var(--sp-2); }
+.battery-metric-dark {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: var(--sp-2) 0; border-top: 0.5px solid rgba(255, 255, 255, 0.03);
+}
+.battery-metric-dark .bm-label { font-size: 15px; color: rgba(255, 255, 255, 0.60); }
+.battery-metric-dark .bm-bar { flex: 1; max-width: 80px; height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; margin: 0 var(--sp-3); overflow: hidden; }
+.battery-metric-dark .bm-bar-fill { height: 100%; border-radius: 3px; }
+.battery-metric-dark .bm-value { font-size: 15px; font-weight: 600; font-family: var(--font-mono); color: rgba(255, 255, 255, 0.70); }
+
+/* ============================================================
+   PROFILE PAGE — Dark
+   ============================================================ */
+.profile-header-dark {
+  margin: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-2xl); padding: var(--sp-5);
+  display: flex; align-items: center; gap: var(--sp-3);
+  background: rgba(20, 20, 24, 0.60);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 0.5px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-md), var(--specular-strong);
+}
+.profile-avatar-dark {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-gold), rgba(139, 155, 174, 0.5));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 700; color: #0A0A0C;
+  box-shadow: 0 4px 16px rgba(139, 155, 174, 0.15), var(--specular-top);
+}
+.profile-info-dark .pi-name { font-size: 22px; font-weight: 700; color: rgba(255, 255, 255, 0.90); }
+.profile-info-dark .pi-sub { font-size: 14px; color: rgba(255, 255, 255, 0.30); }
+
+.vehicle-card-dark {
+  margin: 0 var(--sp-4) var(--sp-3);
+  border-radius: var(--r-2xl); overflow: hidden;
+  background: rgba(20, 20, 24, 0.60);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 0.5px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-md), var(--specular-top);
+}
+.vehicle-header-dark { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-4); border-bottom: 0.5px solid rgba(255, 255, 255, 0.03); }
+.vehicle-icon-dark {
+  width: 48px; height: 48px; border-radius: var(--r-md);
+  background: linear-gradient(135deg, rgba(139, 155, 174, 0.8), rgba(139, 155, 174, 0.3));
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  box-shadow: var(--specular-top);
+}
+.vehicle-icon-dark svg { width: 24px; height: 24px; color: #0A0A0C; }
+.vehicle-info-dark { flex: 1; }
+.vehicle-info-dark .vi-name { font-size: 17px; font-weight: 600; color: rgba(255, 255, 255, 0.85); }
+.vehicle-info-dark .vi-detail { font-size: 13px; color: rgba(255, 255, 255, 0.25); }
+.vehicle-stat-row-dark { display: flex; padding: var(--sp-3) var(--sp-4); gap: var(--sp-3); }
+.vehicle-stat-item-dark { flex: 1; text-align: center; }
+.vehicle-stat-item-dark .vsi-value { font-size: 20px; font-weight: 700; font-family: var(--font-mono); color: rgba(255, 255, 255, 0.85); }
+.vehicle-stat-item-dark .vsi-label { font-size: 11px; color: rgba(255, 255, 255, 0.25); }
+
+.profile-section-title-dark {
+  font-size: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.25);
+  margin: var(--sp-4) var(--sp-6) var(--sp-2);
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.profile-list-dark { margin: 0 var(--sp-4) var(--sp-3); }
+.settings-list-dark {
+  border-radius: var(--r-lg); overflow: hidden;
+  background: rgba(20, 20, 24, 0.50);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 0.5px solid rgba(255, 255, 255, 0.04);
+  box-shadow: var(--shadow-sm), var(--specular-top);
+}
+.settings-row-dark {
+  display: flex; align-items: center; padding: var(--sp-3) var(--sp-4);
+  gap: var(--sp-3); border-bottom: 0.5px solid rgba(255, 255, 255, 0.03);
+}
+.settings-row-dark:last-child { border-bottom: none; }
+.settings-row-dark .sr-icon {
+  width: 29px; height: 29px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  box-shadow: var(--specular-top);
+}
+.settings-row-dark .sr-icon svg { width: 17px; height: 17px; color: rgba(255, 255, 255, 0.9); }
+.settings-row-dark .sr-label { font-size: 16px; flex: 1; color: rgba(255, 255, 255, 0.75); }
+.settings-row-dark .sr-value { font-size: 14px; color: rgba(255, 255, 255, 0.25); }
+.settings-row-dark .sr-chevron { color: rgba(255, 255, 255, 0.15); font-size: 20px; }
+
+/* Icon colors — muted dark variants */
+.ic-gold { background: linear-gradient(135deg, #8B9BAE, rgba(139, 155, 174, 0.7)); }
+.ic-blue { background: linear-gradient(135deg, #3B82F6, rgba(59, 130, 246, 0.7)); }
+.ic-green { background: linear-gradient(135deg, #22C55E, rgba(34, 197, 94, 0.7)); }
+.ic-orange { background: linear-gradient(135deg, #F59E0B, rgba(245, 158, 11, 0.7)); }
+.ic-red { background: linear-gradient(135deg, #EF4444, rgba(239, 68, 68, 0.7)); }
+.ic-teal { background: linear-gradient(135deg, #2DD4BF, rgba(45, 212, 191, 0.7)); }
+.ic-purple { background: linear-gradient(135deg, #8B5CF6, rgba(139, 92, 246, 0.7)); }
+
+/* — Comparison — */
+.comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); margin-top: var(--sp-6); }
+@media (max-width: 768px) { .comparison-grid { grid-template-columns: 1fr; } }
+.compare-card { border-radius: var(--r-lg); padding: var(--sp-5); border: 0.5px solid var(--separator-strong); }
+.compare-card .cc-tag { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--sp-3); }
+.compare-card .cc-title { font-size: 18px; font-weight: 700; margin-bottom: var(--sp-2); }
+.compare-card .cc-list { list-style: none; padding: 0; }
+.compare-card .cc-list li { font-size: 13px; padding: 4px 0; padding-left: 20px; position: relative; }
+.compare-card .cc-list li::before { position: absolute; left: 0; }
+.compare-prev { background: rgba(20, 20, 24, 0.40); }
+.compare-prev .cc-tag { color: var(--label-tertiary); }
+.compare-prev .cc-list li { color: var(--label-secondary); }
+.compare-prev .cc-list li::before { content: '—'; color: var(--label-tertiary); }
+.compare-new { background: rgba(20, 20, 24, 0.60); border-color: rgba(139, 155, 174, 0.15); }
+.compare-new .cc-tag { color: var(--brand-gold); }
+.compare-new .cc-list li { color: var(--label-primary); }
+.compare-new .cc-list li::before { content: '✓'; color: var(--sys-green); font-weight: 700; }
+
+@media (max-width: 768px) {
+  .section { padding: var(--sp-8) var(--sp-4); }
+  .proposal-header { padding: var(--sp-8) var(--sp-4) var(--sp-6); }
+  .proposal-header h1 { font-size: 30px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="proposal-header">
+  <h1>冲充电 · Dark Liquid Glass</h1>
+  <p class="subtitle">极氪 · 特斯拉 · 领克 风格 · 暗黑科技 · 液态玻璃</p>
+  <div class="tags">
+    <span class="tag">深空黑底色</span>
+    <span class="tag">冷金属灰品牌色</span>
+    <span class="tag">暗色毛玻璃</span>
+    <span class="tag">高对比白字</span>
+    <span class="tag">极简克制</span>
+    <span class="tag">汽车质感</span>
+  </div>
+</header>
+
+<!-- DESIGN PRINCIPLES -->
+<section class="section">
+  <h2 class="section-title">设计原则</h2>
+  <p class="section-desc">对标极氪、特斯拉、领克的暗黑科技品牌美学。深空黑为底，冷金属灰为品牌强调色，液态玻璃材质产生空间深度。</p>
+
+  <div class="principle-grid">
+    <div class="principle-card glass">
+      <div class="icon" style="background: var(--brand-gold-soft);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-gold)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="6"/><rect x="6" y="6" width="12" height="12" rx="3" fill="rgba(139,155,174,0.08)"/></svg>
+      </div>
+      <h3>深空黑底</h3>
+      <p>#08080A 壁纸级渐变背景，极致暗沉。玻璃材质折射微弱光线，营造汽车 HUD 般璃屏的科技沉浸感。</p>
+    </div>
+    <div class="principle-card glass">
+      <div class="icon" style="background: rgba(59,130,246,0.08);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--sys-blue)" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <h3>暗色液态玻璃</h3>
+      <p>rgba(20,20,24,0.5-0.8) 半透明暗色面板 + backdrop-filter 模糊。玻璃边框仅 0.5px 微弱白线，镜面高光克制到 6% 不透明度。</p>
+    </div>
+    <div class="principle-card glass">
+      <div class="icon" style="background: var(--brand-gold-soft);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-gold)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+      </div>
+      <h3>冷金属灰品牌色</h3>
+      <p>#8B9BAE 极氪式冷金属灰作为唯一品牌强调色。仅用于核心数据、主操作按钮、品牌标识，其余退让为白/灰层级。</p>
+    </div>
+    <div class="principle-card glass">
+      <div class="icon" style="background: rgba(255,255,255,0.04);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </div>
+      <h3>极简克制</h3>
+      <p>去除一切装饰性渐变、发光、阴影堆叠。信息层级靠字号、字重、间距和透明度梯度建立，不靠色彩和装饰。</p>
+    </div>
+  </div>
+</section>
+
+<!-- GLASS MATERIAL SYSTEM -->
+<section class="section">
+  <h2 class="section-title">暗色液态玻璃材质</h2>
+  <p class="section-desc">四种材质变体，背景从 rgba(20,20,24,0.40) 到 0.80，模糊 16-32px，饱和度补偿 140-180%。</p>
+
+  <div class="component-showcase" style="margin-bottom: var(--sp-8);">
+    <div class="demo-card glass">
+      <div class="demo-title">Regular · 通用面板</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--label-secondary);line-height:1.8;">
+        bg: rgba(20,20,24,0.72)<br>
+        blur: 24px saturate(160%)<br>
+        border: 0.5px rgba(255,255,255,0.06)
+      </div>
+    </div>
+    <div class="demo-card glass-clear">
+      <div class="demo-title">Clear · 高透明</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--label-secondary);line-height:1.8;">
+        bg: rgba(20,20,24,0.40)<br>
+        blur: 16px saturate(140%)<br>
+        border: 0.5px rgba(255,255,255,0.04)
+      </div>
+    </div>
+    <div class="demo-card glass-elevated">
+      <div class="demo-title">Elevated · 悬浮层</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--label-secondary);line-height:1.8;">
+        bg: rgba(28,28,32,0.80)<br>
+        blur: 28px saturate(170%)<br>
+        shadow: shadow-lg + specular
+      </div>
+    </div>
+    <div class="demo-card glass-float">
+      <div class="demo-title">Float · 浮动导航</div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:var(--label-secondary);line-height:1.8;">
+        bg: rgba(18,18,22,0.78)<br>
+        blur: 32px saturate(180%)<br>
+        用于 Tab Bar / Nav Bar
+      </div>
+    </div>
+  </div>
+
+  <div class="color-section">
+    <h3>品牌色与语义色</h3>
+    <div class="color-grid">
+      <div class="color-chip"><div class="swatch" style="background: #8B9BAE;"></div><div class="info"><div class="name">Brand Steel · 品牌</div><div class="hex">#8B9BAE</div></div></div>
+      <div class="color-chip"><div class="swatch" style="background: #3B82F6;"></div><div class="info"><div class="name">Blue · 费用/信息</div><div class="hex">#3B82F6</div></div></div>
+      <div class="color-chip"><div class="swatch" style="background: #22C55E;"></div><div class="info"><div class="name">Green · 健康/成功</div><div class="hex">#22C55E</div></div></div>
+      <div class="color-chip"><div class="swatch" style="background: #F59E0B;"></div><div class="info"><div class="name">Orange · 警告</div><div class="hex">#F59E0B</div></div></div>
+      <div class="color-chip"><div class="swatch" style="background: #EF4444;"></div><div class="info"><div class="name">Red · 错误/删除</div><div class="hex">#EF4444</div></div></div>
+      <div class="color-chip"><div class="swatch" style="background: #2DD4BF;"></div><div class="info"><div class="name">Teal · 电量</div><div class="hex">#2DD4BF</div></div></div>
+      <div class="color-chip"><div class="swatch" style="background: #8B5CF6;"></div><div class="info"><div class="name">Purple · 电池</div><div class="hex">#8B5CF6</div></div></div>
+      <div class="color-chip"><div class="swatch" style="background: #08080A;"></div><div class="info"><div class="name">Void · 深空底色</div><div class="hex">#08080A</div></div></div>
+    </div>
+  </div>
+
+  <div class="color-section">
+    <h3>文字透明度梯度</h3>
+    <div class="color-grid">
+      <div class="color-chip"><div class="swatch" style="background: rgba(255,255,255,0.95);"></div><div class="info"><div class="name">label-primary</div><div class="hex">W 95%</div></div></div>
+      <div class="color-chip"><div class="swatch" style="background: rgba(255,255,255,0.55);"></div><div class="info"><div class="name">label-secondary</div><div class="hex">W 55%</div></div></div>
+      <div class="color-chip"><div class="swatch" style="background: rgba(255,255,255,0.28);"></div><div class="info"><div class="name">label-tertiary</div><div class="hex">W 28%</div></div></div>
+      <div class="color-chip"><div class="swatch" style="background: rgba(255,255,255,0.12);"></div><div class="info"><div class="name">label-quaternary</div><div class="hex">W 12%</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TYPOGRAPHY -->
+<section class="section">
+  <h2 class="section-title">字体系统</h2>
+  <p class="section-desc">SF Pro 字体栈。数据使用 SF Mono 等宽。品牌数据色使用冷金属灰 #8B9BAE。</p>
+
+  <div class="type-table glass">
+    <div class="type-row"><div class="label">Large Title</div><div class="sample tp-large-title">¥248.50</div><div class="meta">36px / 700</div></div>
+    <div class="type-row"><div class="label">Title 1</div><div class="sample tp-title1">本月充电总览</div><div class="meta">28px / 700</div></div>
+    <div class="type-row"><div class="label">Title 2</div><div class="sample tp-title2">充电记录</div><div class="meta">22px / 700</div></div>
+    <div class="type-row"><div class="label">Title 3</div><div class="sample tp-title3">电池健康</div><div class="meta">20px / 600</div></div>
+    <div class="type-row"><div class="label">Headline</div><div class="sample tp-headline">本月充电费用</div><div class="meta">17px / 600</div></div>
+    <div class="type-row"><div class="label">Body</div><div class="sample tp-body">本月已充电 4 次，累计 182.3 度</div><div class="meta">17px / 400</div></div>
+    <div class="type-row"><div class="label">Data (Gold)</div><div class="sample tp-data">14.2 kWh/100km</div><div class="meta">30px / 700 Gold</div></div>
+    <div class="type-row"><div class="label">Caption</div><div class="sample tp-caption">数据更新于 2 分钟前</div><div class="meta">12px / 400</div></div>
+  </div>
+</section>
+
+<!-- COMPONENTS -->
+<section class="section">
+  <h2 class="section-title">组件规范</h2>
+  <p class="section-desc">暗色液态玻璃组件。品牌按钮使用冷金属灰底色黑字，玻璃按钮使用微弱白色半透明。</p>
+
+  <div class="component-showcase">
+    <div class="demo-card glass">
+      <div class="demo-title">按钮</div>
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start;">
+        <button class="btn-accent">保存充电记录</button>
+        <button class="btn-glass">查看详情</button>
+      </div>
+    </div>
+    <div class="demo-card glass">
+      <div class="demo-title">分段控制器</div>
+      <div class="seg-dark">
+        <button class="seg-item active">快充</button>
+        <button class="seg-item">家充</button>
+      </div>
+      <div style="margin-top:10px;">
+        <div class="seg-dark">
+          <button class="seg-item active">本月</button>
+          <button class="seg-item">本年</button>
+          <button class="seg-item">全部</button>
+        </div>
+      </div>
+    </div>
+    <div class="demo-card glass">
+      <div class="demo-title">状态标签</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <span class="tag-dark green">充电完成</span>
+        <span class="tag-dark gold">进行中</span>
+        <span class="tag-dark orange">低电量</span>
+        <span class="tag-dark red">异常</span>
+      </div>
+    </div>
+    <div class="demo-card glass">
+      <div class="demo-title">开关</div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:16px;color:var(--label-primary);">云同步备份</span>
+          <div class="toggle-dark on"></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:16px;color:var(--label-primary);">充电提醒</span>
+          <div class="toggle-dark off"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PAGE MOCKUPS -->
+<section class="mockup-section">
+  <div class="section-inner">
+    <h2 class="section-title" style="text-align:center;">页面设计稿</h2>
+    <p class="section-desc" style="text-align:center;">四大核心页面 · Dark Liquid Glass · 375pt</p>
+
+    <div class="mockup-grid">
+
+      <!-- HOME -->
+      <div>
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-statusbar">
+              <span class="time">9:41</span>
+              <div class="status-icons">
+                <svg viewBox="0 0 18 12"><rect x="0" y="4" width="3" height="4" rx="1"/><rect x="5" y="2" width="3" height="6" rx="1"/><rect x="10" y="0" width="3" height="8" rx="1"/><rect x="15" y="0" width="3" height="8" opacity="0.3" rx="1"/></svg>
+                <svg viewBox="0 0 16 12"><path d="M8 0C5 0 2.5 1 0.5 3l1.5 1.5C3.5 3 5.5 2 8 2s4.5 1 6 2.5L15.5 3C13.5 1 11 0 8 0z" fill="rgba(255,255,255,0.7)"/></svg>
+                <svg viewBox="0 0 27 12"><rect x="0" y="0" width="24" height="12" rx="3" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/><rect x="2" y="2" width="18" height="8" rx="1.5" fill="rgba(255,255,255,0.7)"/><rect x="25" y="4" width="2" height="4" rx="1" fill="rgba(255,255,255,0.3)"/></svg>
+              </div>
+            </div>
+
+            <div class="phone-content">
+              <div class="home-nav-dark">
+                <span class="nav-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></span>
+                <span class="nav-title">冲充电</span>
+                <span class="nav-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></span>
+              </div>
+
+              <div class="home-hero-dark">
+                <div class="month-label">2026年9月 · 本月费用</div>
+                <div class="amount">¥248<span class="unit">.50</span></div>
+                <div class="hero-sub">
+                  <span class="sub-item">充入 <strong>182.3</strong> 度</span>
+                  <span class="sub-item">均价 <strong>¥1.36</strong>/度</span>
+                  <span class="sub-item"><strong>4</strong> 次</span>
+                </div>
+              </div>
+
+              <div class="kpi-grid-dark">
+                <div class="kpi-dark">
+                  <div class="kpi-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M5 8l7-7 7 7"/></svg></div>
+                  <div class="kpi-value">¥3,284</div>
+                  <div class="kpi-label">累计费用</div>
+                </div>
+                <div class="kpi-dark">
+                  <div class="kpi-icon ic-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+                  <div class="kpi-value">2,415</div>
+                  <div class="kpi-label">累计度数</div>
+                </div>
+                <div class="kpi-dark">
+                  <div class="kpi-icon ic-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16"/></svg></div>
+                  <div class="kpi-value">128</div>
+                  <div class="kpi-label">充电次数</div>
+                </div>
+                <div class="kpi-dark">
+                  <div class="kpi-icon ic-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+                  <div class="kpi-value">¥0.14</div>
+                  <div class="kpi-label">每公里费用</div>
+                </div>
+              </div>
+
+              <div class="home-section-header"><h4>费用趋势</h4><span class="see-all">2026 ›</span></div>
+              <div class="chart-card-dark">
+                <div class="chart-title">近 6 个月充电费用</div>
+                <div class="mini-chart">
+                  <div class="bar muted" style="height: 35%;"><span class="bar-label">4月</span></div>
+                  <div class="bar muted" style="height: 50%;"><span class="bar-label">5月</span></div>
+                  <div class="bar muted" style="height: 42%;"><span class="bar-label">6月</span></div>
+                  <div class="bar muted" style="height: 60%;"><span class="bar-label">7月</span></div>
+                  <div class="bar muted" style="height: 48%;"><span class="bar-label">8月</span></div>
+                  <div class="bar active" style="height: 72%;"><span class="bar-label">9月</span></div>
+                </div>
+              </div>
+
+              <div class="home-section-header"><h4>关键指标</h4></div>
+              <div class="stat-grid-dark">
+                <div class="stat-mini-dark">
+                  <div class="sm-icon-row"><div class="sm-icon ic-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg></div><span class="sm-label">平均电耗</span></div>
+                  <div class="sm-value">14.2</div><div class="sm-trend">kWh/100km</div>
+                </div>
+                <div class="stat-mini-dark">
+                  <div class="sm-icon-row"><div class="sm-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M5 8l7-7 7 7"/></svg></div><span class="sm-label">平均电价</span></div>
+                  <div class="sm-value">¥1.36</div><div class="sm-trend">元/度</div>
+                </div>
+                <div class="stat-mini-dark">
+                  <div class="sm-icon-row"><div class="sm-icon ic-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3"/></svg></div><span class="sm-label">快慢充比</span></div>
+                  <div class="sm-value">6:4</div><div class="sm-trend">快充 60%</div>
+                </div>
+                <div class="stat-mini-dark">
+                  <div class="sm-icon-row"><div class="sm-icon ic-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/></svg></div><span class="sm-label">电池健康</span></div>
+                  <div class="sm-value">92</div><div class="sm-trend">优秀</div>
+                </div>
+              </div>
+
+              <div class="home-section-header"><h4>最近充电</h4><span class="see-all">全部 ›</span></div>
+              <div class="recent-list-dark">
+                <div class="recent-item-dark">
+                  <div class="ri-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+                  <div class="ri-info"><div class="ri-title">国网快充 · 朝阳站</div><div class="ri-sub">9月12日 · 42.5 度 · 快充</div></div>
+                  <div class="ri-amount">¥54.40</div>
+                </div>
+                <div class="recent-item-dark">
+                  <div class="ri-icon ic-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg></div>
+                  <div class="ri-info"><div class="ri-title">家充 · 私桩</div><div class="ri-sub">9月10日 · 28.0 度 · 慢充</div></div>
+                  <div class="ri-amount">¥33.60</div>
+                </div>
+                <div class="recent-item-dark">
+                  <div class="ri-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+                  <div class="ri-info"><div class="ri-title">特来电 · 奥莱站</div><div class="ri-sub">9月7日 · 55.3 度 · 快充</div></div>
+                  <div class="ri-amount">¥71.85</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="phone-tabbar">
+              <div class="tab-item"><div class="tab-icon-active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 12l9-9 9 9v9a2 2 0 0 1-2 2h-4v-7H10v7H6a2 2 0 0 1-2-2v-9z" transform="translate(-1,-1)"/></svg></div><span class="tab-label tab-label-active">首页</span></div>
+              <div class="tab-item"><div class="tab-icon-inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2h6a2 2 0 0 1 2 2v18l-5-3-5 3V4a2 2 0 0 1 2-2z"/></svg></div><span class="tab-label tab-label-inactive">记录</span></div>
+              <div class="tab-item"><div class="tab-icon-inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/></svg></div><span class="tab-label tab-label-inactive">分析</span></div>
+              <div class="tab-item"><div class="tab-icon-inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg></div><span class="tab-label tab-label-inactive">我的</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="mockup-label"><h3>首页 · 成本总览</h3><p>暗色玻璃英雄卡 + 冷金属灰数据高亮 + KPI 玻璃网格</p></div>
+      </div>
+
+      <!-- RECORD -->
+      <div>
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-statusbar">
+              <span class="time">9:41</span>
+              <div class="status-icons">
+                <svg viewBox="0 0 18 12"><rect x="0" y="4" width="3" height="4" rx="1"/><rect x="5" y="2" width="3" height="6" rx="1"/><rect x="10" y="0" width="3" height="8" rx="1"/><rect x="15" y="0" width="3" height="8" opacity="0.3" rx="1"/></svg>
+                <svg viewBox="0 0 16 12"><path d="M8 0C5 0 2.5 1 0.5 3l1.5 1.5C3.5 3 5.5 2 8 2s4.5 1 6 2.5L15.5 3C13.5 1 11 0 8 0z" fill="rgba(255,255,255,0.7)"/></svg>
+                <svg viewBox="0 0 27 12"><rect x="0" y="0" width="24" height="12" rx="3" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/><rect x="2" y="2" width="18" height="8" rx="1.5" fill="rgba(255,255,255,0.7)"/><rect x="25" y="4" width="2" height="4" rx="1" fill="rgba(255,255,255,0.3)"/></svg>
+              </div>
+            </div>
+
+            <div class="phone-content">
+              <div class="home-nav-dark">
+                <span class="nav-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></span>
+                <span class="nav-title">充电记录</span>
+                <span class="nav-btn" style="font-size:15px;font-weight:600;">编辑</span>
+              </div>
+
+              <div class="record-header-dark">
+                <div class="seg-dark">
+                  <button class="seg-item active">公共快充</button>
+                  <button class="seg-item">家充私桩</button>
+                </div>
+              </div>
+
+              <div class="form-group-dark">
+                <div class="form-group-title-dark">充电信息</div>
+                <div class="form-list-dark">
+                  <div class="form-row-dark"><span class="fr-label">日期</span><span class="fr-placeholder">2026-09-14</span><span style="color:rgba(255,255,255,0.15);font-size:20px;">›</span></div>
+                  <div class="form-row-dark"><span class="fr-label">充电电量</span><input class="fr-input" type="text" value="42.5"><span class="fr-suffix">kWh</span></div>
+                  <div class="form-row-dark"><span class="fr-label">充电单价</span><input class="fr-input" type="text" value="1.28"><span class="fr-suffix">¥/度</span></div>
+                  <div class="form-row-dark"><span class="fr-label">总费用</span><input class="fr-input" type="text" value="54.40"><span class="fr-suffix">¥</span></div>
+                </div>
+              </div>
+
+              <div class="form-group-dark">
+                <div class="form-group-title-dark">车辆状态</div>
+                <div class="form-list-dark">
+                  <div class="form-row-dark"><span class="fr-label">充电前 SOC</span><input class="fr-input" type="text" value="22"><span class="fr-suffix">%</span></div>
+                  <div class="form-row-dark"><span class="fr-label">充电后 SOC</span><input class="fr-input" type="text" value="85"><span class="fr-suffix">%</span></div>
+                  <div class="form-row-dark"><span class="fr-label">里程表</span><input class="fr-input" type="text" value="18,420"><span class="fr-suffix">km</span></div>
+                </div>
+              </div>
+
+              <div class="record-summary-dark">
+                <div class="rs-label">预计充电费用</div>
+                <div class="rs-amount">¥54.40</div>
+                <div class="rs-detail">42.5 度 × ¥1.28/度</div>
+              </div>
+
+              <div class="record-btn-row"><button class="btn-accent">保存记录</button></div>
+
+              <div class="history-section-dark">
+                <h4>最近记录</h4>
+                <div class="history-list-dark">
+                  <div class="history-item-dark"><div class="hi-date"><div class="day">12</div><div class="month">9月</div></div><div class="hi-info"><div class="hi-title">国网快充 · 朝阳站</div><div class="hi-sub">42.5 度 · 快充 · SOC 22%→85%</div></div><div class="hi-amount">¥54.40</div></div>
+                  <div class="history-item-dark"><div class="hi-date"><div class="day">10</div><div class="month">9月</div></div><div class="hi-info"><div class="hi-title">家充 · 私桩</div><div class="hi-sub">28.0 度 · 慢充 · SOC 35%→80%</div></div><div class="hi-amount">¥33.60</div></div>
+                  <div class="history-item-dark"><div class="hi-date"><div class="day">07</div><div class="month">9月</div></div><div class="hi-info"><div class="hi-title">特来电 · 奥莱站</div><div class="hi-sub">55.3 度 · 快充 · SOC 15%→90%</div></div><div class="hi-amount">¥71.85</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="phone-tabbar">
+              <div class="tab-item"><div class="tab-icon-inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9v9a2 2 0 0 1-2 2h-4v-7H10v7H6a2 2 0 0 1-2-2v-9z" transform="translate(-1,-1)"/></svg></div><span class="tab-label tab-label-inactive">首页</span></div>
+              <div class="tab-item"><div class="tab-icon-active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 2h6a2 2 0 0 1 2 2v18l-5-3-5 3V4a2 2 0 0 1 2-2z"/></svg></div><span class="tab-label tab-label-active">记录</span></div>
+              <div class="tab-item"><div class="tab-icon-inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/></svg></div><span class="tab-label tab-label-inactive">分析</span></div>
+              <div class="tab-item"><div class="tab-icon-inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg></div><span class="tab-label tab-label-inactive">我的</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="mockup-label"><h3>记录页 · 充电记录</h3><p>暗色玻璃表单 + 冷金属灰费用预览 + 玻璃历史列表</p></div>
+      </div>
+
+      <!-- ANALYSIS -->
+      <div>
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-statusbar">
+              <span class="time">9:41</span>
+              <div class="status-icons">
+                <svg viewBox="0 0 18 12"><rect x="0" y="4" width="3" height="4" rx="1"/><rect x="5" y="2" width="3" height="6" rx="1"/><rect x="10" y="0" width="3" height="8" rx="1"/><rect x="15" y="0" width="3" height="8" opacity="0.3" rx="1"/></svg>
+                <svg viewBox="0 0 16 12"><path d="M8 0C5 0 2.5 1 0.5 3l1.5 1.5C3.5 3 5.5 2 8 2s4.5 1 6 2.5L15.5 3C13.5 1 11 0 8 0z" fill="rgba(255,255,255,0.7)"/></svg>
+                <svg viewBox="0 0 27 12"><rect x="0" y="0" width="24" height="12" rx="3" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/><rect x="2" y="2" width="18" height="8" rx="1.5" fill="rgba(255,255,255,0.7)"/><rect x="25" y="4" width="2" height="4" rx="1" fill="rgba(255,255,255,0.3)"/></svg>
+              </div>
+            </div>
+
+            <div class="phone-content">
+              <div class="home-nav-dark">
+                <span class="nav-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></span>
+                <span class="nav-title">数据分析</span>
+                <span class="nav-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+              </div>
+
+              <div class="record-header-dark">
+                <div class="seg-dark">
+                  <button class="seg-item active">本月</button>
+                  <button class="seg-item">本年</button>
+                  <button class="seg-item">全部</button>
+                </div>
+              </div>
+
+              <div class="analysis-hero-dark">
+                <div class="ah-label">本月充电总费用</div>
+                <div class="ah-value">¥248.50</div>
+                <div class="ah-trend"><span class="trend-val">↓ 12.3%</span><span class="trend-label">较上月</span></div>
+              </div>
+
+              <div class="trend-chart-dark">
+                <div class="tc-title">月度费用趋势</div>
+                <div class="line-chart-dark">
+                  <svg viewBox="0 0 300 120" preserveAspectRatio="none">
+                    <defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8B9BAE" stop-opacity="0.25"/><stop offset="100%" stop-color="#8B9BAE" stop-opacity="0"/></linearGradient></defs>
+                    <path d="M 10 80 L 60 60 L 110 75 L 160 40 L 210 55 L 260 35" fill="none" stroke="#8B9BAE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M 10 80 L 60 60 L 110 75 L 160 40 L 210 55 L 260 35 L 260 120 L 10 120 Z" fill="url(#dg)"/>
+                    <circle cx="10" cy="80" r="4" fill="#8B9BAE"/><circle cx="60" cy="60" r="4" fill="#8B9BAE"/><circle cx="110" cy="75" r="4" fill="#8B9BAE"/><circle cx="160" cy="40" r="4" fill="#8B9BAE"/><circle cx="210" cy="55" r="4" fill="#8B9BAE"/><circle cx="260" cy="35" r="5" fill="#8B9BAE" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+                  </svg>
+                </div>
+                <div class="line-chart-dark" style="height:auto;"><div class="x-labels"><span>4月</span><span>5月</span><span>6月</span><span>7月</span><span>8月</span><span>9月</span></div></div>
+              </div>
+
+              <div class="donut-dark">
+                <div class="dc-title">快慢充比例</div>
+                <div class="donut-row-dark">
+                  <svg class="donut-svg-dark" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="12"/>
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="#8B9BAE" stroke-width="12" stroke-dasharray="150.8 251.3" stroke-dashoffset="0" transform="rotate(-90 50 50)"/>
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="#2DD4BF" stroke-width="12" stroke-dasharray="100.5 251.3" stroke-dashoffset="-150.8" transform="rotate(-90 50 50)"/>
+                  </svg>
+                  <div class="donut-legend-dark">
+                    <div class="legend-item"><span class="dot" style="background:#8B9BAE;"></span><span class="ll-label">快充</span><span class="ll-value">60%</span></div>
+                    <div class="legend-item"><span class="dot" style="background:#2DD4BF;"></span><span class="ll-label">慢充</span><span class="ll-value">40%</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="battery-dark">
+                <div class="bh-title">电池健康评估</div>
+                <div class="battery-ring-row-dark">
+                  <svg class="battery-ring-svg-dark" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="8"/>
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="#22C55E" stroke-width="8" stroke-dasharray="289 314.2" stroke-dashoffset="0" transform="rotate(-90 60 60)" stroke-linecap="round"/>
+                  </svg>
+                  <div class="battery-ring-info-dark">
+                    <div class="bh-score">92</div>
+                    <div class="bh-label">健康指数</div>
+                    <div class="bh-status"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> 优秀</div>
+                  </div>
+                </div>
+                <div class="battery-metrics-dark">
+                  <div class="battery-metric-dark"><span class="bm-label">容量健康</span><div class="bm-bar"><div class="bm-bar-fill" style="width:92%;background:#22C55E;"></div></div><span class="bm-value">92%</span></div>
+                  <div class="battery-metric-dark"><span class="bm-label">充电习惯</span><div class="bm-bar"><div class="bm-bar-fill" style="width:85%;background:#8B9BAE;"></div></div><span class="bm-value">85%</span></div>
+                  <div class="battery-metric-dark"><span class="bm-label">深放频率</span><div class="bm-bar"><div class="bm-bar-fill" style="width:30%;background:#F59E0B;"></div></div><span class="bm-value">偏低</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="phone-tabbar">
+              <div class="tab-item"><div class="tab-icon-inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9v9a2 2 0 0 1-2 2h-4v-7H10v7H6a2 2 0 0 1-2-2v-9z" transform="translate(-1,-1)"/></svg></div><span class="tab-label tab-label-inactive">首页</span></div>
+              <div class="tab-item"><div class="tab-icon-inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2h6a2 2 0 0 1 2 2v18l-5-3-5 3V4a2 2 0 0 1 2-2z"/></svg></div><span class="tab-label tab-label-inactive">记录</span></div>
+              <div class="tab-item"><div class="tab-icon-active"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6" fill="none" stroke="currentColor" stroke-width="2"/></svg></div><span class="tab-label tab-label-active">分析</span></div>
+              <div class="tab-item"><div class="tab-icon-inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg></div><span class="tab-label tab-label-inactive">我的</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="mockup-label"><h3>分析页 · 成本与电池健康</h3><p>冷金属灰渐变英雄卡 + 冷金属灰趋势线 + 电池健康面板</p></div>
+      </div>
+
+      <!-- PROFILE -->
+      <div>
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-statusbar">
+              <span class="time">9:41</span>
+              <div class="status-icons">
+                <svg viewBox="0 0 18 12"><rect x="0" y="4" width="3" height="4" rx="1"/><rect x="5" y="2" width="3" height="6" rx="1"/><rect x="10" y="0" width="3" height="8" rx="1"/><rect x="15" y="0" width="3" height="8" opacity="0.3" rx="1"/></svg>
+                <svg viewBox="0 0 16 12"><path d="M8 0C5 0 2.5 1 0.5 3l1.5 1.5C3.5 3 5.5 2 8 2s4.5 1 6 2.5L15.5 3C13.5 1 11 0 8 0z" fill="rgba(255,255,255,0.7)"/></svg>
+                <svg viewBox="0 0 27 12"><rect x="0" y="0" width="24" height="12" rx="3" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/><rect x="2" y="2" width="18" height="8" rx="1.5" fill="rgba(255,255,255,0.7)"/><rect x="25" y="4" width="2" height="4" rx="1" fill="rgba(255,255,255,0.3)"/></svg>
+              </div>
+            </div>
+
+            <div class="phone-content">
+              <div class="home-nav-dark"><span class="nav-title">我的</span><span class="nav-btn" style="font-size:15px;font-weight:600;">完成</span></div>
+
+              <div class="profile-header-dark">
+                <div class="profile-avatar-dark">CC</div>
+                <div class="profile-info-dark"><div class="pi-name">冲冲用户</div><div class="pi-sub">已使用 128 天 · 累计 2,415 度</div></div>
+              </div>
+
+              <div class="vehicle-card-dark">
+                <div class="vehicle-header-dark">
+                  <div class="vehicle-icon-dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14l-2-7H7l-2 7z"/><circle cx="8" cy="19" r="2"/><circle cx="16" cy="19" r="2"/><path d="M5 10l1-3h12l1 3"/></svg></div>
+                  <div class="vehicle-info-dark"><div class="vi-name">小鹏 G6</div><div class="vi-detail">2024款 · 电池 66 kWh · 当前</div></div>
+                  <span style="color:rgba(255,255,255,0.15);font-size:20px;">›</span>
+                </div>
+                <div class="vehicle-stat-row-dark">
+                  <div class="vehicle-stat-item-dark"><div class="vsi-value">18,420</div><div class="vsi-label">总里程 km</div></div>
+                  <div class="vehicle-stat-item-dark"><div class="vsi-value">14.2</div><div class="vsi-label">电耗 kWh/100km</div></div>
+                  <div class="vehicle-stat-item-dark"><div class="vsi-value">92%</div><div class="vsi-label">电池健康</div></div>
+                </div>
+              </div>
+
+              <div class="profile-section-title-dark">数据管理</div>
+              <div class="profile-list-dark">
+                <div class="settings-list-dark">
+                  <div class="settings-row-dark"><div class="sr-icon ic-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div><span class="sr-label">导出数据</span><span class="sr-value">JSON</span><span class="sr-chevron">›</span></div>
+                  <div class="settings-row-dark"><div class="sr-icon ic-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><span class="sr-label">导入数据</span><span class="sr-chevron">›</span></div>
+                  <div class="settings-row-dark"><div class="sr-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></div><span class="sr-label">云同步备份</span><div class="toggle-dark on"></div></div>
+                </div>
+              </div>
+
+              <div class="profile-section-title-dark">设置</div>
+              <div class="profile-list-dark">
+                <div class="settings-list-dark">
+                  <div class="settings-row-dark"><div class="sr-icon ic-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/><path d="M6 10v4M10 10v4M14 10v4"/></svg></div><span class="sr-label">充电类型规则</span><span class="sr-chevron">›</span></div>
+                  <div class="settings-row-dark"><div class="sr-icon ic-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><span class="sr-label">充电提醒</span><div class="toggle-dark off"></div></div>
+                  <div class="settings-row-dark"><div class="sr-icon ic-gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><span class="sr-label">通用设置</span><span class="sr-chevron">›</span></div>
+                </div>
+              </div>
+
+              <div class="profile-section-title-dark" style="color:var(--sys-red);">危险操作</div>
+              <div class="profile-list-dark">
+                <div class="settings-list-dark">
+                  <div class="settings-row-dark"><div class="sr-icon ic-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></div><span class="sr-label" style="color:var(--sys-red);">清空所有数据</span><span class="sr-chevron">›</span></div>
+                </div>
+              </div>
+
+              <div style="text-align:center;padding:var(--sp-4) 0 var(--sp-6);">
+                <span style="font-size:12px;color:rgba(255,255,255,0.15);">冲充电 v2.0 · Dark Liquid Glass</span>
+              </div>
+            </div>
+
+            <div class="phone-tabbar">
+              <div class="tab-item"><div class="tab-icon-inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9v9a2 2 0 0 1-2 2h-4v-7H10v7H6a2 2 0 0 1-2-2v-9z" transform="translate(-1,-1)"/></svg></div><span class="tab-label tab-label-inactive">首页</span></div>
+              <div class="tab-item"><div class="tab-icon-inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2h6a2 2 0 0 1 2 2v18l-5-3-5 3V4a2 2 0 0 1 2-2z"/></svg></div><span class="tab-label tab-label-inactive">记录</span></div>
+              <div class="tab-item"><div class="tab-icon-inactive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/></svg></div><span class="tab-label tab-label-inactive">分析</span></div>
+              <div class="tab-item"><div class="tab-icon-active"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1" fill="none" stroke="currentColor" stroke-width="2"/></svg></div><span class="tab-label tab-label-active">我的</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="mockup-label"><h3>我的页 · 车辆与设置</h3><p>冷金属灰头像 + 玻璃车辆卡 + 暗色设置列表</p></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section class="section">
+  <h2 class="section-title">风格对比</h2>
+  <p class="section-desc">从「Liquid Glass 亮色」到「Dark Liquid Glass 暗黑汽车风格」。</p>
+
+  <div class="comparison-grid">
+    <div class="compare-card compare-prev">
+      <div class="cc-tag">上一版 · 亮色 Liquid Glass</div>
+      <div class="cc-title">浅色毛玻璃 · 白底</div>
+      <ul class="cc-list">
+        <li>白/浅灰壁纸渐变背景</li>
+        <li>rgba(255,255,255,0.55) 亮色玻璃</li>
+        <li>蓝色品牌强调色 #0A84FF</li>
+        <li>黑色文字在白底上</li>
+        <li>亮色镜面高光 60%</li>
+      </ul>
+    </div>
+    <div class="compare-card compare-new">
+      <div class="cc-tag">本版 · Dark Liquid Glass</div>
+      <div class="cc-title">深空黑 · 冷金属灰 · 汽车质感</div>
+      <ul class="cc-list">
+        <li>#08080A 深空黑壁纸渐变</li>
+        <li>rgba(20,20,24,0.5-0.8) 暗色玻璃</li>
+        <li>冷金属灰品牌色 #8B9BAE（极氪风格）</li>
+        <li>高对比白色文字 95%/55%/28%</li>
+        <li>克制镜面高光 6%</li>
+        <li>图标渐变填充（深→浅）</li>
+        <li>暗色阴影更重（0.4-0.6）</li>
+        <li>趋势线/环形图使用冷金属灰</li>
+        <li>整体极氪/特斯拉/领克品牌调性</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
