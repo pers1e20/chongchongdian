@@ -1834,6 +1834,32 @@ transition: color .18s, background .18s;
 
     /* 表单页直接呈现，避免低端机/省电模式下动画停在起始帧导致整屏空白 */
     .page-overlay.show { animation: none; transform: none; }
+    /* ===== 车辆表单页（添加 / 编辑） ===== */
+    #vehicleFormPage .vf-text { text-align: left; font-family: var(--font-sans); }
+    #vehicleFormPage .form-row-textarea { flex-direction: column; align-items: stretch; gap: 6px; padding: 12px; }
+    #vehicleFormPage textarea {
+      width: 100%; min-height: 58px; resize: vertical;
+      background: transparent; border: 0; outline: none;
+      color: var(--c-text); font-family: var(--font-sans);
+      font-size: var(--fs-3); line-height: 1.5;
+    }
+    #vehicleFormPage textarea::placeholder { color: var(--c-text-3); }
+    #vehicleFormPage .vf-check {
+      appearance: none; -webkit-appearance: none;
+      width: 44px; height: 26px; margin-left: auto; flex-shrink: 0;
+      border-radius: 9999px; background: var(--c-surface-2);
+      border: 1px solid var(--c-line-strong);
+      position: relative; cursor: pointer;
+      transition: background var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease);
+    }
+    #vehicleFormPage .vf-check::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--c-text-3);
+      transition: transform var(--dur-2) var(--ease), background var(--dur-2) var(--ease);
+    }
+    #vehicleFormPage .vf-check:checked { background: var(--c-text); border-color: var(--c-text); }
+    #vehicleFormPage .vf-check:checked::after { transform: translateX(18px); background: var(--c-bg); }
   </style>
 </head>
 <body>
@@ -1941,7 +1967,57 @@ transition: color .18s, background .18s;
     </div>
   </div>
 
-
+  <!-- 车辆表单（独立覆盖页）：添加 / 编辑共用 -->
+  <div class="page-overlay" id="vehicleFormPage">
+    <div class="page-header">
+      <button class="page-back-btn" onclick="App.closeVehiclePage()" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+      </button>
+      <h2 id="vehicleModalTitle">添加车辆</h2>
+      <span class="page-header-spacer" aria-hidden="true"></span>
+    </div>
+    <div class="page-body">
+      <form id="vehicleForm">
+        <div class="form-list-dark">
+          <div class="form-row-dark">
+            <span class="fr-label">车辆名称</span>
+            <input type="text" id="vf_name" class="fr-input vf-text" placeholder="如 智己 L6" required autocomplete="off">
+          </div>
+          <div class="form-row-dark">
+            <span class="fr-label">品牌</span>
+            <input type="text" id="vf_brand" class="fr-input vf-text" placeholder="选填" autocomplete="off">
+          </div>
+          <div class="form-row-dark">
+            <span class="fr-label">型号</span>
+            <input type="text" id="vf_model" class="fr-input vf-text" placeholder="选填" autocomplete="off">
+          </div>
+          <div class="form-row-dark">
+            <span class="fr-label">电池容量</span>
+            <input type="number" id="vf_batteryCapacity" step="0.1" min="0" inputmode="decimal" class="fr-input" placeholder="75" required>
+            <span class="fr-suffix">kWh</span>
+          </div>
+          <div class="form-row-dark">
+            <span class="fr-label">最大功率</span>
+            <input type="number" id="vf_maxChargePower" step="1" min="0" inputmode="numeric" class="fr-input" placeholder="120">
+            <span class="fr-suffix">kW</span>
+          </div>
+          <div class="form-row-dark">
+            <span class="fr-label">支持快充</span>
+            <input type="checkbox" id="vf_supportsFastCharge" class="vf-check" aria-label="支持快充">
+          </div>
+          <div class="form-row-dark form-row-textarea">
+            <textarea id="vf_note" placeholder="备注（可选）"></textarea>
+          </div>
+        </div>
+        <div class="record-btn-row">
+          <button type="submit" class="btn-accent">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 12 10 17 19 7" stroke-linecap="round" stroke-linejoin="round"></polyline></svg>
+            保存车辆
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- 车辆详情（半屏） -->
   <div class="modal" id="vehicleDetailModal">

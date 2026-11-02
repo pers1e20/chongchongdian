@@ -588,11 +588,13 @@
       this.renderAll();
       // 首次启动时同步底部导航高亮为当前页（首页），避免静态标记停留在其他页签
       document.querySelectorAll('.tabbar-dark .tab-item').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === App.currentTab); });
-      // 系统/浏览器返回：若当前处于「添加/编辑记录」内嵌页则先关闭它回到当前页/首页，而非退出应用
+      // 系统/浏览器返回：若当前处于覆盖页（记一笔 / 车辆表单）则先关闭它，而非退出应用
       window.addEventListener('popstate', function () {
         if (App._overlayDepth > 0) {
           App._overlayDepth = Math.max(0, App._overlayDepth - 1);
-          App.closeChargePage(true);
+          var vp = document.getElementById('vehicleFormPage');
+          if (vp && vp.classList.contains('show')) App.closeVehiclePage(true);
+          else App.closeChargePage(true);
         }
       });
     },
@@ -1693,16 +1695,19 @@
     openVehicleModal: function (id) {
       this.editingVehicleId = id || null;
       var form = document.getElementById('vehicleForm');
+      var page = document.getElementById('vehicleFormPage');
+      if (!form || !page) { this.toast('车辆表单未加载', 'error'); return; }
       form.reset();
       if (id) {
         var v = VehicleMgr.get(id);
         if (v) {
-          document.getElementById('vf_name').value = v.name;
+          document.getElementById('vf_name').value = v.name || '';
           document.getElementById('vf_brand').value = v.brand || '';
           document.getElementById('vf_model').value = v.model || '';
-          document.getElementById('vf_batteryCapacity').value = v.batteryCapacity;
-          document.getElementById('vf_maxChargePower').value = v.maxChargePower || '';
-          document.getElementById('vf_supportsFastCharge').checked = v.supportsFastCharge;
+          // 未记录的 0 回填为空，避免看起来像填过 0
+          document.getElementById('vf_batteryCapacity').value = Number(v.batteryCapacity) > 0 ? v.batteryCapacity : '';
+          document.getElementById('vf_maxChargePower').value = Number(v.maxChargePower) > 0 ? v.maxChargePower : '';
+          document.getElementById('vf_supportsFastCharge').checked = v.supportsFastCharge !== false;
           document.getElementById('vf_note').value = v.note || '';
         }
         document.getElementById('vehicleModalTitle').textContent = '编辑车辆';
@@ -1710,7 +1715,21 @@
         document.getElementById('vf_supportsFastCharge').checked = true;
         document.getElementById('vehicleModalTitle').textContent = '添加车辆';
       }
-      document.getElementById('vehicleModal').classList.add('show');
+      page.classList.add('show');
+      page.scrollTop = 0;
+      // 压入历史栈，使系统返回先关闭本页而非退出应用
+      this._overlayDepth = (this._overlayDepth || 0) + 1;
+      history.pushState({ implOverlay: true, t: Date.now() }, '');
+    },
+
+    closeVehiclePage: function (silent) {
+      var page = document.getElementById('vehicleFormPage');
+      if (page) page.classList.remove('show');
+      this.editingVehicleId = null;
+      if (!silent && this._overlayDepth > 0) {
+        this._overlayDepth = Math.max(0, this._overlayDepth - 1);
+        history.back();
+      }
     },
 
     saveVehicle: function () {
@@ -1728,6 +1747,7 @@
       if (this.editingVehicleId) VehicleMgr.update(this.editingVehicleId, data);
       else VehicleMgr.add(data);
       this.closeModals();
+      this.closeVehiclePage();
       this.renderAll();
       this.toast('保存成功', 'success');
     },
