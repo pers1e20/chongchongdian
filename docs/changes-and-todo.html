@@ -115,11 +115,11 @@
 <header>
   <div class="kicker">冲充电 / 交接留档</div>
   <h1>改动记录与后续任务</h1>
-  <p class="sub">2026-11-02 · 基线 <span class="mono">f6b4ae0</span> → 当前 <span class="mono">7fea904</span> · P0 数据修正、P1 结构重排、P2 视觉重写均已完成，尚未部署到线上</p>
+  <p class="sub">2026-11-02 · 基线 <span class="mono">f6b4ae0</span> 起共 13 次提交 · P0 数据修正、P1 结构重排、P2 视觉重写、P3 缓存与配置均已完成，尚未部署到线上</p>
   <div class="facts">
-    <div class="fact"><b>−846</b><span>HTML 行数 2852 → 2006</span></div>
+    <div class="fact"><b>−647</b><span>HTML 行数 2852 → 2205</span></div>
     <div class="fact"><b>0</b><span>渐变 / 模糊 / 阴影残留</span></div>
-    <div class="fact"><b>16 / 20</b><span>任务清单完成数</span></div>
+    <div class="fact"><b>0</b><span>375px 下溢出与串位</span></div>
     <div class="fact"><b>0</b><span>数据结构与存储键变更</span></div>
   </div>
 </header>
@@ -140,8 +140,10 @@
   <a href="#usage-limit" class="sub">当前限制</a>
   <a href="#tasks">三 · 下次做什么</a>
   <a href="#t-p2" class="sub">P2 视觉（已完成）</a>
-  <a href="#t-p3" class="sub">P3 部署</a>
-  <a href="#t-observe" class="sub">使用观察清单</a>
+  <a href="#t-block" class="sub">阻断修复（本轮）</a>
+  <a href="#t-wide" class="sub">窄屏加固（本轮）</a>
+  <a href="#t-p3" class="sub">P3 缓存与配置（已完成）</a>
+  <a href="#t-device" class="sub">真机待验 9 条</a>
   <a href="#notes">四 · 注意事项</a>
 </nav>
 
@@ -150,7 +152,7 @@
 <!-- ============ 一 ============ -->
 <section id="changes">
   <h2><span class="no">01</span>改了什么</h2>
-  <p class="lead">本轮只做两件事：先让数据不再算错，再把信息结构从「报表优先」改成「记账优先」。视觉层（CSS）基本没动，所以现在这版<strong>能用但还不好看</strong>，属于预期状态。</p>
+  <p class="lead">三个阶段：先把数据修对，再把信息结构从「报表优先」改成「记账优先」，最后整体重写视觉。收尾时又发现两处<strong>静默失效</strong>——点了没反应，但截图看不出来——已一并修掉。现在这版可以用，但还没有在真机上验证过。</p>
 
   <h3 id="c-p0">P0 · 数据可信</h3>
   <table>
@@ -426,49 +428,86 @@
     </tbody>
   </table>
 
-  <h3 id="t-p3">P3 · 部署与更新（3 项）</h3>
-  <div class="tasks">
+  <h3 id="t-block">阻断修复（本轮，计划外）</h3>
+  <p>核验时发现一个比部署更紧急的问题，它让新设备<strong>完全无法使用</strong>。</p>
+  <table>
+    <thead><tr><th style="width:24%">问题</th><th style="width:38%">原因</th><th>处理</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>「添加车辆」「编辑车辆」必崩 <span class="tag fix">修 bug</span></td>
+        <td><code>openVehicleModal()</code> 第一行就执行 <code>document.getElementById('vehicleForm').reset()</code>，但 <code>#vehicleForm</code>、<code>#vehicleModal</code>、<code>#vf_*</code> 在页面里<strong>一个都不存在</strong>。基线版本 f6b4ae0 同样为 0，属交接包自带缺陷</td>
+        <td>补齐为独立覆盖页 <code>#vehicleFormPage</code>，与「记一笔」同一套交互；字段 id 保持不变，保存逻辑零改动；返回栈按当前打开的覆盖页优先关闭</td>
+      </tr>
+      <tr>
+        <td>失效的点击入口 <span class="tag fix">加检测</span></td>
+        <td>这类问题点下去没反应，截图、控制台都看不出来。此前已出现过一次（<code>Store</code> 未挂到 window，导出与清空点了抛 ReferenceError）</td>
+        <td>新增 <code>docs/click-audit.py</code>：扫描所有 <code>onclick</code> 的目标方法是否真实存在、所有 <code>getElementById</code> 的 id 是否存在。用修复前的版本反向验证过，能准确报出那 10 个缺失 id</td>
+      </tr>
+    </tbody>
+  </table>
 
-    <div class="task">
-      <div class="task-h"><b>Service Worker 改 network-first</b><span class="id">P3-1</span><span class="tag wait">待启动</span></div>
-      <dl>
-        <dt>目标</dt><dd>页面与 JS/CSS 请求走 network-first（超时回落缓存），图片保持 cache-first；用 <code>registration.update()</code> + <code>updatefound</code> 自动提示刷新。从此不用手动改版本号</dd>
-        <dt>落点</dt><dd><code>app/sw.js</code> 全文（102 行）</dd>
-        <dt>验收</dt><dd>改一行业务代码后刷新即见新版，无需改任何常量；断网仍能打开并读到本地数据</dd>
-        <dt>收益</dt><dd>直接消掉「更新麻烦」这一条，且不新增任何文件</dd>
-      </dl>
-    </div>
+  <h3 id="t-wide">窄屏防御式加固（本轮）</h3>
+  <p>没有真机，就不做像素验收，改做<strong>失效模式改造</strong>：把「溢出 / 重叠」这类不可控失效，统一改成「省略号」这类可控失效。</p>
+  <table>
+    <thead><tr><th style="width:26%">项</th><th style="width:34%">改法</th><th>为什么</th></tr></thead>
+    <tbody>
+      <tr><td>全局横向兜底</td><td><code>overflow-x: clip</code>（不支持时回落 hidden）</td><td>clip 不创建滚动容器，不会破坏顶栏的 sticky</td></tr>
+      <tr><td>顶栏车名</td><td>单行 + 省略号</td><td>车名由用户输入，中文会逐字换行把导航撑成两行</td></tr>
+      <tr><td>保存提示条</td><td><code>max-width: calc(100vw - 32px)</code>，允许换行</td><td>「已套用 ¥1.20/度，输入度数后自动算金额」约 381px，超出 375 视口</td></tr>
+      <tr><td>表单标签</td><td>宽度自适应、允许换行</td><td>「充电前 SOC」约 79px，被固定 76px 加省略号截成「充电前 SO…」</td></tr>
+      <tr><td>记录行</td><td>内容区 <code>min-width: 0</code>，金额上限 46%</td><td>金额不收缩时会压住日期与 SOC</td></tr>
+      <tr><td>指标条 / 月份头</td><td>收缩 + 省略号</td><td>三格数字在长单位下会串位或被硬裁</td></tr>
+      <tr><td>弹层网格</td><td><code>repeat(2, minmax(0,1fr))</code></td><td><code>1fr</code> 的最小值是 min-content，长串会把列顶宽</td></tr>
+      <tr><td>点击区</td><td>伪元素扩到 44px，不改变视觉</td><td>顶栏齿轮、返回键、开关实际只有 26–32px 高</td></tr>
+      <tr><td>视口高度</td><td><code>100dvh</code> + 旧值回退</td><td>iOS 地址栏收放会让弹层高度跳动</td></tr>
+      <tr><td>2px 溢出</td><td>顶栏 <code>margin: 0 -2px</code> 归零</td><td>实测顶栏比容器宽 4px，是唯一的真实横向溢出源</td></tr>
+    </tbody>
+  </table>
+  <p>验证靠新写的 <code>docs/mobile-check.mjs</code>：通过 DevTools 协议把视口<strong>真正</strong>设成 375 / 414 / 768（无头 Chrome 的 <code>--window-size</code> 最小只能到 500，直接截图会漏掉窄屏问题），逐页扫描横向溢出、越界、关键点击目标，以及滚动到底后是否被底栏永久遮挡。<strong>三档 × 六界面 + 空库，异常 0 处。</strong></p>
 
-    <div class="task">
-      <div class="task-h"><b>迁移托管</b><span class="id">P3-2</span><span class="tag wait">待启动</span></div>
-      <dl>
-        <dt>目标</dt><dd>从 GitHub Pages 迁到 Cloudflare Pages，push 即部署；GitHub Pages 保留为备份</dd>
-        <dt>前置</dt><dd><strong>当前仓库只在本地</strong>，没有远端。需先建远端仓库并推送，否则只能命令行直传</dd>
-        <dt>验收</dt><dd>新域名可打开、PWA 可安装、Service Worker 正常注册</dd>
-        <dt>需要你</dt><dd>在 Cloudflare 侧完成授权，我提供配置步骤</dd>
-      </dl>
-    </div>
+  <h3 id="t-p3">P3 · 缓存与配置（已完成）</h3>
+  <table>
+    <thead><tr><th style="width:26%">项</th><th style="width:34%">之前</th><th>现在</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>缓存策略 <span class="tag done">已完成</span></td>
+        <td>纯 cache-first，每次发版必须手动递增 <code>CACHE_NAME</code>；忘了改就永远看到旧版，旧 HTML 配新 JS 还会白屏</td>
+        <td>导航与 html/js/css/json 走 network-first（2 秒超时回落缓存），图片保持 cache-first。缓存名固定为 <code>ev-charging-v2</code>，<strong>此后不需要再改</strong></td>
+      </tr>
+      <tr>
+        <td>启动画面配色 <span class="tag done">已完成</span></td>
+        <td><code>background_color</code> / <code>theme_color</code> 仍是旧底色 <code>#050508</code>，启动时会闪一下</td>
+        <td>manifest、页面 <code>theme-color</code>、入口页三处统一为 <code>#0A0A0B</code></td>
+      </tr>
+      <tr>
+        <td>入口页双跳转 <span class="tag done">已完成</span></td>
+        <td>同时有 <code>meta http-equiv="refresh"</code> 与 <code>location.replace</code>，等于导航两次</td>
+        <td>只保留 <code>location.replace</code>（带 search / hash 透传）</td>
+      </tr>
+      <tr>
+        <td>迁 Cloudflare Pages <span class="tag wait">待启动</span></td>
+        <td>仓库只在本地，没有远端，Cloudflare 无法连接部署</td>
+        <td>需要你先决定：建 GitHub 远端，还是用 wrangler 直传。两条路我都能给步骤，但授权必须你来</td>
+      </tr>
+    </tbody>
+  </table>
+  <p><strong>实测</strong>：改一处业务代码 → 刷新 → 立即看到新内容；断网刷新仍能打开并读到本地数据。这两条都在真实浏览器会话里验过，不是推断。</p>
 
-    <div class="task">
-      <div class="task-h"><b>manifest 与主题色对齐</b><span class="id">P3-3</span><span class="tag wait">待启动</span></div>
-      <dl>
-        <dt>目标</dt><dd>启动画面的 <code>background_color</code> / <code>theme_color</code> 与新底色一致，消除启动时的颜色跳变</dd>
-        <dt>落点</dt><dd><code>app/manifest.json</code>、<code>charging-tracker.html</code> 的 <code>theme-color</code></dd>
-        <dt>现状</dt><dd>仍是旧底色 <code>#050508</code>，需等 P2-1 定稿后一起改</dd>
-      </dl>
-    </div>
-  </div>
-
-  <h3 id="t-observe">用的时候请留意这五件事</h3>
-  <p>这几条直接决定 P2 怎么改，比任何设计稿都准。</p>
+  <h3 id="t-device">交给真机验收的 9 条</h3>
+  <p>下面这些<strong>我没有能力验证</strong>，不假装验过。拿到手机后按顺序点一遍，每项只需答「正常 / 有问题」。</p>
   <ol class="check">
-    <li>打开应用第一眼，能不能在一屏内看到「记一笔」入口和最近的记录</li>
-    <li>记一笔实际要点几次、在哪一步停顿或想找某个字段</li>
-    <li>统计页三张卡里，哪张你会真的看，哪张直接划走 —— 划走的那张应该删或降级</li>
-    <li>有没有出现 <code>—</code> 但你预期有数的地方（说明字段缺失或口径没讲清）</li>
-    <li>白天户外强光下能否读清，尤其是列表里的次要文字</li>
+    <li>底部导航三个元素是否完整，有没有被 iPhone 底部横条压住</li>
+    <li>记录页里金额与日期是否在同一行，有没有互相压住</li>
+    <li>统计页三格指标是否各占一格，有没有串位或出现省略号</li>
+    <li>记一笔表单里「充电前 SOC」标签是否完整（不是「充电前 SO…」）</li>
+    <li>保存后的提示条是否被屏幕两侧切掉</li>
+    <li>设置页返回箭头是否在左上角</li>
+    <li>添加车辆、记一笔、编辑、删除四条路径是否都能走通</li>
+    <li>户外强光下，次要文字（日期、单位、备注）是否还看得清</li>
+    <li>断网后能否打开，并看到已有记录</li>
   </ol>
-</section>
+  <p>为什么这 9 条只能真机验：375px 下的字体回退（Android 没有 SF Mono，数字会宽 5–10%）、安全区（桌面 <code>env(safe-area-inset-*)</code> 恒为 0）、触摸手感、iOS 地址栏收放，这四类东西在无头浏览器里根本没有对应物。</p>
+  </section>
 
 <!-- ============ 四 ============ -->
 <section id="notes">
