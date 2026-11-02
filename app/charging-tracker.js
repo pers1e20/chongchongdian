@@ -78,11 +78,7 @@
 
     save: function () {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
-      if (typeof Sync !== 'undefined' && Sync.markLocalChange) Sync.markLocalChange();
     },
-
-    /* 静默保存：仅落盘，不触发同步水印（用于拉取云端后应用，避免误回推） */
-    saveSilently: function () { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); },
 
     exportJSON: function () {
       var blob = new Blob([JSON.stringify(this.data, null, 2)], { type: 'application/json' });
@@ -94,20 +90,53 @@
       URL.revokeObjectURL(url);
     },
 
-    importJSON: function (file, callback) {
+    /* 读取并校验导入文件，不写库 */
+    SNAP_KEY: 'ev_backup_preimport_v1',
+
+    readImportFile: function (file, callback) {
       var reader = new FileReader();
-      var self = this;
       reader.onload = function (e) {
-        try {
-          var imported = JSON.parse(e.target.result);
-          if (!imported.vehicles || !imported.charges) { callback(false, '文件格式不正确'); return; }
-          self.data = imported;
-          if (!self.data.settings) self.data.settings = { currentVehicleId: null };
-          self.save();
-          callback(true, '导入成功');
-        } catch (err) { callback(false, '导入失败：' + err.message); }
+        var imported;
+        try { imported = JSON.parse(e.target.result); }
+        catch (err) { callback('导入失败：文件不是合法 JSON', null); return; }
+        if (!imported || !(imported.vehicles instanceof Array) || !(imported.charges instanceof Array)) {
+          callback('文件格式不正确：缺少 vehicles / charges 数组', null); return;
+        }
+        callback(null, imported);
       };
+      reader.onerror = function () { callback('文件读取失败', null); };
       reader.readAsText(file);
+    },
+
+    /* 应用导入：先给当前库拍快照，再整库替换 */
+    applyImport: function (imported) {
+      try { localStorage.setItem(this.SNAP_KEY, JSON.stringify({ at: Date.now(), data: this.data })); } catch (e) {}
+      this.data = imported;
+      if (!this.data.settings) this.data.settings = { currentVehicleId: null };
+      var vid = this.data.settings.currentVehicleId;
+      var exists = this.data.vehicles.some(function (v) { return v.id === vid; });
+      if (!exists) this.data.settings.currentVehicleId = this.data.vehicles[0] ? this.data.vehicles[0].id : null;
+      this.save();
+    },
+
+    peekImportSnapshot: function () {
+      try {
+        var raw = localStorage.getItem(this.SNAP_KEY);
+        if (!raw) return null;
+        var snap = JSON.parse(raw);
+        if (!snap || !snap.at || !snap.data) return null;
+        var d = new Date(snap.at);
+        return { at: snap.at, label: (d.getMonth() + 1) + '月' + d.getDate() + '日' };
+      } catch (e) { return null; }
+    },
+
+    restoreImportSnapshot: function () {
+      var snap = this.peekImportSnapshot();
+      if (!snap) return false;
+      this.data = snap.data;
+      localStorage.removeItem(this.SNAP_KEY);
+      this.save();
+      return true;
     },
 
     clearAll: function () {
@@ -115,150 +144,6 @@
       this.save();
     }
   };
-
-  /* ============================================================
-   * 云同步（私有 Gist 自动备份）
-   * localStorage 仍为主库；每次保存节流推送到私有 Gist；
-   * 启动/手动同步时按「后写覆盖」拉取。令牌独立存储，不随数据导出。
-   * ============================================================ */
-  var Sync = {
-    CFG_KEY: 'ev_sync_cfg_v1',
-    FILE: 'ev-charging-backup.json',
-    cfg: null,
-    pushTimer: null,
-    pulling: false,
-
-    loadCfg: function () {
-      if (this.cfg) return this.cfg;
-      this.cfg = { enabled: false, token: '', gistId: '', lastPushedMs: 0, lastLocalMs: 0,
-                   lastPullMs: 0, lastSyncAt: 0, lastErr: '', device: (navigator.userAgent || '').slice(0, 50) };
-      try {
-        var raw = localStorage.getItem(this.CFG_KEY);
-        if (raw) { var c = JSON.parse(raw); for (var k in this.cfg) if (c[k] !== undefined) this.cfg[k] = c[k]; }
-      } catch (e) {}
-      return this.cfg;
-    },
-    saveCfg: function () { try { localStorage.setItem(this.CFG_KEY, JSON.stringify(this.cfg)); } catch (e) {} },
-    headers: function () {
-      return {
-        'Authorization': 'Bearer ' + this.cfg.token,
-        'Accept': 'application/vnd.github+json',
-        'Content-Type': 'application/json'
-      };
-    },
-    _api: function (method, url, body) {
-      return fetch('https://api.github.com' + url, {
-        method: method, headers: this.headers(), body: body ? JSON.stringify(body) : undefined
-      }).then(function (r) {
-        if (!r.ok) {
-          return r.json().then(function (j) {
-            var msg = (j && (j.message || j.errors && j.errors[0] && j.errors[0].message)) || ('HTTP ' + r.status);
-            throw new Error(String(msg));
-          });
-        }
-        return r.json();
-      });
-    },
-
-    endpoint: function () { return 'https://api.github.com/gists' + (this.cfg.gistId ? '/' + this.cfg.gistId : ''); },
-
-    /* 每次本地保存时标记并节流推送 */
-    markLocalChange: function () {
-      var c = this.loadCfg();
-      if (!c.enabled || !c.token) return;
-      c.lastLocalMs = Date.now();
-      this.saveCfg();
-      if (this.pulling) return;
-      var self = this;
-      if (this.pushTimer) clearTimeout(this.pushTimer);
-      this.pushTimer = setTimeout(function () { self.pushTimer = null; self.push(); }, 1500);
-    },
-
-    push: function () {
-      var self = this, c = this.loadCfg();
-      if (!c.enabled || !c.token) return Promise.resolve();
-      var content = this.snapshot();
-      if (!c.gistId) {
-        return this._api('POST', '/gists', { description: '冲充电 · EV 充电账单同步备份', 'public': false, files: (function () { var o = {}; o[self.FILE] = { content: content }; return o; })() })
-          .then(function (g) {
-            c.gistId = g.id; c.lastPushedMs = Date.now(); c.lastErr = ''; self.saveCfg();
-            self.toast('数据已备份到私有 Gist', 'success');
-          })
-          .catch(function (e) { self.fail(e); });
-      }
-      var patch = { files: {} };
-      patch.files[this.FILE] = { content: content };
-      return this._api('PATCH', '/gists/' + c.gistId, patch)
-        .then(function () { c.lastPushedMs = Date.now(); c.lastErr = ''; self.saveCfg(); })
-        .catch(function (e) { self.fail(e); });
-    },
-
-    pull: function () {
-      var self = this, c = this.loadCfg();
-      return new Promise(function (resolve) {
-        if (!c.enabled || !c.token || !c.gistId || self.pulling) { resolve(); return; }
-        self.pulling = true;
-        self._api('GET', '/gists/' + c.gistId).then(function (g) {
-            var file = g.files && g.files[self.FILE];
-            var serverMs = Date.parse(g.updated_at) || 0;
-            if (file && serverMs > c.lastPushedMs && serverMs > c.lastLocalMs) {
-              try {
-                var remote = JSON.parse(file.content || '{}');
-                if (remote && remote.vehicles && remote.charges) {
-                  Store.data = remote;
-                  if (!Store.data.settings) Store.data.settings = { currentVehicleId: null };
-                  Store.saveSilently();
-                  c.lastLocalMs = serverMs;
-                  if (App && App.renderAll) App.renderAll();
-                  self.toast('已从云端同步数据', 'success');
-                }
-              } catch (e) {}
-            }
-            c.lastPullMs = Date.now(); c.lastSyncAt = Date.now(); self.saveCfg();
-            self.pulling = false; resolve();
-          })
-          .catch(function (e) { self.pulling = false; self.fail(e); resolve(); });
-      });
-    },
-
-    syncNow: function () {
-      var self = this;
-      this.pull().then(function () {
-        var c = self.loadCfg();
-        if (c.lastLocalMs > c.lastPushedMs) { self.push(); }
-        else { self.toast('已同步，数据一致', 'success'); }
-      });
-    },
-
-    snapshot: function () { return JSON.stringify(Store.data); },
-
-    fail: function (e) {
-      var c = this.loadCfg();
-      c.lastErr = String((e && (e.message || e)) || '未知错误');
-      this.saveCfg();
-      this.toast('同步失败：' + c.lastErr, 'error');
-    },
-    toast: function (msg, type) { if (App && App.toast) App.toast(msg, type); return; },
-
-    /* 启动时：若已启用则拉取 */
-    startup: function () { this.loadCfg(); if (this.cfg.enabled && this.cfg.token) this.pull(); },
-
-    statusLine: function () {
-      var c = this.loadCfg();
-      if (!c.enabled) return '未启用';
-      if (c.lastErr) return '最近出错：' + c.lastErr;
-      var parts = [];
-      if (c.gistId) parts.push('已备份到 Gist #' + c.gistId.slice(0, 7));
-      if (c.lastSyncAt) parts.push('上次同步 ' + new Date(c.lastSyncAt).toLocaleTimeString());
-      return parts.join(' · ') || '等待首次备份';
-    }
-  };
-
-  /* 刷新「我的」页同步状态栏（设置区渲染后调用） */
-  function SyncStatusUI(app) {
-    var el = document.getElementById('syncStatus');
-    if (el) el.textContent = Sync.statusLine();
-  }
 
   /* ============================================================
    * 工具函数
@@ -521,7 +406,7 @@
     pricePerKm: function (vid, year) {
       var ov = this.overview(vid, year);
       var eff = this.avgEfficiency(vid, year);
-      if (ov.avgPrice > 0 && eff.count > 0) {
+      if (ov.avgPrice > 0 && eff.enough) {
         return { value: ov.avgPrice * eff.avg / 100, hasData: true, effCount: eff.count };
       }
       return { value: 0, hasData: false, effCount: eff.count };
@@ -574,22 +459,32 @@
       if (charges.length === 0) return { score: 0, factors: [] };
       var cfg = HEALTH_CONFIG;
       var fastCount = 0, deepDischargeCount = 0, overChargeCount = 0, total = charges.length;
+      var socBeforeCount = 0, socAfterCount = 0;
       charges.forEach(function (c) {
         if (c.chargeType === CHARGE_TYPE.FAST) fastCount++;
-        if (c.socBefore < cfg.deepDischargeThreshold) deepDischargeCount++;
-        if (c.socAfter > cfg.overChargeThreshold) overChargeCount++;
+        // 0 表示「未记录」：既不计入深放，也不进分母；否则未填 SOC 的记录会被误判为深放
+        if (c.socBefore > 0) {
+          socBeforeCount++;
+          if (c.socBefore < cfg.deepDischargeThreshold) deepDischargeCount++;
+        }
+        if (c.socAfter > 0) {
+          socAfterCount++;
+          if (c.socAfter > cfg.overChargeThreshold) overChargeCount++;
+        }
       });
-      var fastRatio = fastCount / total, deepRatio = deepDischargeCount / total, overRatio = overChargeCount / total;
+      var fastRatio = fastCount / total;
+      var deepRatio = socBeforeCount ? deepDischargeCount / socBeforeCount : 0;
+      var overRatio = socAfterCount ? overChargeCount / socAfterCount : 0;
       var fastPenalty = Math.max(0, (fastRatio - cfg.fastChargeHabitRatio) * 80);
       var deepPenalty = deepRatio * 60;
       var overPenalty = overRatio * 40;
       var score = Math.max(0, Math.round(100 - fastPenalty - deepPenalty - overPenalty));
       var factors = [
         { name: '快充占比', value: Math.round(fastRatio * 100) + '%', impact: fastPenalty > 0 ? '偏高' : '正常', penalty: Math.round(fastPenalty) },
-        { name: '深放频率', value: Math.round(deepRatio * 100) + '%', impact: deepPenalty > 0 ? '偏高' : '正常', penalty: Math.round(deepPenalty) },
-        { name: '过充频率', value: Math.round(overRatio * 100) + '%', impact: overPenalty > 0 ? '偏高' : '正常', penalty: Math.round(overPenalty) }
+        { name: '深放频率', value: socBeforeCount ? Math.round(deepRatio * 100) + '%' : '—', impact: socBeforeCount ? (deepPenalty > 0 ? '偏高' : '正常') : '未记录', penalty: Math.round(deepPenalty) },
+        { name: '过充频率', value: socAfterCount ? Math.round(overRatio * 100) + '%' : '—', impact: socAfterCount ? (overPenalty > 0 ? '偏高' : '正常') : '未记录', penalty: Math.round(overPenalty) }
       ];
-      return { score: score, factors: factors, fastRatio: fastRatio, deepRatio: deepRatio, overRatio: overRatio };
+      return { score: score, factors: factors, fastRatio: fastRatio, deepRatio: deepRatio, overRatio: overRatio, socBeforeCount: socBeforeCount, socAfterCount: socAfterCount };
     },
     /** 电池健康度（仅电池容量维度）= 实测容量 ÷ 标称容量，与充电习惯无关 */
     // 规则D：有效估算样本不足 3 组时不给出容量结论，显示「数据不足」
@@ -650,7 +545,7 @@
       }
       if (habit.deepRatio > 0.3) tips.push({ icon: 'alert', title: '经常低电量才充电', text: '有 ' + Math.round(habit.deepRatio * 100) + '% 的充电发生在电量低于 ' + cfg.deepDischargeThreshold + '% 时。长期深放会损伤电池，建议电量降至 30% 左右即开始充电。' });
       if (habit.overRatio > 0.3) tips.push({ icon: 'alert', title: '经常充满至高电量', text: '有 ' + Math.round(habit.overRatio * 100) + '% 的充电充至 ' + cfg.overChargeThreshold + '% 以上。日常使用建议充至 80%-90% 即可，可延长电池循环寿命。' });
-      else if (habit.overRatio < 0.1 && habit.deepRatio < 0.2) tips.push({ icon: 'check', title: '充电区间控制良好', text: '你大多数充电都保持在 ' + cfg.deepDischargeThreshold + '%-' + cfg.overChargeThreshold + '% 的健康区间，对电池寿命非常友好。' });
+      else if (habit.socBeforeCount > 0 && habit.overRatio < 0.1 && habit.deepRatio < 0.2) tips.push({ icon: 'check', title: '充电区间控制良好', text: '你大多数充电都保持在 ' + cfg.deepDischargeThreshold + '%-' + cfg.overChargeThreshold + '% 的健康区间，对电池寿命非常友好。' });
 
       var slowPrice2 = this.avgPriceByType(vid, CHARGE_TYPE.SLOW);
       var fastPrice2 = this.avgPriceByType(vid, CHARGE_TYPE.FAST);
@@ -1031,10 +926,6 @@
 
     init: function () {
       Store.load();
-      // 首次启动：无任何数据时自动写入默认车辆与充电记录（作为默认数据展示）
-      if (Store.data.vehicles.length === 0 && Store.data.charges.length === 0) {
-        this.seedDefaultData();
-      }
       this.bindEvents();
       this.bindAnalysisSegments();
       this.renderAll();
@@ -1047,65 +938,6 @@
           App.closeChargePage(true);
         }
       });
-      // 启动时拉取云端同步（若已启用）
-      Sync.startup();
-    },
-
-    /* ---- 默认数据：首次启动自动写入（智己 L6 及充电记录） ---- */
-    seedDefaultData: function () {
-      var v = VehicleMgr.add({
-        name: '智己 L6', brand: '智己', model: 'L6 max 标准版',
-        batteryCapacity: 75, supportsFastCharge: true, maxChargePower: 153
-      });
-      // 价格为 0 的为慢充，其余皆为快充
-      var records = [
-        { d: '5月30日', cost: 63.93, kwh: 56.3, fast: true },
-        { d: '6月2日', cost: 47.57, kwh: 62.1, fast: true },
-        { d: '6月10日', cost: 0, kwh: 44.9, fast: false },
-        { d: '6月13日', cost: 21.6, kwh: 44.1, fast: true },
-        { d: '6月20日', cost: 0, kwh: 50, fast: false },
-        { d: '6月23日', cost: 0, kwh: 19, fast: false },
-        { d: '6月28日', cost: 8.65, kwh: 44.7, fast: true },
-        { d: '7月4日', cost: 1.2, kwh: 12, fast: true },
-        { d: '7月5日', cost: 19, kwh: 27, fast: true },
-        { d: '7月6日', cost: 1.2, kwh: 22, fast: true },
-        { d: '7月6日', cost: 15.5, kwh: 28, fast: true },
-        { d: '7月11日', cost: 18.9, kwh: 35, fast: true },
-        { d: '7月25日', cost: 38.23, kwh: 64.7, fast: true },
-        { d: '8月9日', cost: 23.89, kwh: 48, fast: true },
-        { d: '8月16日', cost: 31, kwh: 52, fast: true },
-        { d: '8月26日', cost: 18.4, kwh: 30, fast: true },
-        { d: '8月30日', cost: 29.3, kwh: 52, fast: true },
-        { d: '9月15日', cost: 30, kwh: 40, fast: false },
-        { d: '9月30日', cost: 14.54, kwh: 19.7, fast: true },
-        { d: '9月30日', cost: 98.05, kwh: 53.872, fast: true },
-        { d: '10月1日', cost: 49.93, kwh: 51.399, fast: true },
-        { d: '10月1日', cost: 22.97, kwh: 19.036, fast: true },
-        { d: '10月1日', cost: 25.11, kwh: 31.613, fast: true },
-        { d: '10月2日', cost: 49.25, kwh: 42.452, fast: true },
-        { d: '10月2日', cost: 14.52, kwh: 12.514, fast: true },
-        { d: '10月3日', cost: 5.12, kwh: 7.819, fast: true },
-        { d: '10月3日', cost: 43.75, kwh: 43.7676, fast: true },
-        { d: '10月3日', cost: 19.07, kwh: 15.4971, fast: true }
-      ];
-      var year = new Date().getFullYear();
-      var months = { '5': '05', '6': '06', '7': '07', '8': '08' };
-      var self = this;
-      records.forEach(function (r) {
-        var m = /^(\d+)月(\d+)日$/.exec(r.d);
-        if (!m) return;
-        var mm = months[String(parseInt(m[1], 10))] || String(m[1]).padStart(2, '0');
-        var dd = String(parseInt(m[2], 10)).padStart(2, '0');
-        ChargeMgr.add({
-          vehicleId: v.id,
-          date: year + '-' + mm + '-' + dd,
-          odometer: 0, chargeType: r.fast ? 'fast' : 'slow',
-          kWh: r.kwh, totalCost: r.cost,
-          unitPrice: r.cost > 0 ? +(r.cost / r.kwh).toFixed(2) : 0,
-          socBefore: 0, socAfter: 0
-        });
-      });
-      setTimeout(function () { self.toast('已载入默认数据：' + v.name, 'success'); }, 400);
     },
 
     bindEvents: function () {
@@ -1211,20 +1043,6 @@
       if (kWhInput) { kWhInput.addEventListener('input', function () { updateAutoCalc('kWh'); self.refreshCostPreview(); }); }
       if (priceInput) { priceInput.addEventListener('input', function () { updateAutoCalc('unitPrice'); self.refreshCostPreview(); }); }
       if (costInput) { costInput.addEventListener('input', function () { updateAutoCalc('totalCost'); self.refreshCostPreview(); }); }
-
-      var exportBtn = document.getElementById('btnExport');
-      if (exportBtn) exportBtn.addEventListener('click', function () { Store.exportJSON(); self.toast('已导出备份文件', 'success'); });
-      var importInput = document.getElementById('importInput');
-      if (importInput) importInput.addEventListener('change', function () {
-        if (this.files[0]) Store.importJSON(this.files[0], function (ok, msg) { self.toast(msg, ok ? 'success' : 'error'); if (ok) location.reload(); });
-      });
-      var clearBtn = document.getElementById('btnClear');
-      if (clearBtn) clearBtn.addEventListener('click', function () {
-        self.showConfirm('清空所有数据', '确定清空所有数据？此操作不可恢复，建议先导出备份。', function () {
-          Store.clearAll();
-          location.reload();
-        });
-      });
     },
 
     bindAnalysisSegments: function () {
@@ -2675,24 +2493,20 @@
         + '<span class="sr-label">添加车辆</span><span class="sr-chevron">›</span></div>';
       html += '</div></div>';
 
-      // 数据管理（设计稿分组：导出 / 导入 / 云同步 / 令牌 / 立即同步）
-      var syncCfg = Sync.loadCfg();
+      // 数据管理（导出 / 导入 / 恢复导入前快照）
       html += '<div class="profile-section-title-dark">数据管理</div>';
       html += '<div class="profile-list-dark"><div class="settings-list-dark">';
-      html += '<div class="settings-row-dark" onclick="Store.exportJSON();App.toast(\'已导出备份文件\',\'success\')">'
+      html += '<div class="settings-row-dark" onclick="App.exportData()">'
         + '<div class="sr-icon ic-blue">' + Icons.download + '</div><span class="sr-label">导出数据</span><span class="sr-value">JSON</span><span class="sr-chevron">›</span></div>';
       html += '<label class="settings-row-dark" style="cursor:pointer;">'
         + '<div class="sr-icon ic-teal">' + Icons.upload + '</div><span class="sr-label">导入数据</span><span class="sr-value">JSON</span><span class="sr-chevron">›</span>'
         + '<input type="file" id="importInput" accept=".json" style="display:none;"></label>';
-      html += '<div class="settings-row-dark" onclick="App.toggleSync()">'
-        + '<div class="sr-icon ic-green">' + Icons.cloud + '</div><span class="sr-label">云同步备份</span>'
-        + '<div class="toggle-dark' + (syncCfg.enabled ? ' on' : ' off') + '" id="syncToggle"></div></div>';
-      html += '<div class="settings-row-dark">'
-        + '<div class="sr-icon ic-purple">' + Icons.keyIcon + '</div><span class="sr-label">GitHub 令牌</span>'
-        + '<input type="password" id="syncToken" placeholder="github_pat_…" value="' + esc(syncCfg.token || '') + '" style="width:110px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);font-size:12px;font-family:var(--font-mono);padding:6px 8px;border-radius:8px;text-align:right;">'
-        + '<button type="button" onclick="App.copyToken()" style="flex-shrink:0;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);font-size:11px;padding:6px 9px;border-radius:8px;margin-left:6px;">复制</button></div>';
-      html += '<div class="settings-row-dark" onclick="App.syncNow()">'
-        + '<div class="sr-icon ic-orange">' + Icons.syncIcon + '</div><span class="sr-label">立即备份 / 同步</span><span class="sr-value" id="syncStatus">' + Sync.statusLine() + '</span><span class="sr-chevron">›</span></div>';
+      var snap = Store.peekImportSnapshot();
+      if (snap) {
+        html += '<div class="settings-row-dark" onclick="App.restoreImportSnapshot()">'
+          + '<div class="sr-icon ic-orange">' + Icons.clock + '</div><span class="sr-label">恢复导入前的数据</span>'
+          + '<span class="sr-value">' + snap.label + '</span><span class="sr-chevron">›</span></div>';
+      }
       html += '</div></div>';
 
       // 设置（含迁移说明）
@@ -2710,7 +2524,7 @@
       // 危险操作
       html += '<div class="profile-section-title-dark" style="color:var(--sys-red);">危险操作</div>';
       html += '<div class="profile-list-dark"><div class="settings-list-dark">';
-      html += '<div class="settings-row-dark" onclick="App.showConfirm(\'清空所有数据\',\'确定清空所有数据？此操作不可恢复，建议先导出备份。\',function(){Store.clearAll();location.reload();})">'
+      html += '<div class="settings-row-dark" onclick="App.clearAllData()">'
         + '<div class="sr-icon ic-red">' + Icons.trash + '</div><span class="sr-label" style="color:var(--sys-red);">清空所有数据</span><span class="sr-chevron">›</span></div>';
       html += '</div></div>';
 
@@ -2723,99 +2537,53 @@
       this.bindSettingsEvents();
     },
 
-    toggleSync: function () {
-      var cfg = Sync.loadCfg();
-      cfg.enabled = !cfg.enabled;
-      Sync.saveCfg();
-      var el = document.getElementById('syncToggle');
-      if (el) el.className = 'toggle-dark ' + (cfg.enabled ? 'on' : 'off');
-      if (cfg.enabled && cfg.token && !cfg.gistId) Sync.push();
-      this.toast(cfg.enabled ? '已启用云同步备份' : '已关闭云同步备份', 'success');
-      var st = document.getElementById('syncStatus');
-      if (st) st.textContent = Sync.statusLine();
-    },
-
-    copyToken: function () {
-      var el = document.getElementById('syncToken');
-      var v = (el && el.value.trim()) || (Sync.loadCfg().token || '');
-      if (!v) { this.toast('尚未填写令牌', 'error'); return; }
-      var done = function () { if (App && App.toast) App.toast('令牌已复制到剪贴板', 'success'); };
-      var fallback = function () {
-        var ta = document.createElement('textarea');
-        ta.value = v;
-        ta.style.cssText = 'position:fixed;opacity:0;left:-999px;';
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand('copy'); done(); } catch (e) { if (App && App.toast) App.toast('复制失败，请长按输入框手动选择', 'error'); }
-        document.body.removeChild(ta);
-      };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(v).then(done, fallback);
-      } else { fallback(); }
-    },
-
-    syncNow: function () {
-      var tEl = document.getElementById('syncToken');
-      var token = tEl ? tEl.value.trim() : '';
-      if (token) {
-        var cfg = Sync.loadCfg(); cfg.token = token; cfg.enabled = true; Sync.saveCfg();
-        var tg = document.getElementById('syncToggle'); if (tg) tg.className = 'toggle-dark on';
-      }
-      Sync.syncNow();
-      setTimeout(function () {
-        var st = document.getElementById('syncStatus');
-        if (st) st.textContent = Sync.statusLine();
-      }, 1200);
-    },
-
-    settingsItem: function (color, icon, title, desc, action) {
-      return '<div class="settings-item"><div class="settings-item-left"><div class="settings-icon ' + color + '">' + icon + '</div>'
-        + '<div class="settings-item-info"><div class="si-title">' + title + '</div><div class="si-desc">' + desc + '</div></div></div>'
-        + action + '</div>';
-    },
-
     bindSettingsEvents: function () {
       var self = this;
-      var exportBtn = document.getElementById('btnExport');
-      if (exportBtn) exportBtn.onclick = function () { Store.exportJSON(); self.toast('已导出备份文件', 'success'); };
       var importInput = document.getElementById('importInput');
       if (importInput) importInput.onchange = function () {
-        if (this.files[0]) Store.importJSON(this.files[0], function (ok, msg) { self.toast(msg, ok ? 'success' : 'error'); if (ok) location.reload(); });
-      };
-      var clearBtn = document.getElementById('btnClear');
-      if (clearBtn) clearBtn.onclick = function () {
-        self.showConfirm('清空所有数据', '确定清空所有数据？此操作不可恢复，建议先导出备份。', function () {
-          Store.clearAll();
-          location.reload();
+        var file = this.files && this.files[0];
+        this.value = '';
+        if (!file) return;
+        Store.readImportFile(file, function (err, data) {
+          if (err) { self.toast(err, 'error'); return; }
+          var n = data.charges.length, v = data.vehicles.length;
+          self.showConfirm('导入数据',
+            '将用该文件替换现有全部数据（' + v + ' 辆车 · ' + n + ' 条记录）。当前数据会先存为快照，可在「数据管理」里恢复。',
+            function () {
+              Store.applyImport(data);
+              self.toast('导入成功', 'success');
+              setTimeout(function () { location.reload(); }, 500);
+            });
         });
-      };
-
-      // 数据同步控件
-      var syncEnable = document.getElementById('syncEnable');
-      if (syncEnable) syncEnable.onchange = function () {
-        var cfg = Sync.loadCfg();
-        cfg.enabled = syncEnable.checked;
-        Sync.saveCfg();
-        if (cfg.enabled && cfg.token && !cfg.gistId) Sync.push();
-        else self.toast(cfg.enabled ? '已启用自动同步' : '已关闭自动同步', 'success');
-        SyncStatusUI(self);
-      };
-      var syncToken = document.getElementById('syncToken');
-      if (syncToken) syncToken.onchange = function () {
-        var v = syncToken.value.trim();
-        if (v) { var cfg = Sync.loadCfg(); cfg.token = v; Sync.saveCfg(); self.toast('令牌已保存', 'success'); SyncStatusUI(self); }
-      };
-      var btnSync = document.getElementById('btnSyncNow');
-      if (btnSync) btnSync.onclick = function () {
-        var t = syncToken ? syncToken.value.trim() : '';
-        if (t) { var cfg = Sync.loadCfg(); cfg.token = t; cfg.enabled = true; if (syncEnable) syncEnable.checked = true; Sync.saveCfg(); }
-        Sync.syncNow();
-        setTimeout(function () { SyncStatusUI(self); }, 1200);
       };
     },
 
-    /* ---- 车辆选择器 ---- */
-    openVehiclePicker: function () {
+    exportData: function () {
+      Store.exportJSON();
+      this.toast('已导出备份文件', 'success');
+    },
+
+    clearAllData: function () {
+      this.showConfirm('清空所有数据', '确定清空所有数据？此操作不可恢复，建议先导出备份。', function () {
+        Store.clearAll();
+        location.reload();
+      });
+    },
+
+    restoreImportSnapshot: function () {
+      var snap = Store.peekImportSnapshot();
+      if (!snap) { this.toast('没有可恢复的快照', 'error'); return; }
+      var self = this;
+      this.showConfirm('恢复导入前的数据',
+        '将用 ' + snap.label + ' 的导入前快照替换当前全部数据。',
+        function () {
+          Store.restoreImportSnapshot();
+          self.toast('已恢复', 'success');
+          setTimeout(function () { location.reload(); }, 500);
+        });
+    },
+
+    /* ---- 车辆选择器 ---- */    openVehiclePicker: function () {
       var vehicles = VehicleMgr.list();
       var current = VehicleMgr.current();
       var listEl = document.getElementById('vehiclePickerList');
