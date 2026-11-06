@@ -13,11 +13,49 @@
 | 形态 | 手机优先的纯前端 PWA，单页应用；加到主屏可离线使用 |
 | 技术 | 原生 HTML/CSS/JS（ES5 风格），无框架、无依赖、无后端、无构建 |
 | 存储 | `localStorage` 为唯一主库；可选备份到 GitHub 私有 Gist（后写覆盖） |
-| 规模 | `charging-tracker.js` ≈ 3080 行；`charging-tracker.html` ≈ 2860 行（其中约 2530 行内联 CSS） |
+| 规模 | `charging-tracker.js` ≈ 2448 行；`charging-tracker.html` ≈ 1039 行（含内联 CSS） |
 | 部署 | 当前 GitHub Pages（`pers1e20/chongchongdian`，`app/` 即站点根目录）——后续可整体替换 |
-| 视觉 | 当前为深色「液态玻璃 / 冷灰科幻」风格——后续可整体替换 |
+| 视觉 | 浅/深双主题「中性光液态玻璃」；控制层强、内容层弱；令牌与组件见 `docs/design-system.md` |
 
 架构上是单文件 IIFE，但内部已按职责分层：`Store`（持久化）→ `Stats / BatteryHealth / Recommender`（纯计算）→ `App`（DOM 渲染）。**纯计算层可原样移植到任何框架**，这是最有价值的资产。
+
+---
+
+## 0.1 最近修复（2026-11-04）
+
+| 问题 | 原因 | 处理 |
+|---|---|---|
+| 设置里点「添加车辆」没反应 | 设置页与车辆表单页同为 `z-index:100`，设置页在 DOM 中更靠后，整层盖住表单 | 表单页加 `.page-form`，层级 110；层级表写进 `design-system.md` |
+| 添加车辆后仍显示「还没有车辆」 | `currentVehicleId` 指向已删除的车时，`VehicleMgr.add` 只在字段为空才回填 | `Store.repair()` 启动即校验并回退；`add` 改为 `!this.current()` 时设为当前 |
+| 累计总费用旁出现「▼100% 环比上月」 | 无年份筛选时算的是本月/上月，却配在累计总额上 | 累计口径不显示涨跌；只有「年份 vs 上年」做同比 |
+| 首次启动没有数据 | 重做视觉时移除了旧种子逻辑 | `app/seed-data.js` + 首次写入 + 设置内「载入基础数据」 |
+| 表单里「支持快充」开关被拉成整行 | `.field input` 的 `flex:1` / `height:44px` 覆盖了 `.switch` | `.field .switch` 固定 44×28 |
+| 弹层转表单页会多留一条历史 | silent 关闭只弹栈不回收历史条目 | `_reuseEntry` 让新层复用条目；无后续层时下一拍回退 |
+
+---
+
+## 0.2 最近改造（2026-11-04 · v2.4）
+
+| 项 | 改动 |
+|---|---|
+| 首屏 | 底栏改为「统计 / + / 记录」，默认落在统计；统计页顶栏补车辆切换（`statsNav`） |
+| 光效 | 恢复中性光玻璃：`--glass-tint` / `--glass-sheen` / `--glass-rim` / `--glass-shadow` / `--rim-gradient`；控制层四件套，卡片只加 1px 投影，Hero 允许斜向高光 |
+| 动效 | 弹层 340ms 弹簧入场 / 200ms 退场；表单与设置页 320ms 推入 / 180ms 退出；确认框缩放；页签指示器滑动；列表错峰；折线描线；Hero 数字滚动；主题 View Transition |
+| 关闭 | `.is-closing` 承接退场，状态先改、动画后收；静默关闭跳过动画；快速连点取消关闭 |
+| 自检 | `docs/style-audit.py` 改为「光影只允许令牌化」，新增 `--glass-*` 必填令牌；`flow-check` 61 项；`mobile-check` 视图顺序改为统计优先 |
+
+### 0.3 最近修复（2026-11-05 · v2.5）
+
+| 问题 | 原因 | 处理 |
+|---|---|---|
+| 快慢充环明细不随年份筛选 | `openDonutSheet` 未接收年份，环按筛选画、明细却统计全部 | 明细与环形图统一按 `statsYear` 过滤 |
+| 趋势图空月掉到 0 | `Stats.monthlyEfficiency` 无样本时返回 0 | 无样本返回 `null`，折线断开而非归零 |
+| 同月出现两个电耗数 | 月明细用「月内相邻对」，统计页用「后条归属月」 | `_monthEff` 统一委托 `Stats.monthlyEfficiency` |
+| 编辑记录把车挂到当前车 | `openChargePage` 回填时把 `vehicleId` 设为当前车辆 | 编辑时保留记录原本的 `vehicleId` |
+| 设置页保存油车参数后统计卡不刷新 | 设置页是浮层，保存后未重绘底层页 | `FuelCar.set` 后同步 `renderTab(currentTab)` |
+| `Utils.fmt(n, 0)` 失效 | `toFixed(d \|\| 1)` 把 0 当 falsy | 显式判断 `undefined/null`，0 位小数恢复生效 |
+
+新增功能「油车对比」见 §3.3 A / §5.10。
 
 ---
 
@@ -28,12 +66,13 @@ cd app
 python3 -m http.server 8000      # 打开 http://localhost:8000
 ```
 
-- 首次启动（无任何数据，即 vehicles 与 charges 都为空）自动写入示例车「智己 L6」（75 kWh / 支持快充 / 最大 153 kW）+ 28 条记录。记录日期固定为 **当前年份的 5 月~10 月**，单价 = 费用/度数（保留 2 位），**全部 odometer=0、SOC=0**。
-- 因此若在 10 月之前首次安装，种子记录会包含「未来日期」；且首屏电耗/健康永远无有效样本（见 §7）。
-- 重置：控制台执行 `localStorage.removeItem('ev_charging_data_v1')` 后刷新。只会清主数据，不会清 `ev_sync_cfg_v1`（令牌仍保留）。**刷新后 `init` 会因「两库皆空」重新种入演示数据**（没有 firstRun 标记，无法得到真正空库）。
+- 首次启动（`ev_charging_data_v1` 不存在且 `ev_seed_v1` 未标记）自动写入基础数据：「智己 L6」（75 kWh / 支持快充 / 最大 153 kW）+ **33 条** 2026-05-30 ~ 2026-10-18 的记录，来源 `app/seed-data.js`。
+- 数据口径：3 条 ¥0 慢充按免费计入；单价缺失记 0；SOC 全部未记录；里程仅 3 条有读数（34928 / 35395 / 38179）。首屏电耗/容量仍会显示「样本不足 / —」，这是规则而非缺陷。
+- 已有数据时不会自动写入。设置 → 数据 → **载入基础数据**：按 日期+度数+金额 去重追加，车辆按名称匹配，不覆盖现有记录。
+- 重置：设置 → 清空所有数据（会写 `ev_seed_v1`，刷新后保持空库）；或同时删除 `ev_charging_data_v1` 与 `ev_seed_v1` 再刷新。只删前者会按首次安装重新种入基础数据。
 - 本地调试建议在 DevTools 勾选 *Update on reload* 或清空 Service Worker 缓存，否则会看到旧版本；SW 在 localhost 同样生效。
-- 修改任何上线可见内容后必须递增 `app/sw.js` 的 `CACHE_NAME`（当前 `ev-charging-v42`），否则用户命中旧缓存。
-- 包内没有测试脚本。原项目的 `tests/_verify*.js` 是基于 Playwright 的一次性验收脚本，依赖本机路径与 `127.0.0.1:8080`，不适合直接迁移。
+- SW 已改 network-first（html/js/css/json 2s 超时回落缓存），**常规发版不必再递增 `CACHE_NAME`**；只在缓存结构变化时改（当前 `ev-charging-v4`）。本地调试仍建议勾 *Update on reload* 或清空 SW 缓存。
+- 校验脚本（均需先开带 `--remote-debugging-port` 的 Chrome）：`docs/style-audit.py`、`docs/mobile-check.mjs`、`docs/flow-check.mjs`（71 项，含油车对比）。`docs/click-audit.py` 与 `tests/_verify*.js` 是旧版脚本，不适用。
 
 目录：
 
@@ -42,9 +81,10 @@ app/
   index.html              # 入口，重定向到 charging-tracker.html
   charging-tracker.html   # 页面骨架 + 全部 CSS + DOM 模板 + SW 注册
   charging-tracker.js     # 全部业务逻辑与渲染
+  seed-data.js            # 33 条基础数据（window.CHARGING_BASE_DATA）
   manifest.json           # PWA 清单
-  sw.js                   # 离线缓存（cache-first + 后台更新）
-  icon-*.png, assets/     # 图标与空态/背景图
+  sw.js                   # 离线缓存（network-first + 缓存回落）
+  icon-*.png              # 图标；旧 assets/ 已删除
 ```
 
 ---
@@ -97,6 +137,7 @@ app/
   - 电价 = 当月费用/当月度数（当月度数为 0 时为 0）；电耗 = 当月区间样本的算术平均。
 - 快慢充比例环 + 图例（点环弹明细；**明细弹层固定显示全部记录，不随年份筛选**，见 §7）。
 - 快慢充价差提示：快充均价明显高于慢充时提示「改慢充可省钱」；差价 ≥0.05 元提示可省，-0.01~0.05 元提示价差不大；只有两类均价都 >0 才显示。
+- 油车对比卡（v2.5）：未配置 → 只给「去设置」入口；已配置 → 累计/本年/本月三档节省 + 每百公里电/油成本；<3 组样本加注「样本较少」。口径见 §5.10。
 
 **B. 电池健康（`health`）**
 - 健康指数环（0~100，颜色阈值 85/70/50）+ 状态文案（优秀/良好/一般/需关注）。
@@ -188,7 +229,12 @@ type Charge = {
   createdAt: number;
 };
 
-type Settings = { currentVehicleId: string | null; createdAt?: number };
+type Settings = {
+  currentVehicleId: string | null;
+  createdAt?: number;
+  // 油车对比参数（v2.5）：全局共用；缺油耗或油价视为未配置
+  fuelCar?: { model: string; consumption: number; price: number };
+};
 ```
 
 **约定**：数值字段统一用 `0` 表示「未记录」，读取时用 `> 0` 判断有效性。`date` 是字符串排序（`localeCompare`），不要改成时间戳而不做迁移。
@@ -329,16 +375,18 @@ type Settings = { currentVehicleId: string | null; createdAt?: number };
 | 建议 | 快充功率提示 | `<50 kW` | JS 664 |
 | 建议 | 模拟器默认 n | `max(1, round(快充次数×0.3))` | JS 2232 |
 | 建议 | 摘要分级 | 80 / 60 | JS 667 |
+| 油车 | 对比参数 | `settings.fuelCar {model, consumption, price}`，全局共用 | JS 743–768 |
+| 油车 | 对比口径 | 区间里程 × 油耗 × 油价；节省 = 油费 − 本条电费 | JS 775–811 |
 | 图表 | 首页费用窗口 | 固定近 6 个月 | JS 1367 |
 | 图表 | 分析「全部」窗口 | 至少近 12 个月；有更早数据则从最早记录月延伸（≤240 个月） | JS 313–331 |
 | 图表 | 快慢充差价提示 | ≥0.05 元（-0.01~0.05 提示价差不大） | JS 2087–2090 |
 | UI | toast 时长 | 2000 ms | JS 3076 |
-| UI | 数字格式 | `fmt` 默认 1 位小数；`fmtMoney` 固定 2 位；非法值显示 `--` | JS 282–283 |
-| PWA | SW 缓存名 | `ev-charging-v42` | sw.js 6 |
-| PWA | 预缓存清单 | 11 项：html/js/manifest/4 icons/5 assets | sw.js 7–20 |
+| UI | 数字格式 | `fmt(n,d)` 默认 1 位小数（`d=0` 也生效）；`fmtMoney` 固定 2 位；非法值显示 `--` | JS 244–245 |
+| PWA | SW 缓存名 | `ev-charging-v4`（network-first，缓存结构不变时不用动） | sw.js 6 |
+| PWA | 预缓存清单 | 8 项：html/js/seed-data/manifest/4 icons | sw.js 7–20 |
 | PWA | manifest | standalone / portrait / `charging-tracker.html` / `#050508` / 4 icons | manifest.json |
 | PWA | HTML meta | theme-color `#050508`、apple 全屏、`user-scalable=no`、`viewport-fit=cover` | HTML 4–11 |
-| 版本 | UI 脚注 | `v2.0 · Dark Liquid Glass` | JS 2719 |
+| 版本 | UI 脚注 | `v2.5 · 本地存储` | `renderSettings` |
 | 视觉 | CSS 底色 | `#08080A`（与 theme-color `#050508` 不一致） | CSS 21 |
 
 ### 5.9 运行状态与持久化边界
@@ -347,7 +395,14 @@ type Settings = { currentVehicleId: string | null; createdAt?: number };
 - 切换车辆会立即保存并重绘当前页签（不会重绘其他页签，用到时再渲染）。
 - 只有充电表单使用 `history.pushState`；其他弹层/确认框不写历史，PWA 下按系统返回键可能直接退出应用。
 - 日期一律按本地 `YYYY-MM-DD` 字符串处理，无时区换算；`new Date(dateStr)` 仅用于个别展示/排序，不参与统计归组。
-- 仅深色主题、仅中文、无系统深色/浅色适配。
+- 浅 / 深双主题 + 跟随系统（`ev_theme_v1`）；仅中文。
+
+### 5.10 油车对比（v2.5）
+- 参数：设置页填「车型 + 油耗（L/100km）+ 油价（元/L）」，**全局共用**，存 `settings.fuelCar`；缺油耗或油价视为未配置。
+- 区间沿用 `Stats.kWhPer100km`：距离 = 本条里程 − 上条里程；油费 = `距离/100 × 油耗 × 油价`；电费 = 本条充电金额；节省 = 油费 − 电费。
+- 首条记录不参与；跨月/跨年归「后一条记录」所属月/年（与电耗区间同口径）。
+- 展示三处联动：统计页卡（累计 / 本年 / 本月节省 + 每百公里电/油成本）、单条记录详情弹层（本次节省）、月明细弹层。
+- 门槛：未配置 → 只给「去设置」入口；已配置无区间 → 提示补录里程；**1 组即出数**，<3 组加注「样本较少仅供参考」；年 / 月按自然年 / 自然月。
 
 ---
 
@@ -419,11 +474,11 @@ HTML/CSS（`charging-tracker.html`）：
 | P2 | `每公里单价`只要求电耗样本 >0，不像其他指标要求 ≥3 | 可能用 1–2 组样本展示金额，口径不一致 | `Stats.pricePerKm` 521–528；建议统一 ≥3 |
 | P2 | 容量有效样本 <3 时仍计算并展示健康指数（只把状态写「数据不足」） | 与「样本不足不出结论」原则冲突 | `capacityHealth` / `healthIndex` 596–626 |
 | P2 | SOC=0 既表示「未记录」也可能是真实 0%；费用 0 既可能免费也可能未填 | 深放/均价/容量判断存在歧义 | 需要区分 `null` 或增加显式标记；改动需数据迁移 |
-| P2 | **环形图明细忽略年份筛选**：环按筛选范围画，点开 `donutSheet` 却统计全部记录 | 数字对不上 | `buildDonut` 调用 2072；`donutSheet` 1856–1878。应把 yearFilter 传进去 |
-| P2 | **空月补 0**：电价/电耗/容量趋势在没有样本的月份返回 0 | 曲线出现「掉到 0」的假骤降，容量趋势尤其误导 | `statsMetricData` 2131–2137、`capacityTrend` 559–563、`buildCapacitySpark` |
-| P2 | **两套月度电耗口径**：统计页按「后一条记录月份」聚合全局区间；月明细只在月内取相邻对 | 同一个月可能看到两个不同电耗 | `Stats.monthlyEfficiency` 496–514 vs `_monthEff` 1844–1853 |
-| P2 | **currentVehicleId 无回退**：导入/损坏数据中的无效 id 不会自动修复，**添加新车也不会修复**（`add` 仅在空值时设置） | 明明有车却显示「还没有添加车辆」 | `VehicleMgr.current` 371、`add` 350；建议 load/import 后校验 |
-| P2 | **编辑记录会把 vehicleId 设为当前车辆** | 跨车辆编辑会改挂记录（正常路径不易触发） | `openChargePage` 2858 + `saveCharge` 2935 |
+| ✅ 已修复 | ~~**环形图明细忽略年份筛选**~~（2026-11-05）：`openDonutSheet` 已按 `statsYear` 过滤，与环口径一致 | 已处理 | `openDonutSheet` |
+| P2 | **空月补 0**：电价/电耗趋势在没有样本的月份返回 0（电耗侧 2026-11-05 已改 `null`，折线断开）；**容量趋势仍补 0** | 曲线出现「掉到 0」的假骤降，容量趋势尤其误导 | `statsMetricData` eff 分支已修；`capacityTrend` 559–563、`buildCapacitySpark` 待修 |
+| ✅ 已修复 | ~~**两套月度电耗口径**~~（2026-11-05）：`_monthEff` 统一委托 `Stats.monthlyEfficiency`，月明细与统计页同口径 | 已处理 | `Stats.monthlyEfficiency` |
+| ✅ 已修复 | ~~**currentVehicleId 无回退**~~（2026-11-04）：`Store.repair()` 启动即校验并回退；`add` 在 `!current()` 时设为当前 | 已处理 | `Store.repair` / `VehicleMgr.add` |
+| ✅ 已修复 | ~~**编辑记录会把 vehicleId 设为当前车辆**~~（2026-11-05）：编辑时保留记录原本的 `vehicleId` | 已处理 | `openChargePage` |
 | P2 | **编辑时未记录的 0 回填为 0**；保存不重算费用 | 表单难以区分「未填」与「0」，只填度数会存成 0 元 | `openChargePage` 2880–2884、`saveCharge` 2933–2952 |
 | P2 | 同步是整库后写覆盖，无合并/冲突提示；token 存在 localStorage | 多设备可能丢改动；XSS 可窃取 token | `Sync` 124–261。重构若保留同步，建议改为字段级合并 + 设备 id + 冲突提示 |
 | P3 | 同一天多条记录排序只按日期字符串，顺序依赖插入顺序 | 同日多笔时电耗区间可能不按里程排序 | `Utils.sortByDate` 284；建议同日再按 odometer 升序 |
@@ -483,21 +538,27 @@ ui/          pages: Home / Records / Analysis(stats|health|advice) / Profile / C
 ### 9.1 部署（当前）
 - GitHub Pages：仓库 `pers1e20/chongchongdian`，`main` 分支、根目录 `/`，线上 `https://pers1e20.github.io/chongchongdian/`。
 - 源码在 `app/`，推送即发布；`index.html` 负责重定向。
-- **每次改动 bump `sw.js` 的 `CACHE_NAME`**；线上校验 `charging-tracker.html`、`sw.js`、`manifest.json` 均 200。
+- SW 为 network-first（html/js/css/json 走网络、2s 超时回落缓存；图片 cache-first），常规发版无需递增 `CACHE_NAME`；线上校验 `charging-tracker.html`、`sw.js`、`manifest.json` 均 200。
 - 旧 README 提到的 Cloudflare Pages 是历史方案，当前不使用。
-- 离线：`sw.js` 预缓存 11 个核心文件（html/js/manifest/4 个 icon/5 张 assets），只拦截**同源 GET**；命中缓存先返回、后台更新（stale-while-revalidate）；导航离线回退到 `charging-tracker.html`。**新增任何静态资源必须同步加入 `CORE_ASSETS`**，否则首次离线会缺失。
+- 离线：`sw.js` 预缓存 8 个核心文件（html/js/seed-data/manifest/4 个 icon），只拦截**同源 GET**；导航离线回退到 `charging-tracker.html`。**新增任何静态资源必须同步加入 `CORE_ASSETS`**，否则首次离线会缺失。
 - 安装体验：`manifest.json` 为 `standalone` + `portrait`，`start_url=charging-tracker.html`，启动/主题色 `#050508`，4 个图标（含 maskable）；HTML 另有 apple 全屏 meta 与禁止缩放 viewport。
 
-### 9.2 视觉现状（可整体替换）
-- 深色单主题（无明暗切换），近黑底 + 冷灰蓝主色 + 玻璃质感卡片 + 大圆角。
-- 核心令牌（CSS 18–71，`--bg-base` 在 21 行）：`--bg-base #08080A`、`--bg-surface #0C0C10`、`--bg-elevated #17171D`、`--accent-frost #8B9BAE`、`--success #22C55E`、`--warning #F59E0B`、`--error #EF4444`；4px 间距网格；圆角 6/10/14/20。
-- 数字统一等宽（`--font-mono`）+ `tabular-nums`。
-- 布局：手机优先、底部浮空 Tabbar、中央 `+`、内容卡片纵向流。
+### 9.2 视觉现状（v2.4）
+- 浅/深双主题，三态切换（跟随系统 / 浅色 / 深色），localStorage 键 `ev_theme_v1`，样式表前应用。
+- 令牌（`app/charging-tracker.html` 顶部）：浅 `#F2F2F7`/`#FFFFFF`，深 `#000000`/`#1C1C1E`；主文、次文、三级文按 WCAG AA 取值。组件内不允许颜色字面量。
+- 玻璃四件套：`--glass-tint`（半透明底）、`--glass-sheen`（顶部高光）、`--glass-rim`（1px 高光/暗边）、`--glass-shadow`（柔和投影），另加 `--rim-gradient` 镜面边；只用于顶栏、浮动胶囊底栏、弹层、确认框、操作条、Toast。
+- 内容卡片：`--surface-tint` + `--shadow-card` + `--glass-card-rim` + 发丝线；Hero 用 `--hero-tint` 与斜向高光。卡片不加 `backdrop-filter`。
+- 数字用系统字体 + `tabular-nums`，取消全量等宽；字阶 11/12/13/15/17/20/22/28/34；字重 400/500/600。
+- 布局：手机优先、浮动胶囊 Tabbar、中央 `+`、页面左右 20px；点击目标 ≥44px。
+- 层级：页面 100 → 表单页 110 → 弹层 200 → 确认框 250 → Toast 300；表单页必须压住设置页。
+- 动效：`--dur-4 320ms` + `--ease-spring`；弹层/页面/确认框均有进出场，`prefers-reduced-motion` 直接隐藏。
+- 降级：`prefers-reduced-transparency` 与「不支持 backdrop-filter」都回退实色。
+- 自检：`python3 docs/style-audit.py`（颜色字面量 / 未走令牌的光影与模糊 / 类名覆盖 / 对比度）。
 
-### 9.3 与原设计文档的偏差（避免被旧文档误导）
-- 原 `docs/设计规范.md` 的主色是 `#5B8FA8`，实际代码已改为 `#8B9BAE`；语义色也从低饱和（`#4A7A6B` 等）改成高饱和（`#22C55E` 等）。
-- 原 `docs/` 下的 Smartisan / Apple / 液态玻璃原型均为**历史探索稿**，不是当前实现，也未被打包。
-- 结论：以 `charging-tracker.html` 的实际 CSS 为准；若重做设计，这些文档可全部舍弃。
+### 9.3 设计文档索引
+- 当前规范：`docs/design-system.html`（可视化，可切浅/深）与 `docs/design-system.md`（摘要）。
+- 历史稿：`docs/设计规范.md`、`docs/*-proposal.html`、`docs/smartisan-*` 均为旧探索，**不代表当前界面**。
+- 规范版本：v1.1（2026-11-04）。视觉以 `design-system.md` 与 `charging-tracker.html` 顶部令牌为准。
 
 ---
 

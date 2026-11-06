@@ -30,8 +30,10 @@ const args = process.argv.slice(2);
 const only = args.find((a) => /^\d+$/.test(a));
 const wantShot = args.includes('--shot');
 const emptyMode = args.includes('--empty');
+const themeArg = (args.find((a) => a.startsWith('--theme=')) || '').split('=')[1] || 'light';
 
 const WIDTHS = only ? [Number(only)] : [375, 414, 768];
+const THEME = themeArg;
 
 const SEED = {
   vehicles: [{
@@ -136,7 +138,7 @@ const PROBE = `(() => {
     }
   }
   // 可点目标：只对关键操作做 44px 硬要求，其余（chip / 分段控件）只提示
-  var CRITICAL = '.nav-btn,.page-back-btn,.btn-accent,.re-btn,.settings-row-dark,.history-item-dark,.tab-item,.tab-add-btn,.ds-icon-btn';
+  var CRITICAL = '.nav-btn,.btn,.re-btn,.row,.record-row,.tab-item,.tab-add,.icon-btn,.chip,.field input';
   var tappable = document.querySelectorAll('button, a, [onclick], input:not([type=hidden]), select, textarea');
   for (var j = 0; j < tappable.length; j++) {
     var t = tappable[j];
@@ -161,7 +163,7 @@ const PROBE = `(() => {
   }
   // 滚动到底，检查内容是否被固定底栏永久遮挡
   res.bottomOverlap = null;
-  var bar = document.querySelector('.tabbar-dark');
+  var bar = document.querySelector('.tabbar');
   // 覆盖页（z=200）会盖住底栏，此时不应把底栏算作遮挡物
   var barVisible = false;
   if (bar) {
@@ -179,7 +181,7 @@ const PROBE = `(() => {
     var maxBottom = -1, worst = '';
     for (var k = 0; k < nodes.length; k++) {
       var n = nodes[k];
-      if (n.closest('.tabbar-dark')) continue;
+      if (n.closest('.tabbar')) continue;
       var cs3 = getComputedStyle(n);
       if (cs3.position === 'fixed' || cs3.display === 'none' || cs3.visibility === 'hidden') continue;
       var br = n.getBoundingClientRect();
@@ -194,14 +196,18 @@ const PROBE = `(() => {
 
 /* ---------------- 主流程 ---------------- */
 const VIEWS = emptyMode
-  ? [{ name: 'empty-records', js: null }, { name: 'empty-settings', js: 'App.openSettings()' }]
+  ? [
+    { name: 'empty-stats', js: null },
+    { name: 'empty-records', js: "App.switchTab('records')" },
+    { name: 'empty-settings', js: 'App.openSettings()' }
+  ]
   : [
-  { name: 'records', js: null },
-  { name: 'stats', js: "App.switchTab('stats')" },
+  { name: 'stats', js: null },
+  { name: 'records', js: "App.switchTab('records')" },
   { name: 'settings', js: "App.openSettings()" },
-  { name: 'charge-form', js: "App.openSettings();App.closeSettings();App.openChargePage()" },
-  { name: 'vehicle-form', js: "App.closeChargePage(true);App.openVehicleModal()" },
-  { name: 'sheet', js: "App.closeVehiclePage(true);App.switchTab('stats');App.showChartSheet('month','2026-10')" }
+  { name: 'charge-form', js: "App.openChargePage()" },
+  { name: 'vehicle-form', js: "App.openVehicleModal()" },
+  { name: 'sheet', js: "App.showChartSheet('month','2026-10')" }
 ];
 
 const cdp = await connect();
@@ -211,7 +217,7 @@ const SEED_JSON = JSON.stringify(emptyMode
   ? { vehicles: [], charges: [], settings: { currentVehicleId: null } }
   : SEED);
 await cdp.send('Page.addScriptToEvaluateOnNewDocument', {
-  source: `try{localStorage.setItem('ev_charging_data_v1', ${JSON.stringify(SEED_JSON)})}catch(e){}`
+  source: `try{localStorage.setItem('ev_charging_data_v1', ${JSON.stringify(SEED_JSON)});localStorage.setItem('ev_theme_v1', ${JSON.stringify(themeArg)})}catch(e){}`
 });
 
 let issues = 0;
@@ -249,7 +255,7 @@ for (const width of WIDTHS) {
 
     if (wantShot) {
       const shot = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
-      writeFileSync(`/tmp/m_${width}_${view.name}.png`, Buffer.from(shot.data, 'base64'));
+      writeFileSync(`/tmp/m_${width}_${view.name}_${themeArg}.png`, Buffer.from(shot.data, 'base64'));
     }
     report.push({ width, view: view.name, ...r });
   }
@@ -260,6 +266,6 @@ writeFileSync('/tmp/mobile-report.json', JSON.stringify(report, null, 1));
 
 console.log('\n' + '='.repeat(60));
 console.log(`检查 ${WIDTHS.length} 档宽度 × ${VIEWS.length} 个界面，异常 ${issues} 处`);
-console.log(wantShot ? '截图已存 /tmp/m_<宽度>_<界面>.png' : '加 --shot 可同时存截图');
+console.log(wantShot ? `截图已存 /tmp/m_<宽度>_<界面>_${themeArg}.png` : '加 --shot 可同时存截图');
 console.log('='.repeat(60));
 process.exit(issues ? 1 : 0);

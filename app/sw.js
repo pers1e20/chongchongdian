@@ -1,7 +1,7 @@
 /**
  * 冲充电 PWA Service Worker
  *
- * 策略（v2）：
+ * 策略（v4）：
  *   - 导航请求与 html / js / css / json：network-first，2 秒超时回落缓存
  *   - 图片等其他资源：cache-first
  *
@@ -10,12 +10,13 @@
  * 改成 network-first 后，CACHE_NAME 只在缓存结构变化时才需要动。
  */
 
-var CACHE_NAME = 'ev-charging-v2';
+var CACHE_NAME = 'ev-charging-v4';
 var NETWORK_TIMEOUT = 2000;
 
 var CORE_ASSETS = [
   'charging-tracker.html',
   'charging-tracker.js',
+  'seed-data.js',
   'manifest.json',
   'icon-192.png',
   'icon-512.png',
