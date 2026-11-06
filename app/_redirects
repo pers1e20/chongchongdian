@@ -1,0 +1,6 @@
+# 冲充电 · Cloudflare Pages 重定向
+# 根路径直接回落到应用入口，省去 index.html 的一次 JS 跳转。
+# 注意：Cloudflare 的 _redirects 优先于静态文件生效（即使 index.html 存在）。
+
+/               charging-tracker.html   200
+/index.html     charging-tracker.html   302

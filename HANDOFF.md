@@ -535,13 +535,23 @@ ui/          pages: Home / Records / Analysis(stats|health|advice) / Profile / C
 
 ## 9. 现状：部署与设计（仅参考，可按需替换）
 
-### 9.1 部署（当前）
-- GitHub Pages：仓库 `pers1e20/chongchongdian`，`main` 分支、根目录 `/`，线上 `https://pers1e20.github.io/chongchongdian/`。
-- 源码在 `app/`，推送即发布；`index.html` 负责重定向。
+### 9.1 部署
+
+**当前线上**：GitHub Pages `pers1e20/chongchongdian` → `https://pers1e20.github.io/chongchongdian/`（源码在 `app/`，推送即发布）。
+
+**目标托管（配置已就绪，尚未部署）**：Cloudflare Pages
+- 纯静态零构建，`app/` 即构建输出目录；仓库根目录 `wrangler.toml` 已配置 `name = "chongchongdian"`、`pages_build_output_dir = "app"`。
+- 部署：`npx wrangler pages deploy`（Direct Upload，**不需要 GitHub 账号**）；或控制台 Direct Upload 上传 `app/`。
+- `app/_headers`：HTML / JS / SW 设 `no-cache`（站点无内容哈希，配合 SW network-first，发版即更新）；图标与 manifest `max-age=604800`。
+- `app/_redirects`：`/` 以 200 回落到 `charging-tracker.html`，省去 `index.html` 的一次 JS 跳转。
+- 额度：免费版 500 构建/月、单文件 25 MB、每站 2 万文件、无限静态请求与带宽——本项目 8 文件 / 488 KB，远低于上限。
+- **中国大陆访问**：Cloudflare 无大陆节点，`*.pages.dev` 国内不稳定；绑自定义域名会改善。无 ICP 备案能力；面向国内且要稳定访问应选国内静态托管（腾讯云 EdgeOne Pages / CloudBase）。
+- 换域名后 localStorage 数据不跟随，需「旧页面导出 → 新地址导入」。
+
+**离线 / 安装**
 - SW 为 network-first（html/js/css/json 走网络、2s 超时回落缓存；图片 cache-first），常规发版无需递增 `CACHE_NAME`；线上校验 `charging-tracker.html`、`sw.js`、`manifest.json` 均 200。
-- 旧 README 提到的 Cloudflare Pages 是历史方案，当前不使用。
-- 离线：`sw.js` 预缓存 8 个核心文件（html/js/seed-data/manifest/4 个 icon），只拦截**同源 GET**；导航离线回退到 `charging-tracker.html`。**新增任何静态资源必须同步加入 `CORE_ASSETS`**，否则首次离线会缺失。
-- 安装体验：`manifest.json` 为 `standalone` + `portrait`，`start_url=charging-tracker.html`，启动/主题色 `#050508`，4 个图标（含 maskable）；HTML 另有 apple 全屏 meta 与禁止缩放 viewport。
+- `sw.js` 预缓存 8 个核心文件（html/js/seed-data/manifest/4 个 icon），只拦截**同源 GET**；导航离线回退到 `charging-tracker.html`。**新增任何静态资源必须同步加入 `CORE_ASSETS`**，否则首次离线会缺失。
+- 安装体验：`manifest.json` 为 `standalone` + `portrait`，`start_url=charging-tracker.html`，启动/主题色 `#F2F2F7`，4 个图标（含 maskable）；HTML 另有 apple 全屏 meta 与禁止缩放 viewport。
 
 ### 9.2 视觉现状（v2.4）
 - 浅/深双主题，三态切换（跟随系统 / 浅色 / 深色），localStorage 键 `ev_theme_v1`，样式表前应用。

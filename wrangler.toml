@@ -1,0 +1,13 @@
+# 冲充电 · Cloudflare Pages 部署配置
+# 纯静态站点，无构建步骤；app/ 即构建输出目录。
+#
+# 用法（在仓库根目录执行）：
+#   npx wrangler pages deploy
+# 首次执行会打开浏览器登录 Cloudflare 并创建项目。
+#
+# 也可以显式指定目录与项目名：
+#   npx wrangler pages deploy app --project-name chongchongdian --branch main
+
+name = "chongchongdian"
+pages_build_output_dir = "app"
+compatibility_date = "2026-11-06"
