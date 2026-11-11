@@ -540,6 +540,10 @@ ui/          pages: Home / Records / Analysis(stats|health|advice) / Profile / C
 **当前线上**：GitHub Pages `pers1e20/chongchongdian` → `https://pers1e20.github.io/chongchongdian/`（源码在 `app/`，推送 `main` 即发布；根 `index.html` 自动跳转到 `app/charging-tracker.html`）。
 
 - 部署方式：`git push origin main`，GitHub Pages 自动构建，无构建命令。
+- **本机推送（已配置好）**：仓库 Deploy Key（写权限），私钥在 `~/.ssh/wb_github_push2`。远程默认是 HTTPS（需令牌），本机走 SSH 部署密钥即可，无需令牌：
+  ```bash
+  GIT_SSH_COMMAND="ssh -i ~/.ssh/wb_github_push2 -o IdentitiesOnly=yes" git push git@github.com:pers1e20/chongchongdian.git main
+  ```
 - **中国大陆访问**：GitHub Pages 国内速度一般；若面向国内且要稳定访问，可绑自定义域名 + 国内 CDN，或改用国内静态托管（腾讯云 EdgeOne Pages / CloudBase，EdgeOne 国内节点需 ICP 备案）。
 - 换域名后 localStorage 数据不跟随，需「旧页面导出 → 新地址导入」。
 
