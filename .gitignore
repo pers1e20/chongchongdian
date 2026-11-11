@@ -4,3 +4,4 @@
 node_modules/
 .ssh_keys/
 *.pem
+.wrangler/

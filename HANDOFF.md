@@ -537,16 +537,13 @@ ui/          pages: Home / Records / Analysis(stats|health|advice) / Profile / C
 
 ### 9.1 部署
 
-**当前线上**：GitHub Pages `pers1e20/chongchongdian` → `https://pers1e20.github.io/chongchongdian/`（源码在 `app/`，推送即发布）。
+**当前线上**：GitHub Pages `pers1e20/chongchongdian` → `https://pers1e20.github.io/chongchongdian/`（源码在 `app/`，推送 `main` 即发布；根 `index.html` 自动跳转到 `app/charging-tracker.html`）。
 
-**目标托管（配置已就绪，尚未部署）**：Cloudflare Pages
-- 纯静态零构建，`app/` 即构建输出目录；仓库根目录 `wrangler.toml` 已配置 `name = "chongchongdian"`、`pages_build_output_dir = "app"`。
-- 部署：`npx wrangler pages deploy`（Direct Upload，**不需要 GitHub 账号**）；或控制台 Direct Upload 上传 `app/`。
-- `app/_headers`：HTML / JS / SW 设 `no-cache`（站点无内容哈希，配合 SW network-first，发版即更新）；图标与 manifest `max-age=604800`。
-- `app/_redirects`：`/` 以 200 回落到 `charging-tracker.html`，省去 `index.html` 的一次 JS 跳转。
-- 额度：免费版 500 构建/月、单文件 25 MB、每站 2 万文件、无限静态请求与带宽——本项目 8 文件 / 488 KB，远低于上限。
-- **中国大陆访问**：Cloudflare 无大陆节点，`*.pages.dev` 国内不稳定；绑自定义域名会改善。无 ICP 备案能力；面向国内且要稳定访问应选国内静态托管（腾讯云 EdgeOne Pages / CloudBase）。
+- 部署方式：`git push origin main`，GitHub Pages 自动构建，无构建命令。
+- **中国大陆访问**：GitHub Pages 国内速度一般；若面向国内且要稳定访问，可绑自定义域名 + 国内 CDN，或改用国内静态托管（腾讯云 EdgeOne Pages / CloudBase，EdgeOne 国内节点需 ICP 备案）。
 - 换域名后 localStorage 数据不跟随，需「旧页面导出 → 新地址导入」。
+
+> 曾评估迁移 Cloudflare Pages（`wrangler.toml` / `_headers` / `_redirects` 已备好），因 Cloudflare 账号被暂停（pages.dev 子域名封锁）无法创建项目，最终决定继续用 GitHub Pages。相关 Cloudflare 配置已移除。
 
 **离线 / 安装**
 - SW 为 network-first（html/js/css/json 走网络、2s 超时回落缓存；图片 cache-first），常规发版无需递增 `CACHE_NAME`；线上校验 `charging-tracker.html`、`sw.js`、`manifest.json` 均 200。

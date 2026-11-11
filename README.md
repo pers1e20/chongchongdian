@@ -4,9 +4,7 @@
 
 ## 线上使用
 
-**https://pers1e20.github.io/chongchongdian/**（当前线上地址，GitHub Pages）
-
-> 正在迁往 Cloudflare Pages：部署配置已就绪（见下方「部署到 Cloudflare Pages」）。切换后把本行替换为 `https://<项目名>.pages.dev/`。
+**https://pers1e20.github.io/chongchongdian/**（GitHub Pages，推送 `main` 即发布）
 
 手机打开后「分享 → 添加到主屏幕」，之后像 App 一样全屏打开，断网也能用（Service Worker 已做 network-first + 离线回落）。
 
@@ -34,26 +32,18 @@ python3 -m http.server 8000
 
 推荐直接打开 `http://localhost:8000/charging-tracker.html`（`/` 会跳转过去）。
 
-## 部署到 Cloudflare Pages
+## 部署到 GitHub Pages
 
-纯静态站点，零构建，`app/` 即构建输出目录。仓库根目录的 `wrangler.toml` 已配好项目名与输出目录。
-
-**方式一：命令行（Direct Upload，不需要 GitHub 账号）**
+纯静态站点，零构建，`app/` 即站点目录。仓库 `pers1e20/chongchongdian` 推送 `main` 即发布，GitHub Pages 自动构建；根 `index.html` 会自动跳转到 `app/charging-tracker.html`。
 
 ```bash
-npx wrangler pages deploy        # 读取仓库根目录的 wrangler.toml
+git push origin main
 ```
-
-首次执行会打开浏览器登录 Cloudflare 并创建项目；之后每次改完直接重跑即可。
-
-**方式二：控制台**：Workers & Pages → Pages → Create → Direct Upload，上传 `app/` 目录，构建命令留空。
-
-**可选：自定义域名**：项目 → Custom domains 绑定即可。绑域名后国内访问稳定性明显优于 `*.pages.dev`。
 
 **注意**
 
-- 站点无内容哈希，`app/_headers` 已把 HTML / JS / SW 设为 `no-cache`，配合 SW 的 network-first，发版即可见新版。
-- `*.pages.dev` 国内访问不稳定（不同运营商 / 时段差异大）；Cloudflare 无大陆节点、无法 ICP 备案。若面向国内且要稳定访问，请改用国内静态托管（如腾讯云 EdgeOne Pages / CloudBase）。
+- 站点无内容哈希，Service Worker 已做 network-first（2 秒超时回落缓存），发版即可见新版。
+- GitHub Pages 国内访问速度一般；若面向国内且要稳定访问，可绑自定义域名 + 国内 CDN，或改用国内静态托管（如腾讯云 EdgeOne Pages / CloudBase）。
 - 换域名后 localStorage 数据不跟随，需要「旧页面导出 → 新地址导入」。
 
 ## 数据
