@@ -129,6 +129,8 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         } catch (e) { console.warn('基础数据写入失败', e); }
       }
       this.repair();
+      /* 旧库没有版本号：补一个，云同步靠它判断数据新旧 */
+      if (!this.data._updatedAt) this.save();
       return this.data;
     },
 
@@ -152,12 +154,20 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       return this.data.settings.currentVehicleId;
     },
 
-    save: function () {
+    /* rev 只在云同步回写远端数据时传入；平时取当前时间当版本号 */
+    save: function (rev) {
+      this.data._updatedAt = (rev === undefined || rev === null) ? Date.now() : (Number(rev) || 0);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+      if (typeof Sync !== 'undefined' && !Sync._suppressPush) Sync.schedulePush();
     },
 
     exportJSON: function () {
-      var blob = new Blob([JSON.stringify(this.data, null, 2)], { type: 'application/json' });
+      /* 导出不含内部版本号 _updatedAt，保持与旧版备份格式一致 */
+      var copy = {};
+      Object.keys(this.data).forEach(function (k) {
+        if (k !== '_updatedAt') copy[k] = this.data[k];
+      }, this);
+      var blob = new Blob([JSON.stringify(copy, null, 2)], { type: 'application/json' });
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
@@ -219,6 +229,354 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       this.save();
       /* 记住「用户主动清空」，刷新后不再自动种回基础数据 */
       try { localStorage.setItem(SEED_KEY, '1'); } catch (e) {}
+    }
+  };
+
+  /* ============================================================
+   * 云同步：GitHub Gist（私有 Gist 存整库快照）
+   * 触发：写入后 3s 防抖 push；启动 / 回前台 / 手动 pull
+   * 冲突：LWW（比较快照 updatedAt），多设备最后一次写入生效
+   * ============================================================ */
+  var SYNC_KEY = 'ev_sync_config_v1';
+  var SYNC_FILE = 'ev-charging-data.json';
+  var SYNC_DESC = '冲充电数据备份';
+  var SYNC_DEBOUNCE = 3000;
+
+  var Sync = {
+    cfg: null,
+    _pushTimer: null,
+    _pushing: false,
+    _pulling: false,
+    _suppressPush: false,
+    /* 内存里的最新状态文案：设置页重渲染时不回退成「等待首次同步」 */
+    _statusText: '',
+
+    defaults: function () {
+      return { enabled: false, gistId: '', token: '', localRev: 0, remoteRev: 0, lastSyncAt: 0, lastError: '' };
+    },
+
+    load: function () {
+      var cfg = null;
+      try {
+        var raw = localStorage.getItem(SYNC_KEY);
+        if (raw) cfg = JSON.parse(raw);
+      } catch (e) { cfg = null; }
+      var d = this.defaults();
+      if (cfg && typeof cfg === 'object') {
+        d.enabled = !!cfg.enabled;
+        d.gistId = typeof cfg.gistId === 'string' ? cfg.gistId : '';
+        d.token = typeof cfg.token === 'string' ? cfg.token : '';
+        d.localRev = Number(cfg.localRev) || 0;
+        d.remoteRev = Number(cfg.remoteRev) || 0;
+        d.lastSyncAt = Number(cfg.lastSyncAt) || 0;
+        d.lastError = typeof cfg.lastError === 'string' ? cfg.lastError : '';
+      }
+      this.cfg = d;
+      return d;
+    },
+
+    save: function () {
+      try { localStorage.setItem(SYNC_KEY, JSON.stringify(this.cfg)); } catch (e) {}
+    },
+
+    init: function () { this.load(); },
+
+    isReady: function () { return !!(this.cfg && this.cfg.enabled && this.cfg.token); },
+
+    /* 本机数据版本号（Store.data._updatedAt） */
+    dataRev: function () { return Number((Store.data && Store.data._updatedAt) || 0); },
+
+    hasLocalCharges: function () {
+      return !!(Store.data && Store.data.charges && Store.data.charges.length);
+    },
+
+    /* ---------- 调度 ---------- */
+    schedulePush: function () {
+      if (!this.isReady() || this._pushing || this._suppressPush) return;
+      var self = this;
+      if (this._pushTimer) clearTimeout(this._pushTimer);
+      this._pushTimer = setTimeout(function () {
+        self._pushTimer = null;
+        self.push(true);
+      }, SYNC_DEBOUNCE);
+    },
+
+    /* 立即上传（切后台时兜底） */
+    flush: function () {
+      if (!this.isReady()) return;
+      if (this._pushTimer) { clearTimeout(this._pushTimer); this._pushTimer = null; }
+      this.push(true);
+    },
+
+    /* ---------- 请求 ---------- */
+    _request: function (method, url, body) {
+      var headers = {
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28'
+      };
+      if (this.cfg.token) headers['Authorization'] = 'Bearer ' + this.cfg.token;
+      var opts = { method: method, headers: headers };
+      if (body !== undefined) {
+        headers['Content-Type'] = 'application/json';
+        opts.body = JSON.stringify(body);
+      }
+      return fetch(url, opts);
+    },
+
+    _wrap: function (rev) {
+      return JSON.stringify({
+        app: 'charging-tracker',
+        version: 2,
+        updatedAt: rev || this.dataRev() || Date.now(),
+        data: Store.data
+      });
+    },
+
+    _unwrap: function (content) {
+      var obj;
+      try { obj = JSON.parse(content); } catch (e) { return null; }
+      if (!obj || typeof obj !== 'object') return null;
+      var data = obj.data;
+      if (!data || !(data.vehicles instanceof Array) || !(data.charges instanceof Array)) return null;
+      return { updatedAt: Number(obj.updatedAt) || 0, data: data };
+    },
+
+    /* 找到或新建备份 Gist：先按文件名搜，避免多设备各建一个 */
+    _ensureGist: function () {
+      var self = this;
+      if (this.cfg.gistId) return Promise.resolve({ id: this.cfg.gistId, created: false });
+      return this._request('GET', 'https://api.github.com/gists?per_page=100')
+        .then(function (res) {
+          if (!res.ok) throw { status: res.status };
+          return res.json();
+        })
+        .then(function (list) {
+          var found = null;
+          (list || []).forEach(function (g) {
+            if (!g || !g.files || !g.files[SYNC_FILE]) return;
+            if (!found || String(g.updated_at) > String(found.updated_at)) found = g;
+          });
+          if (found) {
+            self.cfg.gistId = found.id;
+            self.save();
+            return { id: found.id, created: false };
+          }
+          var rev = self.dataRev() || Date.now();
+          var files = {};
+          files[SYNC_FILE] = { content: self._wrap(rev) };
+          return self._request('POST', 'https://api.github.com/gists', {
+            description: SYNC_DESC,
+            public: false,
+            files: files
+          }).then(function (res) {
+            if (!res.ok) throw { status: res.status };
+            return res.json();
+          }).then(function (g) {
+            self.cfg.gistId = g.id;
+            self.cfg.localRev = rev;
+            self.cfg.remoteRev = rev;
+            self.cfg.lastSyncAt = Date.now();
+            self.cfg.lastError = '';
+            self.save();
+            return { id: g.id, created: true };
+          });
+        });
+    },
+
+    /* ---------- 上传 ---------- */
+    push: function (silent, allowRetry) {
+      if (this._pushing || !this.isReady()) return;
+      var self = this;
+      this._pushing = true;
+      this._setStatus('syncing', '正在上传…');
+      this._ensureGist().then(function (info) {
+        if (info.created) {
+          self._pushing = false;
+          self._setStatus('ok', '上次同步：' + self.fmtTime(self.cfg.lastSyncAt));
+          if (!silent) App.toast('已同步到云端', 'success');
+          return null;
+        }
+        var files = {};
+        files[SYNC_FILE] = { content: self._wrap() };
+        return self._request('PATCH', 'https://api.github.com/gists/' + info.id, { files: files })
+          .then(function (res) {
+            if (!res.ok) throw { status: res.status };
+            return res.json();
+          });
+      }).then(function () {
+        var now = Date.now();
+        var rev = self.dataRev() || now;
+        self.cfg.localRev = rev;
+        self.cfg.remoteRev = rev;
+        self.cfg.lastSyncAt = now;
+        self.cfg.lastError = '';
+        self.save();
+        self._pushing = false;
+        self._setStatus('ok', '上次同步：' + self.fmtTime(now));
+        if (!silent) App.toast('已同步到云端', 'success');
+      }).catch(function (err) {
+        self._pushing = false;
+        var kind = self.errKind(err);
+        if (kind === 'notfound' && allowRetry !== false) {
+          self.cfg.gistId = '';
+          self.save();
+          self._setStatus('warn', '云端备份丢失，正在重建…');
+          self.push(silent, false);
+          return;
+        }
+        self.fail(kind, silent);
+      });
+    },
+
+    /* ---------- 下载 ---------- */
+    pull: function (silent, allowRetry) {
+      if (this._pulling || this._pushing || !this.isReady()) return;
+      var self = this;
+      this._pulling = true;
+      this._setStatus('syncing', '正在连接…');
+      this._ensureGist().then(function (info) {
+        if (info.created) {
+          self._pulling = false;
+          self._setStatus('ok', '已创建云端备份（' + self.fmtTime(self.cfg.lastSyncAt) + '）');
+          if (!silent) App.toast('已创建云端备份', 'success');
+          return null;
+        }
+        return self._request('GET', 'https://api.github.com/gists/' + info.id)
+          .then(function (res) {
+            if (!res.ok) throw { status: res.status };
+            return res.json();
+          });
+      }).then(function (g) {
+        if (!g) return;
+        self._pulling = false;
+        var file = g.files && g.files[SYNC_FILE];
+        var snap = file && file.content ? self._unwrap(file.content) : null;
+        if (!snap) {
+          self._setStatus('warn', '云端为空，正在上传本机数据');
+          self.push(silent);
+          return;
+        }
+        var remoteAt = snap.updatedAt || 0;
+        var localAt = self.dataRev();
+        var firstContact = !self.cfg.localRev;
+        if (firstContact && remoteAt > 0 && self.hasLocalCharges()) {
+          /* 本机从未对账且两边都有数据：不静默覆盖，交给用户决定 */
+          App.showConfirm('云端已有备份',
+            '云端备份时间 ' + self.fmtTime(remoteAt) + '，本机有 ' + Store.data.charges.length + ' 条记录。首次同步会用云端数据覆盖本机，是否继续？',
+            function () { self.acceptRemote(snap, silent); });
+          return;
+        }
+        if (firstContact || remoteAt > localAt) { self.acceptRemote(snap, silent); return; }
+        if (remoteAt < localAt) {
+          self._setStatus('warn', '本机较新，正在上传');
+          self.push(silent);
+          return;
+        }
+        self.cfg.remoteRev = remoteAt;
+        self.cfg.lastSyncAt = Date.now();
+        self.cfg.lastError = '';
+        self.save();
+        self._setStatus('ok', '已是最新（' + self.fmtTime(self.cfg.lastSyncAt) + '）');
+      }).catch(function (err) {
+        self._pulling = false;
+        var kind = self.errKind(err);
+        if (kind === 'notfound' && allowRetry !== false) {
+          self.cfg.gistId = '';
+          self.save();
+          self.pull(silent, false);
+          return;
+        }
+        if (kind === 'notfound') {
+          self._setStatus('warn', '云端备份不存在，将在下次写入时重建');
+          return;
+        }
+        self.fail(kind, silent);
+      });
+    },
+
+    /* 用远端快照替换本机数据 */
+    acceptRemote: function (snap, silent) {
+      var rev = Number(snap.updatedAt) || Date.now();
+      this._suppressPush = true;
+      try {
+        Store.data = snap.data;
+        if (!Store.data.settings) Store.data.settings = { currentVehicleId: null };
+        Store.repair();
+        Store.save(rev);
+      } finally {
+        this._suppressPush = false;
+      }
+      this.cfg.localRev = rev;
+      this.cfg.remoteRev = rev;
+      this.cfg.lastSyncAt = Date.now();
+      this.cfg.lastError = '';
+      this.save();
+      this._setStatus('ok', '上次同步：' + this.fmtTime(this.cfg.lastSyncAt));
+      if (!silent) App.toast('已从云端更新', 'success');
+      App.renderAll();
+    },
+
+    /* ---------- 开关 ---------- */
+    enable: function () {
+      if (!this.cfg.token) { App.toast('请先填写 GitHub 令牌', 'error'); return; }
+      this.cfg.enabled = true;
+      this.cfg.lastError = '';
+      this.save();
+      this.pull(false);
+    },
+
+    disable: function () {
+      this.cfg.enabled = false;
+      this.cfg.lastError = '';
+      this.save();
+      this._setStatus('off', '未开启');
+    },
+
+    /* ---------- 辅助 ---------- */
+    fail: function (kind, silent) {
+      if (kind === 'offline') {
+        this._setStatus('warn', '离线，已暂存，联网后自动上传');
+        return;
+      }
+      if (kind === 'auth') {
+        this.cfg.enabled = false;
+        this.cfg.lastError = 'auth';
+        this.save();
+        this._setStatus('error', '令牌无效，已暂停同步');
+        App.toast('同步失败：令牌无效，已暂停', 'error');
+        return;
+      }
+      this.cfg.lastError = kind;
+      this.save();
+      this._setStatus('error', '同步失败：' + kind);
+      if (!silent) App.toast('同步失败：' + kind, 'error');
+    },
+
+    errKind: function (err) {
+      if (!err) return 'unknown';
+      if (err.status === 401 || err.status === 403) return 'auth';
+      if (err.status === 404) return 'notfound';
+      if (err.status === 422) return 'invalid';
+      if (err.status) return 'http-' + err.status;
+      /* fetch 网络错误没有 status */
+      return 'offline';
+    },
+
+    fmtTime: function (ts) {
+      if (!ts) return '—';
+      var d = new Date(ts);
+      function p(n) { return n < 10 ? '0' + n : '' + n; }
+      return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + p(d.getHours()) + ':' + p(d.getMinutes());
+    },
+
+    _setStatus: function (kind, text) {
+      this._statusText = text;
+      var el = document.getElementById('syncStatusLine');
+      if (el) {
+        el.textContent = text;
+        el.style.color = kind === 'error' ? 'var(--c-danger)'
+          : (kind === 'warn' ? 'var(--c-warn)' : 'var(--c-text-3)');
+      }
     }
   };
 
@@ -835,6 +1193,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
 
     /* ---------- 启动 ---------- */
     init: function () {
+      Sync.init();
       Store.load();
       Theme.init();
       this.bindEvents();
@@ -848,6 +1207,14 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
           var fn = self._stack.pop();
           fn();
         }
+      });
+      /* 云同步：启动后拉一次；回前台再拉；切后台立即上传 */
+      if (Sync.isReady()) {
+        setTimeout(function () { Sync.pull(true); }, 1200);
+      }
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) Sync.flush();
+        else if (Sync.isReady()) Sync.pull(true);
       });
     },
 
@@ -1611,12 +1978,21 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       }
       html += '</div><p class="note-line">换手机或清缓存前先导出；导入会整库替换，载入基础数据只追加不覆盖。</p>';
 
+      var sc = Sync.cfg || Sync.load();
+      html += '<div class="group-title">云同步</div><div class="group">';
+      html += '<label class="row"><span class="row-label">自动同步</span><input type="checkbox" class="switch" id="syncEnabled"' + (sc.enabled ? ' checked' : '') + '></label>';
+      html += '<div class="field"><label for="syncToken">令牌</label><input id="syncToken" type="text" placeholder="GitHub Token" value="' + esc(sc.token) + '" autocomplete="off" spellcheck="false" style="text-align:left"><span class="suffix"></span></div>';
+      html += '<button class="row" onclick="App.syncNow()"><span class="row-label">立即同步</span>' + Icons.chevronRight + '</button>';
+      html += '</div>';
+      html += '<p class="note-line" id="syncStatusLine">' + esc(this.syncStatusText()) + '</p>';
+      html += '<p class="note-line">把整库快照通过 HTTPS 存到你的私有 GitHub Gist，仅自己可见。换设备时填同一令牌即可拉取；多设备同时使用按「最后写入」合并。</p>';
+
       html += '<div class="group-title">高级</div><div class="group">';
       html += '<button class="row" onclick="App.toggleMigrationNote()" id="migrationToggle" aria-expanded="false"><span class="row-label">技术说明</span>' + Icons.chevronDown + '</button>';
       html += '<button class="row danger" onclick="App.clearAllData()"><span class="row-label">清空所有数据</span>' + Icons.chevronRight + '</button>';
       html += '</div>';
-      html += '<div class="collapse" id="migrationCollapse"><p class="note-line" style="margin-top:10px">纯前端单页应用，数据只存在本机 localStorage。导出的 JSON 就是整库快照，可直接改名存档。</p></div>';
-      html += '<p class="note-line" style="margin-top:32px;text-align:center">冲充电 v2.5 · 本地存储</p>';
+      html += '<div class="collapse" id="migrationCollapse"><p class="note-line" style="margin-top:10px">纯前端单页应用，数据主要存在本机 localStorage；开启云同步后，整库快照会额外存到你的私有 GitHub Gist。导出的 JSON 就是整库快照，可直接改名存档。</p></div>';
+      html += '<p class="note-line" style="margin-top:32px;text-align:center">冲充电 v2.6 · 本地存储' + (sc.enabled ? ' · 云同步已开启' : '') + '</p>';
 
       document.getElementById('settingsBody').innerHTML = html;
       this.bindSettingsEvents();
@@ -1660,6 +2036,11 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
           });
         });
       }
+      /* 云同步：开关与令牌都失焦/切换时保存 */
+      var syncSw = document.getElementById('syncEnabled');
+      if (syncSw) syncSw.addEventListener('change', function () { self.syncToggle(syncSw.checked); });
+      var syncToken = document.getElementById('syncToken');
+      if (syncToken) syncToken.addEventListener('change', function () { self.syncSaveToken(); });
     },
 
     setTheme: function (pref) {
@@ -1717,6 +2098,43 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         App.toast('已恢复', 'success');
         setTimeout(function () { location.reload(); }, 500);
       });
+    },
+
+    /* ============================================================
+     * 云同步
+     * ============================================================ */
+    syncStatusText: function () {
+      var c = Sync.cfg || Sync.load();
+      if (Sync._statusText) return Sync._statusText;
+      if (!c.enabled) return c.token ? '已保存令牌，未开启同步' : '未开启';
+      if (c.lastError === 'auth') return '令牌无效，已暂停';
+      if (c.lastSyncAt) return '上次同步：' + Sync.fmtTime(c.lastSyncAt);
+      return '已开启，等待首次同步';
+    },
+
+    syncToggle: function (on) {
+      if (on) Sync.enable();
+      else Sync.disable();
+      this.renderSettings();
+    },
+
+    syncSaveToken: function () {
+      var el = document.getElementById('syncToken');
+      if (!el) return;
+      Sync.cfg.token = el.value.trim();
+      Sync.save();
+      if (Sync.cfg.token && !Sync.cfg.enabled) {
+        this.toast('令牌已保存，打开「自动同步」后生效', 'success');
+      } else if (!Sync.cfg.token && Sync.cfg.enabled) {
+        Sync.disable();
+        this.toast('已停止同步', 'warn');
+      }
+      this.renderSettings();
+    },
+
+    syncNow: function () {
+      if (!Sync.isReady()) { this.toast('请先填写令牌并开启自动同步', 'error'); return; }
+      Sync.pull(false);
     },
 
     /* ============================================================
