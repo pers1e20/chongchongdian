@@ -548,12 +548,6 @@
     /* 表单页永远压在设置页之上：100 页面 < 110 表单页 < 200 弹层 < 250 确认框 < 300 Toast */
     .page.page-form { z-index: 110; }
     .page-body { padding: var(--sp-4) var(--gutter) calc(96px + env(safe-area-inset-bottom)); }
-    .field-group {
-      overflow: hidden; margin-bottom: var(--sp-3);
-      background-color: var(--c-surface); background-image: var(--surface-tint);
-      border-radius: var(--r-card);
-      box-shadow: var(--glass-card-rim), var(--shadow-card), inset 0 0 0 .5px var(--c-line);
-    }
     .field { display: flex; align-items: center; gap: var(--sp-3); min-height: 52px; padding: 4px 16px; border-bottom: .5px solid var(--c-line); }
     .field:last-child { border-bottom: 0; }
     .field label { width: 88px; flex-shrink: 0; font-size: var(--fs-15); color: var(--c-text-2); }
@@ -567,27 +561,9 @@
     .field .suffix { font-size: var(--fs-13); color: var(--c-text-3); flex-shrink: 0; }
     .field.invalid { box-shadow: inset 0 0 0 1.5px var(--c-danger); border-radius: var(--r-ctrl); }
     .field.invalid label, .field.invalid input { color: var(--c-danger); }
-    .field-note { margin: 8px 2px 0; min-height: 16px; font-size: var(--fs-12); color: var(--c-text-3); }
     .form-msg { margin: 8px 2px 0; font-size: var(--fs-12); color: var(--c-danger); }
     .form-msg:empty { display: none; }
 
-    .last-hint {
-      display: flex; align-items: center; gap: 8px;
-      min-height: 44px; margin: var(--sp-3) 0; padding: 8px 12px;
-      border-radius: var(--r-ctrl); background: var(--c-fill);
-      font-size: var(--fs-12); color: var(--c-text-2);
-    }
-    .last-hint .txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .last-hint b { color: var(--c-text); font-weight: 600; }
-    .last-hint .apply { min-height: 44px; font-size: var(--fs-13); font-weight: 600; color: var(--c-text); padding: 10px 4px; flex-shrink: 0; }
-
-    .disclosure {
-      display: flex; align-items: center; gap: 6px; width: 100%; min-height: 44px;
-      padding: 8px 2px; font-size: var(--fs-13); color: var(--c-text-2); text-align: left;
-    }
-    .disclosure span { font-size: var(--fs-12); color: var(--c-text-3); }
-    .disclosure .i { margin-left: auto; width: 16px; height: 16px; color: var(--c-text-3); transition: transform var(--dur-2) var(--ease); }
-    .disclosure.open .i { transform: rotate(180deg); }
     .collapse { display: none; }
     .collapse.open { display: block; }
     .textarea-row { display: block; padding: 12px 16px; }
@@ -596,6 +572,77 @@
       background: transparent; color: var(--c-text); font-size: var(--fs-15); line-height: 1.5;
     }
     .textarea-row textarea::placeholder { color: var(--c-placeholder); }
+
+    /* ---------- 9.5 表单语言：扁平卡片（记一笔 / 车辆 / 设置共用） ---------- */
+    .fcard {
+      margin-bottom: var(--sp-3); padding: 2px 16px;
+      background-color: var(--c-surface);
+      border-radius: var(--r-card);
+      box-shadow: inset 0 0 0 .5px var(--c-line);
+    }
+    .fcard .field { padding-left: 0; padding-right: 0; border-bottom: 0; }
+    .fcard .field + .field { border-top: .5px solid var(--c-line); }
+    .fcard .textarea-row { padding: 10px 0 12px; border-top: .5px solid var(--c-line); }
+    .fcard-foot { padding: 8px 0 10px; font-size: var(--fs-13); color: var(--c-text-3); font-variant-numeric: tabular-nums; }
+    .fcard-foot:empty { display: none; }
+
+    /* 类型双卡 */
+    .type-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: var(--sp-3); }
+    .type-card {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+      min-height: 88px; padding: 14px; border-radius: var(--r-card);
+      background-color: var(--c-surface);
+      box-shadow: inset 0 0 0 .5px var(--c-line);
+      color: var(--c-text-2); text-align: left;
+      transition: background var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+    }
+    .type-card .i { width: 20px; height: 20px; }
+    .type-card-name { font-size: var(--fs-17); font-weight: 600; color: var(--c-text); }
+    .type-card[aria-pressed="true"] { background: var(--c-fill); box-shadow: inset 0 0 0 1px var(--c-line-strong); }
+
+    /* 大数字行 */
+    .fcard .bignum-row { min-height: 64px; }
+    .fcard .bignum-row > label { width: auto; font-size: var(--fs-13); color: var(--c-text-3); }
+    .fcard .bignum-row > input { height: 46px; font-size: var(--fs-34); font-weight: 600; }
+    .fcard .bignum-row .suffix { font-size: var(--fs-15); color: var(--c-text-2); }
+
+    /* 日期 */
+    .fcard .chips { padding: 12px 0; }
+    .date-other { display: none; }
+    .date-other.open { display: block; }
+    .fcard .field-plain > input { text-align: left; }
+
+    /* 步进器 */
+    .fcard .stepper-row { gap: var(--sp-2); }
+    .stepper-label { flex-shrink: 0; font-size: var(--fs-13); color: var(--c-text-3); }
+    .stepper { display: flex; align-items: center; justify-content: flex-end; gap: 4px; flex: 1; min-width: 0; }
+    /* 输入盒保持 44px 高（透明底，视觉仍是居中的数字），满足命中区 */
+    .stepper .stepper-input {
+      flex: 0 0 58px; width: 58px; min-width: 0; height: 44px;
+      border: 0; outline: 0; background: transparent;
+      text-align: center; font-size: var(--fs-17); font-weight: 600; color: var(--c-text);
+      font-variant-numeric: tabular-nums;
+    }
+    .stepper .suffix { font-size: var(--fs-13); color: var(--c-text-3); }
+    .step-btn {
+      position: relative;
+      width: 34px; height: 34px; flex-shrink: 0; border-radius: var(--r-ctrl);
+      background: var(--c-fill); color: var(--c-text);
+      font-size: var(--fs-17); line-height: 1; display: grid; place-items: center;
+    }
+    .step-btn::after {
+      content: ""; position: absolute; left: 0; right: 0; top: 50%;
+      height: 44px; transform: translateY(-50%);
+    }
+    .step-btn:active { background: var(--c-line-strong); }
+
+    /* 设置页统一到扁平卡片语言 */
+    #settingsBody .group {
+      background-color: var(--c-surface); background-image: none;
+      box-shadow: inset 0 0 0 .5px var(--c-line);
+    }
+    #settingsBody .row { min-height: 50px; }
+    #settingsBody .group-title { font-size: var(--fs-12); letter-spacing: .02em; }
 
     /* ---------- 10. 弹层 ---------- */
     .sheet-layer { position: fixed; inset: 0; z-index: 200; display: none; }
@@ -815,60 +862,74 @@
       <input type="hidden" id="cf_chargeType" value="fast">
       <input type="hidden" id="cf_unitPrice">
 
-      <div class="segmented" id="cf_chargeTypeSegment" role="group" aria-label="充电类型">
-        <button type="button" data-val="slow" aria-pressed="false">慢充</button>
-        <button type="button" data-val="fast" aria-pressed="true">快充</button>
+      <div class="type-cards" id="cf_chargeTypeSegment" role="group" aria-label="充电类型">
+        <button type="button" class="type-card" data-val="slow" aria-pressed="false">
+          <svg class="i" aria-hidden="true"><use href="#i-plug"/></svg>
+          <span class="type-card-name">慢充</span>
+        </button>
+        <button type="button" class="type-card" data-val="fast" aria-pressed="true">
+          <svg class="i" aria-hidden="true"><use href="#i-bolt"/></svg>
+          <span class="type-card-name">快充</span>
+        </button>
       </div>
 
-      <div style="height:12px"></div>
-
-      <div class="field-group">
-        <div class="field">
+      <div class="fcard">
+        <div class="field bignum-row">
           <label for="cf_kWh">充入电量</label>
-          <input id="cf_kWh" type="number" step="0.1" inputmode="decimal" placeholder="45.5">
+          <input id="cf_kWh" class="bignum-input" type="number" step="0.1" inputmode="decimal" placeholder="0.0">
           <span class="suffix">度</span>
         </div>
-        <div class="field">
+        <div class="field bignum-row">
           <label for="cf_totalCost">金额</label>
-          <input id="cf_totalCost" type="number" step="0.01" inputmode="decimal" placeholder="0.00">
+          <input id="cf_totalCost" class="bignum-input" type="number" step="0.01" inputmode="decimal" placeholder="0.00">
           <span class="suffix">元</span>
         </div>
-        <div class="field">
-          <label for="cf_date">日期</label>
-          <input id="cf_date" type="date">
-          <span class="suffix"></span>
+        <div class="fcard-foot" id="cfPriceHint"></div>
+      </div>
+      <div class="form-msg" id="cfFormMsg"></div>
+
+      <div class="fcard">
+        <div class="chips" id="cfDateChips" role="group" aria-label="日期">
+          <button type="button" class="chip" data-offset="0" aria-pressed="true">今天</button>
+          <button type="button" class="chip" data-offset="1" aria-pressed="false">昨天</button>
+          <button type="button" class="chip" data-offset="2" aria-pressed="false">前天</button>
+          <button type="button" class="chip" id="cfDateOther" aria-pressed="false">其他</button>
+        </div>
+        <div class="date-other" id="cfDateOtherRow">
+          <div class="field field-plain">
+            <label for="cf_date">日期</label>
+            <input id="cf_date" type="date">
+            <span class="suffix"></span>
+          </div>
         </div>
       </div>
 
-      <div class="field-note" id="cfPriceHint"></div>
-      <div class="form-msg" id="cfFormMsg"></div>
-
-      <div class="last-hint" id="cfLastHint"></div>
-
-      <button type="button" class="disclosure" id="cfMoreBtn" onclick="App.toggleChargeExtra()">
-        补充信息<span>用于算电耗</span>
-        <svg class="i" aria-hidden="true"><use href="#i-chevron-down"/></svg>
-      </button>
-      <div class="collapse" id="cfExtra">
-        <div class="field-group">
-          <div class="field">
-            <label for="cf_socBefore">充电前 SOC</label>
-            <input id="cf_socBefore" type="number" min="0" max="100" inputmode="numeric" placeholder="20">
+      <div class="fcard">
+        <div class="field stepper-row">
+          <span class="stepper-label">充电前</span>
+          <div class="stepper">
+            <button type="button" class="step-btn" data-target="cf_socBefore" data-step="-1" aria-label="充电前 SOC 减 1">−</button>
+            <input id="cf_socBefore" class="stepper-input" type="number" min="0" max="100" inputmode="numeric" placeholder="20">
             <span class="suffix">%</span>
+            <button type="button" class="step-btn" data-target="cf_socBefore" data-step="1" aria-label="充电前 SOC 加 1">＋</button>
           </div>
-          <div class="field">
-            <label for="cf_socAfter">充电后 SOC</label>
-            <input id="cf_socAfter" type="number" min="0" max="100" inputmode="numeric" placeholder="85">
+        </div>
+        <div class="field stepper-row">
+          <span class="stepper-label">充电后</span>
+          <div class="stepper">
+            <button type="button" class="step-btn" data-target="cf_socAfter" data-step="-1" aria-label="充电后 SOC 减 1">−</button>
+            <input id="cf_socAfter" class="stepper-input" type="number" min="0" max="100" inputmode="numeric" placeholder="85">
             <span class="suffix">%</span>
+            <button type="button" class="step-btn" data-target="cf_socAfter" data-step="1" aria-label="充电后 SOC 加 1">＋</button>
           </div>
-          <div class="field">
-            <label for="cf_odometer">里程表</label>
-            <input id="cf_odometer" type="number" step="0.1" inputmode="decimal" placeholder="15200">
-            <span class="suffix">km</span>
-          </div>
-          <div class="textarea-row">
-            <textarea id="cf_note" placeholder="备注（可选）"></textarea>
-          </div>
+        </div>
+        <div class="field">
+          <label for="cf_odometer">里程表</label>
+          <input id="cf_odometer" type="number" step="0.1" inputmode="decimal" placeholder="15200">
+          <span class="suffix">km</span>
+        </div>
+        <div class="textarea-row">
+          <textarea id="cf_note" placeholder="备注（可选）"></textarea>
         </div>
       </div>
 
@@ -890,7 +951,7 @@
       <button class="nav-btn nav-text" type="submit" form="vehicleForm">保存</button>
     </div>
     <form id="vehicleForm" class="page-body" novalidate>
-      <div class="field-group">
+      <div class="fcard">
         <div class="field">
           <label for="vf_name">车辆名称</label>
           <input id="vf_name" type="text" placeholder="如 智己 L6" autocomplete="off">
@@ -906,6 +967,9 @@
           <input id="vf_model" type="text" placeholder="选填" autocomplete="off">
           <span class="suffix"></span>
         </div>
+      </div>
+
+      <div class="fcard">
         <div class="field">
           <label for="vf_batteryCapacity">电池容量</label>
           <input id="vf_batteryCapacity" type="number" step="0.1" min="0" inputmode="decimal" placeholder="75">
@@ -925,8 +989,9 @@
           <textarea id="vf_note" placeholder="备注（可选）"></textarea>
         </div>
       </div>
+
       <div class="form-msg" id="vfFormMsg"></div>
-      <p class="note-line">标称容量用于计算容量保持率；不填则关闭电池容量评估。</p>
+      <p class="note-line">标称容量用于计算容量保持率。</p>
 
       <div class="action-bar">
         <button type="submit" class="btn btn-primary btn-block">

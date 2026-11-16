@@ -589,6 +589,11 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       var d = new Date();
       return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     },
+    todayOffset: function (n) {
+      var d = new Date();
+      d.setDate(d.getDate() - n);
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    },
     monthKey: function (s) { return s.slice(0, 7); },
     monthLabel: function (k) { var p = k.split('-'); return p[0] + '年' + parseInt(p[1], 10) + '月'; },
     monthShort: function (k) { return parseInt(k.split('-')[1], 10) + '月'; },
@@ -1250,6 +1255,21 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         b.addEventListener('click', function () { self.setChargeType(b.dataset.val); });
       });
 
+      /* 日期 chips 与 SOC 步进器 */
+      document.querySelectorAll('#cfDateChips .chip[data-offset]').forEach(function (c) {
+        c.addEventListener('click', function () { self.setChargeDate(parseInt(c.dataset.offset, 10)); });
+      });
+      var cfDateOtherBtn = document.getElementById('cfDateOther');
+      if (cfDateOtherBtn) cfDateOtherBtn.addEventListener('click', function () { self.openOtherDate(); });
+      var chargeFormEl = document.getElementById('chargeFormPage-form');
+      if (chargeFormEl) {
+        chargeFormEl.addEventListener('click', function (e) {
+          var btn = e.target && e.target.closest ? e.target.closest('.step-btn') : null;
+          if (!btn) return;
+          self.stepValue(btn.dataset.target, parseInt(btn.dataset.step, 10));
+        });
+      }
+
       var ok = document.getElementById('confirmOkBtn');
       if (ok) ok.addEventListener('click', function () { self.confirmOk(); });
 
@@ -1258,7 +1278,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       if (kWh) kWh.addEventListener('input', function () { self.clearFieldError('cf_kWh'); self.onKwhInput(); });
       if (cost) cost.addEventListener('input', function () { self.clearFieldError('cf_totalCost'); self.onCostInput(); });
       var date = document.getElementById('cf_date');
-      if (date) date.addEventListener('input', function () { self.clearFieldError('cf_date'); });
+      if (date) date.addEventListener('input', function () { self.clearFieldError('cf_date'); self.syncDateChips(); });
 
       document.addEventListener('keydown', function (e) {
         if (e.key !== 'Escape') return;
@@ -1992,7 +2012,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       html += '<button class="row danger" onclick="App.clearAllData()"><span class="row-label">清空所有数据</span>' + Icons.chevronRight + '</button>';
       html += '</div>';
       html += '<div class="collapse" id="migrationCollapse"><p class="note-line" style="margin-top:10px">纯前端单页应用，数据主要存在本机 localStorage；开启云同步后，整库快照会额外存到你的私有 GitHub Gist。导出的 JSON 就是整库快照，可直接改名存档。</p></div>';
-      html += '<p class="note-line" style="margin-top:32px;text-align:center">冲充电 v2.6 · 本地存储' + (sc.enabled ? ' · 云同步已开启' : '') + '</p>';
+      html += '<p class="note-line" style="margin-top:32px;text-align:center">冲充电 v2.7 · 本地存储' + (sc.enabled ? ' · 云同步已开启' : '') + '</p>';
 
       document.getElementById('settingsBody').innerHTML = html;
       this.bindSettingsEvents();
@@ -2511,7 +2531,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       document.getElementById('cfFormMsg').textContent = '';
       this.clearChargeErrors();
       this.setChargeType('fast');
-      this.setChargeExtra(false);
+      this.syncDateChips();
 
       if (id) {
         var c = ChargeMgr.get(id);
@@ -2530,15 +2550,13 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
           put('cf_socAfter', c.socAfter);
           document.getElementById('cf_note').value = c.note || '';
           this.setChargeType(c.chargeType === 'slow' ? 'slow' : 'fast');
-          var hasExtra = Number(c.odometer) > 0 || Number(c.socBefore) > 0 || Number(c.socAfter) > 0 || !!c.note;
-          this.setChargeExtra(hasExtra);
+          this.syncDateChips();
         }
         document.getElementById('chargeFormPageTitle').textContent = '编辑记录';
       } else {
         document.getElementById('chargeFormPageTitle').textContent = '记一笔';
       }
 
-      this.renderLastHint();
       this.updatePriceHint();
 
       var page = document.getElementById('chargeFormPage');
@@ -2563,51 +2581,54 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       });
     },
 
-    renderLastHint: function () {
-      var el = document.getElementById('cfLastHint');
+    /* 日期 chips：按当前日期值回显选中态，非近三日时展开手选行 */
+    syncDateChips: function () {
+      var input = document.getElementById('cf_date');
+      if (!input) return;
+      var val = input.value;
+      var hit = '';
+      document.querySelectorAll('#cfDateChips .chip[data-offset]').forEach(function (c) {
+        var match = !!val && val === Utils.todayOffset(parseInt(c.dataset.offset, 10));
+        c.setAttribute('aria-pressed', match ? 'true' : 'false');
+        if (match) hit = c.dataset.offset;
+      });
+      var other = document.getElementById('cfDateOther');
+      var row = document.getElementById('cfDateOtherRow');
+      var isOther = !!val && !hit;
+      if (other) other.setAttribute('aria-pressed', isOther ? 'true' : 'false');
+      if (row) row.classList.toggle('open', isOther);
+    },
+
+    setChargeDate: function (offset) {
+      document.getElementById('cf_date').value = Utils.todayOffset(offset);
+      this.syncDateChips();
+    },
+
+    openOtherDate: function (force) {
+      var row = document.getElementById('cfDateOtherRow');
+      var btn = document.getElementById('cfDateOther');
+      if (!row) return;
+      var open = force === undefined ? !row.classList.contains('open') : !!force;
+      row.classList.toggle('open', open);
+      if (btn) btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+      if (open) document.getElementById('cf_date').focus();
+    },
+
+    /* SOC 步进器：空值时从 placeholder 起算 */
+    stepValue: function (id, delta) {
+      var el = document.getElementById(id);
       if (!el) return;
-      var v = VehicleMgr.current();
-      var last = v ? ChargeMgr.list(v.id)[0] : null;
-      if (!last) { el.style.display = 'none'; el.innerHTML = ''; el.dataset.price = ''; return; }
-      el.style.display = 'flex';
-      var price = last.kWh > 0 ? last.totalCost / last.kWh : 0;
-      var d = last.date.split('-');
-      var text = '上次 ' + parseInt(d[1], 10) + '/' + parseInt(d[2], 10) + ' · ' + Utils.fmt(last.kWh, 1) + ' 度 · ¥' + Utils.fmtMoney(last.totalCost);
-      el.dataset.price = price > 0 ? price.toFixed(2) : '';
-      el.innerHTML = '<span class="txt">' + text + '</span>'
-        + (price > 0 ? '<button type="button" class="apply" onclick="App.fillLastCharge()">套用 ¥' + Utils.fmtMoney(price) + '/度</button>' : '');
-    },
-
-    fillLastCharge: function () {
-      var el = document.getElementById('cfLastHint');
-      var p = el ? el.dataset.price : '';
-      if (!p) { this.toast('上次记录没有电价', 'warn'); return; }
-      document.getElementById('cf_unitPrice').value = p;
-      var formEl = document.getElementById('chargeFormPage-form');
-      if (formEl) formEl.dataset.priceMode = 'last';
-      var k = parseFloat(document.getElementById('cf_kWh').value) || 0;
-      if (k > 0) {
-        document.getElementById('cf_totalCost').value = (k * parseFloat(p)).toFixed(2);
-        this.toast('已按 ¥' + p + '/度 算出金额', 'success');
-      } else {
-        this.toast('已套用 ¥' + p + '/度', 'success');
+      var min = parseFloat(el.min), max = parseFloat(el.max);
+      var v = parseFloat(el.value);
+      if (isNaN(v)) {
+        var ph = parseFloat(el.placeholder);
+        v = isNaN(ph) ? 0 : ph;
       }
-      this.updatePriceHint();
-    },
-
-    setChargeExtra: function (open) {
-      var box = document.getElementById('cfExtra');
-      var btn = document.getElementById('cfMoreBtn');
-      if (box) box.classList.toggle('open', !!open);
-      if (btn) {
-        btn.classList.toggle('open', !!open);
-        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      }
-    },
-
-    toggleChargeExtra: function () {
-      var box = document.getElementById('cfExtra');
-      this.setChargeExtra(box ? !box.classList.contains('open') : true);
+      v = Math.round((v + delta) * 10) / 10;
+      if (!isNaN(min) && v < min) v = min;
+      if (!isNaN(max) && v > max) v = max;
+      el.value = String(v);
+      this.clearFieldError(id);
     },
 
     onKwhInput: function () {
@@ -2646,6 +2667,8 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
     markInvalid: function (id) {
       var el = document.getElementById(id);
       if (!el) return;
+      /* 日期手选行默认收起，报错时先展开才能看到红框 */
+      if (id === 'cf_date') this.openOtherDate(true);
       var field = el.closest('.field');
       if (field) field.classList.add('invalid');
     },
@@ -2717,8 +2740,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       document.getElementById('cf_odometer').value = '';
       document.getElementById('cf_note').value = '';
       document.getElementById('chargeFormPage-form').dataset.priceMode = '';
-      this.setChargeExtra(false);
-      this.renderLastHint();
+      this.syncDateChips();
       this.updatePriceHint();
       this.toast('已记一笔', 'success');
     },
