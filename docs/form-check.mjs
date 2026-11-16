@@ -134,6 +134,12 @@ await wait(400);
 ok('设置页分组扁平化', (await ev("(function(){var g=document.querySelector('#settingsBody .group');return g?getComputedStyle(g).backgroundImage==='none':false;})()")));
 ok('云同步分组仍在', (await ev("document.getElementById('settingsBody').innerText")).includes('云同步'));
 
+/* 回归：保存令牌曾整段重渲染设置页，把用户正在点击的「自动同步」开关换掉 */
+await ev("document.getElementById('settingsBody').dataset.marker='keep';App.syncSaveToken()");
+ok('保存令牌不重建设置页', (await ev("document.getElementById('settingsBody').dataset.marker")) === 'keep');
+ok('开关状态与配置一致', (await ev("document.getElementById('syncEnabled').checked")) === await ev("JSON.parse(localStorage.getItem('ev_sync_config_v1')||'{}').enabled===true"));
+ok('页脚随配置刷新', (await ev("document.getElementById('settingsFoot').textContent")).includes('冲充电 v2.7'));
+
 console.log('8. 控制台错误');
 const errs = await ev("(window.__errs||[]).join(' | ')");
 ok('无未捕获错误' + (errs ? '：' + errs : ''), !errs);

@@ -577,6 +577,9 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         el.style.color = kind === 'error' ? 'var(--c-danger)'
           : (kind === 'warn' ? 'var(--c-warn)' : 'var(--c-text-3)');
       }
+      /* 异步结果可能改变 enabled（如令牌失效自动暂停），同步开关状态 */
+      var sw = document.getElementById('syncEnabled');
+      if (sw) sw.checked = !!this.cfg.enabled;
     }
   };
 
@@ -2012,7 +2015,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       html += '<button class="row danger" onclick="App.clearAllData()"><span class="row-label">清空所有数据</span>' + Icons.chevronRight + '</button>';
       html += '</div>';
       html += '<div class="collapse" id="migrationCollapse"><p class="note-line" style="margin-top:10px">纯前端单页应用，数据主要存在本机 localStorage；开启云同步后，整库快照会额外存到你的私有 GitHub Gist。导出的 JSON 就是整库快照，可直接改名存档。</p></div>';
-      html += '<p class="note-line" style="margin-top:32px;text-align:center">冲充电 v2.7 · 本地存储' + (sc.enabled ? ' · 云同步已开启' : '') + '</p>';
+      html += '<p class="note-line" id="settingsFoot" style="margin-top:32px;text-align:center">冲充电 v2.7 · 本地存储' + (sc.enabled ? ' · 云同步已开启' : '') + '</p>';
 
       document.getElementById('settingsBody').innerHTML = html;
       this.bindSettingsEvents();
@@ -2149,7 +2152,17 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         Sync.disable();
         this.toast('已停止同步', 'warn');
       }
-      this.renderSettings();
+      /* 只刷文字，不整段重渲染：否则令牌框失焦的瞬间会换掉用户正在点的开关 */
+      var sw = document.getElementById('syncEnabled');
+      if (sw) sw.checked = Sync.cfg.enabled;
+      this.syncRefreshText();
+    },
+
+    syncRefreshText: function () {
+      var line = document.getElementById('syncStatusLine');
+      if (line) line.textContent = this.syncStatusText();
+      var foot = document.getElementById('settingsFoot');
+      if (foot) foot.textContent = '冲充电 v2.7 · 本地存储' + (Sync.cfg.enabled ? ' · 云同步已开启' : '');
     },
 
     syncNow: function () {
