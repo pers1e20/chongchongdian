@@ -1525,17 +1525,19 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
 
     recordRow: function (c, idx) {
       var d = (c.date || '').split('-');
-      var dateText = d.length === 3 ? (parseInt(d[1], 10) + '月' + parseInt(d[2], 10) + '日') : (c.date || '');
-      var sub = dateText;
-      if (Number(c.socBefore) > 0 && Number(c.socAfter) > 0) sub += ' · ' + c.socBefore + '→' + c.socAfter + '%';
-      if (c.note) sub += ' · ' + c.note;
+      var day = d.length === 3 ? parseInt(d[2], 10) : '';
+      var week = '';
+      if (d.length === 3) {
+        var dt = new Date(parseInt(d[0], 10), parseInt(d[1], 10) - 1, parseInt(d[2], 10));
+        week = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dt.getDay()];
+      }
       var isFast = c.chargeType === 'fast';
       return '<button class="record-row" style="--i:' + Math.min(idx || 0, 14) + '" onclick="App.showChargeDetail(\'' + c.id + '\')">'
-        + '<span class="rec-icon">' + (isFast ? Icons.bolt : Icons.plug) + '</span>'
+        + '<span class="rec-day"><b>' + (day < 10 ? '0' + day : day) + '</b><span>' + week + '</span></span>'
         + '<span class="rec-main">'
         + '<span class="rec-top"><span class="rec-kwh">' + Utils.fmt(c.kWh, 1) + '</span>'
         + '<span class="rec-unit">度</span><span class="tag">' + (isFast ? '快充' : '慢充') + '</span></span>'
-        + '<span class="rec-sub">' + esc(sub) + '</span></span>'
+        + '</span>'
         + '<span class="rec-amount">¥' + Utils.fmtMoney(c.totalCost) + '</span></button>';
     },
 
@@ -1666,22 +1668,42 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       var months = yearFilter ? Utils.yearMonths(parseInt(yearFilter, 10)) : Utils.chartRange(vid, 12);
       var metric = this.statsTrend || 'cost';
       var heroLabel = yearFilter ? (yearFilter + ' 年') : '累计';
+      var md = this.statsMetricData(metric, vid, months);
+      var eff = Stats.avgEfficiency(vid, yearFilter);
+      var pkm = Stats.pricePerKm(vid, yearFilter);
       var html = this.statsNav() + '<div class="body">';
 
       html += '<div class="toolbar">'
         + '<button class="menu-btn" onclick="App.openYearSheet()">' + (yearFilter ? yearFilter + ' 年' : '全部年份') + Icons.chevronDown + '</button>'
         + '<span class="toolbar-meta">' + scope.count + ' 条记录</span></div>';
 
-      html += '<div class="hero">'
+      var spark = '';
+      if (md.monthly && md.monthly.length > 1) {
+        var vals = md.monthly.map(function (r) { return Number(r.value) || 0; });
+        var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
+        var span = mx - mn || 1;
+        var pts = vals.map(function (v, i) {
+          return (i / (vals.length - 1) * 62).toFixed(1) + ',' + (27 - (v - mn) / span * 23).toFixed(1);
+        });
+        spark = '<svg class="hero-spark" viewBox="0 0 62 30" aria-hidden="true"><polyline points="'
+          + pts.join(' ') + '" fill="none" stroke="var(--c-text-3)" stroke-width="1.2"/></svg>';
+      }
+
+      html += '<div class="hero"><div class="hero-top"><div>'
         + '<div class="hero-label"><span>' + heroLabel + '充电总费用</span>' + this.periodDeltaHTML(yearFilter, scope) + '</div>'
         + '<div class="hero-value">¥<span class="hero-num" data-to="' + scope.cost + '">' + Utils.fmtMoney(scope.cost) + '</span></div>'
         + '<div class="hero-meta">' + (scope.count > 0
           ? (scope.count + ' 次 · 均价 ¥' + Utils.fmtMoney(scope.avgPrice) + '/度 · 充入 ' + Utils.fmt(scope.kWh, 1) + ' 度')
           : '还没有充电记录') + '</div>'
+        + '</div>' + spark + '</div></div>';
+
+      html += '<div class="tiles">'
+        + '<div class="tile"><div class="tile-k">均价/度</div><div class="tile-v">¥' + Utils.fmtMoney(scope.avgPrice) + '</div></div>'
+        + '<div class="tile"><div class="tile-k">度/百公里</div><div class="tile-v">' + (eff.enough ? Utils.fmt(eff.avg, 1) : '—') + '</div></div>'
+        + '<div class="tile"><div class="tile-k">充电次数</div><div class="tile-v">' + scope.count + '</div></div>'
         + '</div>';
 
       /* 趋势 */
-      var md = this.statsMetricData(metric, vid, months);
       var seg = [['cost', '费用'], ['kwh', '度数'], ['price', '电价'], ['eff', '电耗']].map(function (o) {
         return '<button aria-pressed="' + (metric === o[0] ? 'true' : 'false') + '" onclick="App.setStatsTrend(\'' + o[0] + '\')">' + o[1] + '</button>';
       }).join('');
@@ -1690,6 +1712,15 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         + '<div class="segmented tabular">' + seg + '</div>'
         + this.buildChart(md.monthly, md.fmt)
         + '</div>';
+
+      /* 油车对比是关键结论，保留在一级；其余分析收进折叠区 */
+      html += this.fuelCardHTML(vid);
+
+      var moreOpen = !!this._analysisMoreOpen;
+      html += '<button class="more-bar' + (moreOpen ? ' open' : '') + '" id="analysisMoreBtn" onclick="App.toggleAnalysisMore()" aria-expanded="'
+        + (moreOpen ? 'true' : 'false') + '"><span>更多分析</span><span class="more-count">'
+        + (moreOpen ? '收起' : '4 项') + ' ⌄</span>' + Icons.chevronDown + '</button>';
+      html += '<div class="collapse' + (moreOpen ? ' open' : '') + '" id="analysisMore"><div class="more-body">';
 
       /* 快慢充 */
       var total = scope.fastCount + scope.slowCount;
@@ -1726,8 +1757,6 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       }
 
       /* 电耗 */
-      var eff = Stats.avgEfficiency(vid, yearFilter);
-      var pkm = Stats.pricePerKm(vid, yearFilter);
       html += '<div class="card">'
         + '<div class="card-head"><span class="card-title">电耗</span></div>'
         + '<div class="metrics">'
@@ -1737,9 +1766,6 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         + '</div>'
         + '<div class="note-line">' + this.effNote(eff) + '</div>'
         + '</div>';
-
-      /* 油车对比 */
-      html += this.fuelCardHTML(vid);
 
       /* 电池 */
       var cap = BatteryHealth.capacityHealth(vid);
@@ -1766,11 +1792,25 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         + '<div class="advice-list">' + tips.slice(0, 3).map(adviceHTML).join('') + '</div>'
         + '</div>';
 
+      html += '</div></div>';
       html += '<div style="height:24px"></div></div>';
       panel.innerHTML = html;
       if (this._heroAnim) {
         this._heroAnim = false;
         this._countUp(panel.querySelector('.hero-num'));
+      }
+    },
+
+    toggleAnalysisMore: function () {
+      this._analysisMoreOpen = !this._analysisMoreOpen;
+      var body = document.getElementById('analysisMore');
+      var btn = document.getElementById('analysisMoreBtn');
+      if (body) body.classList.toggle('open', this._analysisMoreOpen);
+      if (btn) {
+        btn.classList.toggle('open', this._analysisMoreOpen);
+        btn.setAttribute('aria-expanded', this._analysisMoreOpen ? 'true' : 'false');
+        var count = btn.querySelector('.more-count');
+        if (count) count.textContent = this._analysisMoreOpen ? '收起 ⌄' : '4 项 ⌄';
       }
     },
 
@@ -1985,7 +2025,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       html += '<div class="field"><label>车型</label><input id="fc_model" type="text" maxlength="40" placeholder="如 迈腾 330TSI" value="' + esc(fc.model) + '"><span class="suffix"></span></div>';
       html += '<div class="field"><label>油耗</label><input id="fc_consumption" type="number" step="0.1" min="0" placeholder="8.0" value="' + (fc.consumption > 0 ? Utils.fmt(fc.consumption, 1) : '') + '"><span class="suffix">L/100km</span></div>';
       html += '<div class="field"><label>油价</label><input id="fc_price" type="number" step="0.01" min="0" placeholder="7.80" value="' + (fc.price > 0 ? Utils.fmt(fc.price, 2) : '') + '"><span class="suffix">元/L</span></div>';
-      html += '</div><p class="note-line">用于统计页与记录详情的「油车对比」。油费 = 区间里程 × 油耗 × 油价，电费按充电金额。</p>';
+      html += '</div>';
 
       html += '<div class="group-title">数据</div><div class="group">';
       html += '<button class="row" onclick="App.exportData()"><span class="row-label">导出数据</span><span class="row-value">JSON</span>' + Icons.chevronRight + '</button>';
@@ -1999,7 +2039,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       if (snap) {
         html += '<button class="row" onclick="App.restoreImportSnapshot()"><span class="row-label">恢复导入前的数据</span><span class="row-value">' + snap.label + '</span>' + Icons.chevronRight + '</button>';
       }
-      html += '</div><p class="note-line">换手机或清缓存前先导出；导入会整库替换，载入基础数据只追加不覆盖。</p>';
+      html += '</div>';
 
       var sc = Sync.cfg || Sync.load();
       html += '<div class="group-title">云同步</div><div class="group">';
@@ -2008,14 +2048,13 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       html += '<button class="row" onclick="App.syncNow()"><span class="row-label">立即同步</span>' + Icons.chevronRight + '</button>';
       html += '</div>';
       html += '<p class="note-line" id="syncStatusLine">' + esc(this.syncStatusText()) + '</p>';
-      html += '<p class="note-line">把整库快照通过 HTTPS 存到你的私有 GitHub Gist，仅自己可见。换设备时填同一令牌即可拉取；多设备同时使用按「最后写入」合并。</p>';
 
       html += '<div class="group-title">高级</div><div class="group">';
       html += '<button class="row" onclick="App.toggleMigrationNote()" id="migrationToggle" aria-expanded="false"><span class="row-label">技术说明</span>' + Icons.chevronDown + '</button>';
       html += '<button class="row danger" onclick="App.clearAllData()"><span class="row-label">清空所有数据</span>' + Icons.chevronRight + '</button>';
       html += '</div>';
       html += '<div class="collapse" id="migrationCollapse"><p class="note-line" style="margin-top:10px">纯前端单页应用，数据主要存在本机 localStorage；开启云同步后，整库快照会额外存到你的私有 GitHub Gist。导出的 JSON 就是整库快照，可直接改名存档。</p></div>';
-      html += '<p class="note-line" id="settingsFoot" style="margin-top:32px;text-align:center">冲充电 v2.7 · 本地存储' + (sc.enabled ? ' · 云同步已开启' : '') + '</p>';
+      html += '<p class="note-line" id="settingsFoot" style="margin-top:32px;text-align:center">冲充电 v2.8 · 本地存储' + (sc.enabled ? ' · 云同步已开启' : '') + '</p>';
 
       document.getElementById('settingsBody').innerHTML = html;
       this.bindSettingsEvents();
@@ -2162,7 +2201,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       var line = document.getElementById('syncStatusLine');
       if (line) line.textContent = this.syncStatusText();
       var foot = document.getElementById('settingsFoot');
-      if (foot) foot.textContent = '冲充电 v2.7 · 本地存储' + (Sync.cfg.enabled ? ' · 云同步已开启' : '');
+      if (foot) foot.textContent = '冲充电 v2.8 · 本地存储' + (Sync.cfg.enabled ? ' · 云同步已开启' : '');
     },
 
     syncNow: function () {

@@ -138,7 +138,7 @@ ok('云同步分组仍在', (await ev("document.getElementById('settingsBody').i
 await ev("document.getElementById('settingsBody').dataset.marker='keep';App.syncSaveToken()");
 ok('保存令牌不重建设置页', (await ev("document.getElementById('settingsBody').dataset.marker")) === 'keep');
 ok('开关状态与配置一致', (await ev("document.getElementById('syncEnabled').checked")) === await ev("JSON.parse(localStorage.getItem('ev_sync_config_v1')||'{}').enabled===true"));
-ok('页脚随配置刷新', (await ev("document.getElementById('settingsFoot').textContent")).includes('冲充电 v2.7'));
+ok('页脚随配置刷新', (await ev("document.getElementById('settingsFoot').textContent")).includes('冲充电 v2.8'));
 
 console.log('8. 控制台错误');
 const errs = await ev("(window.__errs||[]).join(' | ')");
