@@ -1,7 +1,7 @@
 /**
  * 冲充电 PWA Service Worker
  *
- * 策略（v5）：
+ * 策略（v6）：
  *   - 导航请求与 html / js / css / json：network-first，2 秒超时回落缓存
  *   - OCR vendor（app/vendor/tesseract/）：cache-first，且不受 2 秒超时约束
  *   - 图片等其他资源：cache-first
@@ -9,9 +9,12 @@
  * 为什么改：旧版是纯 cache-first，每次发版必须手动递增 CACHE_NAME，
  * 否则用户永远看到旧页面；而且旧 HTML 配新 JS 会直接白屏。
  * 改成 network-first 后，CACHE_NAME 只在缓存结构变化时才需要动。
+ *
+ * v6：语言包由 tessdata_best(12MB) 换成 tessdata_fast(1.7MB)，URL 不变，
+ *     必须淘汰 v5 缓存，否则 cache-first 会一直返回旧的 12MB 包。
  */
 
-var CACHE_NAME = 'ev-charging-v5';
+var CACHE_NAME = 'ev-charging-v6';
 var NETWORK_TIMEOUT = 2000;
 
 var CORE_ASSETS = [
@@ -32,7 +35,7 @@ function isFreshFirst(request) {
   return /\.(html|js|css|json)$/i.test(new URL(request.url).pathname);
 }
 
-/* OCR 引擎与语言包体积大（10–20MB），按需下载后长期复用：
+/* OCR 引擎与语言包（约 6MB：语言包 1.7MB + core 3.9–4.7MB）按需下载后长期复用：
    走 cache-first，且必须排在 isFreshFirst 之前，
    否则 .wasm.js 会命中 2 秒超时逻辑被反复截断重下。 */
 function isVendor(request) {

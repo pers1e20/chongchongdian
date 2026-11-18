@@ -6,7 +6,7 @@
  *   入口显隐 / 预填不自动保存 / 低置信只描红 / pendingExtra 角标 /
  *   详情页补录入口 / 收敛开关 / 控制台无错。
  *
- * 识别链路用 mock（覆盖 OCR.pickAndRecognize 与 OCR._recognizeImpl），
+ * 识别链路用 mock（覆盖 OCR.pickImage / OCR._prepareImpl / OCR._recognizeImpl），
  * 不下载真引擎，保证脚本快且稳定。
  *
  * 用法：
@@ -84,10 +84,19 @@ await ev("App.closeChargePage()");
 await wait(250);
 await ev("localStorage.setItem('ev_ocr_enabled_v1','1');App.openChargePage()");
 await wait(300);
+ok('识别入口在表单底部、保存按钮上方', await ev("(function(){var b=document.getElementById('cfOcrBtn');return !!b&&b.previousElementSibling&&b.previousElementSibling.classList.contains('fcard')&&b.nextElementSibling&&b.nextElementSibling.classList.contains('action-bar');})()"));
+ok('识别入口高度不低于 56px', await ev("document.getElementById('cfOcrBtn').getBoundingClientRect().height>=56"));
 
 console.log('3. 识别预填（mock，不自动保存）');
 const before = await ev("window.__charges().length");
-await ev("OCR.pickAndRecognize = function(){ return Promise.resolve({ blob:{}, text:'充电量 42.5 度\\n实付 ¥30.00\\n2026-11-18 12:30', confidence:92 }); };");
+/* 先验证「点了就选图、未选中不弹识别层」 */
+await ev("window.__pickCalled=false;OCR.pickImage=function(){window.__pickCalled=true;return new Promise(function(){});};App.startOcr()");
+await wait(150);
+ok('点击先调起选图', await ev("window.__pickCalled===true"));
+ok('未选中图片时不显示识别层', !(await ev("document.getElementById('ocrOverlay').classList.contains('show')")));
+await ev("OCR.pickImage=function(){return Promise.resolve(new Blob(['x'],{type:'image/png'}));};"
+  + "OCR._prepareImpl=function(f){return Promise.resolve(f);};"
+  + "OCR._recognizeImpl=function(){return Promise.resolve({text:'充电量 42.5 度\\n实付 ¥30.00\\n2026-11-18 12:30',confidence:92});};");
 await ev("App.startOcr()");
 await wait(400);
 ok('度数已预填', (await ev("document.getElementById('cf_kWh').value")) === '42.5');
@@ -95,6 +104,7 @@ ok('金额已预填', (await ev("document.getElementById('cf_totalCost').value")
 ok('日期已预填', (await ev("document.getElementById('cf_date').value")) === '2026-11-18');
 ok('识别层已关闭', !(await ev("document.getElementById('ocrOverlay').classList.contains('show')")));
 ok('预填不自动保存', (await ev("window.__charges().length")) === before);
+await ev("OCR._prepareImpl=null;OCR._recognizeImpl=null;");
 
 console.log('4. 保存后写入「待补充」');
 await ev("App.saveCharge()");
@@ -159,7 +169,83 @@ await wait(200);
 ok('开启状态已写入 localStorage', (await ev("localStorage.getItem('ev_ocr_enabled_v1')")) === '1');
 ok('页脚版本号未受影响', (await ev("document.getElementById('settingsFoot').textContent")).includes('冲充电 v2.8'));
 
-console.log('9. 控制台错误');
+console.log('9. 分栏模式与 Worker 生命周期');
+await ev("OCR._createWorkerImpl=function(){window.__createCount=(window.__createCount||0)+1;"
+  + "return Promise.resolve({setParameters:function(p){window.__psm=p;return Promise.resolve();},"
+  + "recognize:function(){return Promise.resolve({data:{text:'',confidence:0}});},"
+  + "terminate:function(){window.__terminated=(window.__terminated||0)+1;}});};");
+await ev("OCR._worker=null;OCR._workerPromise=null;window.__createCount=0;window.__psm=null;window.__terminated=0;");
+await ev("OCR.worker()");
+await wait(400);
+ok('显式设置分栏模式 AUTO(3)', (await ev("window.__psm && window.__psm.tessedit_pageseg_mode")) === '3');
+ok('_worker 是真实 Worker 而非 Promise', (await ev("typeof (OCR._worker && OCR._worker.terminate)")) === 'function');
+ok('worker() 去重，只创建一次', (await ev("window.__createCount")) === 1);
+await ev("OCR.dispose()");
+ok('dispose 真正调用 terminate', (await ev("window.__terminated")) === 1);
+ok('dispose 后 _worker 置空', (await ev("OCR._worker === null")));
+await ev("OCR._createWorkerImpl=null;OCR._worker=null;OCR._workerPromise=null;");
+
+console.log('10. 金额抽取容错');
+ok('PSM6 噪声文本（¥ 读成 x）抽出 24.07', (await ev(
+  "(OCR.extractFields('充电 费 应 付 金 客 x24.07',64).totalCost||{}).value")) === 24.07);
+ok('PSM3 文本抽出 24.07 且高置信', await ev(
+  "(function(){var f=OCR.extractFields('充电费应付金额 Y24.07',76).totalCost||{};return f.value===24.07&&f.level==='high';})()"));
+ok('多金额行优先「应付」而非「电费」', (await ev(
+  "(OCR.extractFields('电费 Y17.56\\n服务费 Y6.51\\n应付：Y24.07',76).totalCost||{}).value")) === 24.07);
+ok('千分位 1,234.56 解析正确', (await ev(
+  "(OCR.extractFields('应付 ¥1,234.56',90).totalCost||{}).value")) === 1234.56);
+ok('小数点被读成逗号 24,07', (await ev(
+  "(OCR.extractFields('应付 24,07',90).totalCost||{}).value")) === 24.07);
+ok('标签与数值换行版式', (await ev(
+  "(OCR.extractFields('应付金额\\n¥24.07',90).totalCost||{}).value")) === 24.07);
+ok('「充电费用」标题不跨行抓度数', await ev(
+  "(function(){var f=OCR.extractFields('充电费用\\n广安路充电站 35.698 度',80);return !f.totalCost;})()"));
+ok('误读 1756 判低置信（不预填）', await ev(
+  "(function(){var f=OCR.extractFields('充电量 35.698 度\\n应付 1756',75).totalCost||{};return f.level==='low';})()"));
+
+console.log('11. HEIC 检测与图片缩放');
+ok('HEIC 文件头识别为 true', await ev(
+  "(function(){var b=new Uint8Array([0,0,0,24,102,116,121,112,104,101,105,99]);"
+  + "return OCR.isHeic(new Blob([b],{type:'image/heic'}));})()"));
+ok('PNG 头识别为 false', (await ev(
+  "(function(){var b=new Uint8Array([137,80,78,71,13,10,26,10]);"
+  + "return OCR.isHeic(new Blob([b],{type:'image/png'}));})()")) === false);
+ok('checkImage 对 HEIC 抛 OCR_HEIC', await ev(
+  "(function(){var b=new Uint8Array([0,0,0,24,102,116,121,112,104,101,105,99]);"
+  + "return OCR.checkImage(new Blob([b],{type:'image/heic'})).then(function(){return false;},"
+  + "function(e){return e.code==='OCR_HEIC';});})()"));
+await ev("window.__mkBlob=function(w,h){var cv=document.createElement('canvas');cv.width=w;cv.height=h;"
+  + "return new Promise(function(r){cv.toBlob(function(b){r(b);},'image/jpeg',0.9);});};"
+  + "window.__edge=function(b){return createImageBitmap(b).then(function(m){var l=Math.max(m.width,m.height);"
+  + "if(m.close)m.close();return l;});};");
+ok('900 小图放大进入稳定区间', await ev(
+  "window.__mkBlob(900,1200).then(function(b){return OCR.prepare(b);}).then(window.__edge).then(function(l){return l>=1100&&l<=2048;})"));
+ok('3000 大图降采样到 2048', await ev(
+  "window.__mkBlob(3000,2000).then(function(b){return OCR.prepare(b);}).then(window.__edge).then(function(l){return l<=2048;})"));
+ok('1500 中等图保持原样', await ev(
+  "window.__mkBlob(1500,1000).then(function(b){return OCR.prepare(b);}).then(window.__edge).then(function(l){return l===1500;})"));
+
+console.log('12. 错误分类提示');
+await ev("OCR.checkImage=function(){var e=new Error('x');e.code='OCR_HEIC';return Promise.reject(e);};");
+await ev("App.startOcr()");
+await wait(400);
+ok('HEIC → 标题「不支持的图片格式」', (await ev("document.getElementById('ocrTitle').textContent")) === '不支持的图片格式');
+ok('HEIC 状态文案含 HEIC', (await ev("document.getElementById('ocrStatus').textContent")).includes('HEIC'));
+ok('失败时旋转动画停止', await ev("document.getElementById('ocrSpinner').hidden===true"));
+await ev("App.hideOcrOverlay()");
+await ev("OCR.checkImage=function(f){return Promise.resolve(f);};"
+  + "OCR._recognizeImpl=function(){return Promise.reject(undefined);};");
+await ev("App.startOcr()");
+await wait(400);
+ok('undefined 错误归类为引擎下载失败', (await ev("document.getElementById('ocrTitle').textContent")) === '识别引擎下载失败');
+await ev("App.hideOcrOverlay()");
+await ev("OCR._recognizeImpl=null;OCR.pickImage=function(){return Promise.reject(new Error('已取消选择'));};");
+await ev("App.startOcr()");
+await wait(400);
+const cancelShown = await ev("document.getElementById('ocrOverlay').classList.contains('show')");
+ok('取消选择不显示失败层', cancelShown === false);
+
+console.log('13. 控制台错误');
 const errs = await ev("(window.__errs||[]).join(' | ')");
 ok('无未捕获错误' + (errs ? '：' + errs : ''), !errs);
 

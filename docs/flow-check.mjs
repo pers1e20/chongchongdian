@@ -109,9 +109,9 @@ section('1. 首屏与空态');
 check('默认落在统计', (await ev("App.currentTab")) === 'stats');
 check('底栏顺序 统计 → 记录',
   (await ev("[...document.querySelectorAll('.tab-item')].map(b=>b.dataset.tab).join(',')")) === 'stats,records');
-check('统计页签指示器已定位',
-  /translateX\(/.test(await ev("document.querySelector('.tab-indicator').style.transform")));
-check('统计页有车辆切换', await ev("!!document.querySelector('#panel-stats .nav-title-btn')"));
+check('底栏已去掉背景块', !(await ev("!!document.querySelector('.tab-indicator')")));
+check('统计页选中态用实心图标', await ev("(function(){var e=document.querySelector('.tab-item.active .ico-on');return !!e&&getComputedStyle(e).display!=='none';})()"));
+check('统计页标题为「统计」', (await ev("document.querySelector('#panel-stats .nav-heading').textContent")) === '统计');
 await click("App.switchTab('records')", 450);
 check('记录页显示「还没有车辆」', (await ev("document.getElementById('panel-records').innerText")).includes('还没有车辆'));
 check('记录列表为空', (await ev("document.querySelectorAll('.record-row').length")) === 0);
@@ -137,7 +137,10 @@ check('currentVehicleId 指向新车', s1 && s1.settings.currentVehicleId === s1
 check('车辆表单已关闭', !(await ev("document.getElementById('vehicleFormPage').classList.contains('show')")));
 check('设置页出现该车', (await ev("document.getElementById('settingsBody').innerText")).includes('验收车'));
 await click("App.closeSettings()", 400);
-check('记录页标题为车名', (await ev("document.querySelector('#panel-records .nav-title-btn span').textContent")) === '验收车');
+check('记录页标题为「记录」', (await ev("document.querySelector('#panel-records .nav-heading').textContent")) === '记录');
+await click("App.switchTab('stats')", 400);
+check('统计页工具栏显示车名', (await ev("document.querySelector('#panel-stats .toolbar-meta').textContent")).includes('验收车'));
+await click("App.switchTab('records')", 400);
 
 section('2. 记账 → 编辑 → 删除');
 await click("document.querySelector('.tab-add').click()", 350);
@@ -179,7 +182,9 @@ s1 = await storage();
 check('车辆名称已更新', s1.vehicles[0].name === '验收车·改', s1.vehicles[0].name);
 check('设置页车辆行跟随', (await ev("document.getElementById('settingsBody').innerText")).includes('验收车·改'));
 await click("App.closeSettings()", 400);
-check('记录页标题跟随', (await ev("document.querySelector('#panel-records .nav-title-btn span').textContent")) === '验收车·改');
+await click("App.switchTab('stats')", 400);
+check('统计页工具栏车名跟随', (await ev("document.querySelector('#panel-stats .toolbar-meta').textContent")).includes('验收车·改'));
+await click("App.switchTab('records')", 400);
 
 await click("App.openSettings()", 300);
 await click("[...document.querySelectorAll('#settingsBody .row')].find(b=>b.textContent.includes('验收车·改')).click()", 350);
@@ -322,6 +327,12 @@ const statsText = await ev("document.querySelector('#panel-stats').innerText");
 check('累计节省 ¥389.20', statsText.includes('¥389.20'), statsText.slice(0, 240));
 check('每百公里 电 ¥13.75 / 油 ¥62.40', statsText.includes('电 ¥13.75') && statsText.includes('油 ¥62.40'));
 check('显示区间数与样本提示', statsText.includes('2 个充电区间') && statsText.includes('样本较少'));
+check('4 项分析直接平铺无折叠', await ev("(function(){var t=document.getElementById('panel-stats').innerText;return t.includes('快慢充比例')&&t.includes('电耗')&&t.includes('电池')&&t.includes('建议')&&!document.getElementById('analysisMoreBtn');})()"));
+check('一级页面不显示建议解释', (await ev("document.querySelectorAll('#panel-stats .advice-text').length")) === 0);
+check('卡片说明已收进 info', await ev("(function(){var n=[...document.querySelectorAll('#panel-stats .note-line')];return n.length<=1&&n.every(function(x){return x.textContent.includes('每百公里');});})()"));
+await click("document.querySelector('#panel-stats .card-note').click()", 350);
+check('说明弹层可打开', (await ev("document.getElementById('sheetTitle').textContent")).includes('说明'));
+await click("App.closeSheet()", 350);
 
 await click("App.switchTab('records')", 400);
 await click("document.querySelectorAll('.record-row')[1].click()", 400);

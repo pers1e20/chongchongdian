@@ -17,7 +17,10 @@
 
   var VENDOR = 'vendor/tesseract/';
   var LANG = 'chi_sim';
-  var MAX_EDGE = 2048;
+  var MAX_EDGE = 2048;   // 长边上限：超过则降采样
+  var MIN_EDGE = 1350;   // 长边下限：低于则放大（实测 900→1350 完全恢复）
+  var MAX_UPSCALE = 3;   // 单次最大放大倍数，避免极端小图撑爆内存
+  var PSM_AUTO = '3';    // Tesseract AUTO 分栏，避免默认 SINGLE_BLOCK(6)
 
   function clamp01(n) {
     n = Number(n) || 0;
@@ -41,27 +44,96 @@
   }
 
   /* ---------- 抽取规则（与 docs/ocr-方案.html 对齐） ---------- */
+  /* 标签与数值之间的空白一律用 [^\S\r\n]（非换行空白），
+     否则 \s 会跨行，把「充电费用」标题和下一行的度数粘在一起。 */
   var RE = {
     /* 充入电量：数字 + 单位，单位可有可无地紧跟 */
-    kwh: /(\d+(?:[.,]\d+)?)\s*(度|kwh|千瓦时|kw\.?\s?h)/i,
+    kwh: /(\d+(?:[.,]\d+)?)[^\S\r\n]*(度|kwh|千瓦时|kw\.?[ \t]?h)/i,
     /* 金额：优先「实付」等标签；兼容 OCR 把 ¥ 读成 Y、标签被拆出空格的情况 */
-    cost: /(?:¥|￥|Y|实付|金额|费用|合计|应付|实收|价格)\s*[:：]?\s*(?:¥|￥|Y)?\s*(\d+(?:[.,]\d+)?)/,
+    cost: /(?:¥|￥|Y|实付|金额|费用|合计|应付|实收|价格)[ \t]*[:：]?[ \t]*(?:¥|￥|Y)?[ \t]*(\d{1,3}(?:[,，]\d{3})+(?:\.\d{1,2})?|\d+[.,]\d{1,2}|\d+)/,
     /* 完整日期 */
-    date: /(\d{4})\s*[-/年.]\s*(\d{1,2})\s*[-/月.]\s*(\d{1,2})/,
+    date: /(\d{4})[^\S\r\n]*[-/年.][^\S\r\n]*(\d{1,2})[^\S\r\n]*[-/月.][^\S\r\n]*(\d{1,2})/,
     /* 仅时分 */
-    time: /(\d{1,2})\s*[:：]\s*(\d{2})/,
+    time: /(\d{1,2})[^\S\r\n]*[:：][^\S\r\n]*(\d{2})/,
     /* SOC 前后：默认不识别，命中只作候选 */
-    soc: /(\d{1,3})\s*%\s*(?:→|至|-|~|—|－)\s*(\d{1,3})\s*%/,
+    soc: /(\d{1,3})[^\S\r\n]*%[^\S\r\n]*(?:→|至|-|~|—|－)[^\S\r\n]*(\d{1,3})[^\S\r\n]*%/,
     /* 可选：时长 / 站点 */
-    duration: /(\d+(?:\.\d+)?)\s*(分钟|min|小时|h)/i,
+    duration: /(\d+(?:\.\d+)?)[^\S\r\n]*(分钟|min|小时|h)/i,
     site: /(站点|充电桩|充电站|运营商)/
   };
 
-  /* 汉字之间常被 OCR 插入空格（如「实 付」），先归一化再匹配 */
+  /* 金额数字 token：千分位 > 小数 > 整数，避免截断 */
+  var NUM_RE = /\d{1,3}(?:[,，]\d{3})+(?:\.\d{1,2})?|\d+[.,]\d{1,2}|\d+/;
+  var MONEY_RE = NUM_RE;
+
+  /* 标签优先级：总额类 > 金额/费用类 */
+  var COST_TIERS = [
+    /应付|实付|合计|总额|小计|总价|实收/,
+    /金额|费用|价格|充电费/
+  ];
+
+  /* 金额数值清洗：兼容千分位逗号、OCR 把小数点读成逗号 */
+  function parseMoney(s) {
+    s = String(s == null ? '' : s).trim();
+    if (!s) return 0;
+    s = s.replace(/(\d)[.,](\d{3})(?!\d)/g, '$1$2');   // 千分位
+    s = s.replace(/(\d)[.,](\d{1,2})(?!\d)/g, '$1.$2'); // 小数
+    var n = parseFloat(s.replace(/[^\d.]/g, ''));
+    return isNaN(n) ? 0 : n;
+  }
+
+  /* 标签行内、标签之后的首个数字；本行没有则看下一行（版式常换行）。
+     下一行含电量单位时跳过——「充电费用」标题的下一行常是「35.698 度」。 */
+  function findLooseCost(lines) {
+    for (var t = 0; t < COST_TIERS.length; t++) {
+      var tier = COST_TIERS[t];
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (!tier.test(line)) continue;
+        var idx = line.search(tier);
+        var m = line.slice(idx).match(MONEY_RE);
+        if (m) return { raw: m[0], sameLine: true };
+        if (i + 1 < lines.length) {
+          var nxt = lines[i + 1];
+          if (/度|kwh|千瓦时/i.test(nxt)) continue;
+          var n = nxt.match(MONEY_RE);
+          if (n) return { raw: n[0], sameLine: false };
+        }
+      }
+    }
+    return null;
+  }
+
+  /* HEIC 文件头：ISO-BMFF 的 ftyp box + brand */
+  function isHeicBuffer(buf) {
+    var b = new Uint8Array(buf);
+    if (b.length < 12) return false;
+    if (String.fromCharCode(b[4], b[5], b[6], b[7]) !== 'ftyp') return false;
+    var brand = String.fromCharCode(b[8], b[9], b[10], b[11]).toLowerCase();
+    return /^(heic|heix|hevc|hevx|heif|heim|heis|hevm|hevs|mif1|msf1)$/.test(brand);
+  }
+
+  function readHead(blob, n) {
+    return new Promise(function (resolve, reject) {
+      if (typeof blob.arrayBuffer === 'function') {
+        blob.slice(0, n).arrayBuffer().then(resolve, reject);
+        return;
+      }
+      var fr = new FileReader();
+      fr.onload = function () { resolve(fr.result); };
+      fr.onerror = reject;
+      fr.readAsArrayBuffer(blob.slice(0, n));
+    });
+  }
+
+  /* 汉字之间常被 OCR 插入空格（如「实 付」），先归一化再匹配。
+     必须逐行处理：\s 会跨行，把「充电费用」标题和下一行的度数粘成一行。 */
   function normalize(text) {
-    return String(text || '')
-      .replace(/([\u4e00-\u9fa5])\s+(?=[\u4e00-\u9fa5])/g, '$1')
-      .replace(/\r\n?/g, '\n');
+    var lines = String(text || '').replace(/\r\n?/g, '\n').split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      lines[i] = lines[i].replace(/([\u4e00-\u9fa5])[ \t]+(?=[\u4e00-\u9fa5])/g, '$1');
+    }
+    return lines.join('\n');
   }
 
   var LABELS = {
@@ -85,10 +157,12 @@
 
   var OCR = {
     _worker: null,
+    _workerPromise: null,
     _loading: null,
     /* 测试注入点：校验脚本用假识别替代真引擎，避免下载与耗时 */
     _recognizeImpl: null,
     _prepareImpl: null,
+    _createWorkerImpl: null,
     _progressCb: null,
 
     /* 能力检测：不支持就直接隐藏入口 */
@@ -113,7 +187,12 @@
         var s = document.createElement('script');
         s.src = VENDOR + 'tesseract.min.js';
         s.onload = function () { resolve(); };
-        s.onerror = function () { self._loading = null; reject(new Error('OCR 引擎下载失败')); };
+        s.onerror = function () {
+          self._loading = null;
+          var e = new Error('OCR 引擎下载失败');
+          e.code = 'OCR_LOAD';
+          reject(e);
+        };
         document.head.appendChild(s);
       });
       return this._loading;
@@ -123,41 +202,94 @@
     worker: function () {
       var self = this;
       if (this._worker) return Promise.resolve(this._worker);
-      return this.load().then(function () {
-        /* cacheMethod 'none'：不写 IndexedDB，语言包由 Service Worker 缓存 */
-        self._worker = global.Tesseract.createWorker(LANG, 1, {
-          workerPath: VENDOR + 'worker.min.js',
-          workerBlobURL: false,
-          corePath: VENDOR,
-          langPath: VENDOR,
-          gzip: true,
-          cacheMethod: 'none',
-          logger: function (m) { self._progress(m); }
-        });
-        return self._worker;
+      if (this._workerPromise) return this._workerPromise;
+
+      var p = this.load().then(function () {
+        var factory = self._createWorkerImpl || function () {
+          /* cacheMethod 'none'：不写 IndexedDB，语言包由 Service Worker 缓存 */
+          return global.Tesseract.createWorker(LANG, 1, {
+            workerPath: VENDOR + 'worker.min.js',
+            workerBlobURL: false,
+            corePath: VENDOR,
+            langPath: VENDOR,
+            gzip: true,
+            cacheMethod: 'none',
+            logger: function (m) { self._progress(m); }
+          });
+        };
+        return factory();
+      }).then(function (w) {
+        /* 创建期间被 dispose 取消：不要写回 _worker */
+        if (self._workerPromise !== p) return w;
+        /* 显式 AUTO(3)。Tesseract.js 默认 SINGLE_BLOCK(6) 会把整页当单块，
+           导致标签与数值粘连（¥ 被读成 x）、金额正则失效。 */
+        var sp = (w && typeof w.setParameters === 'function')
+          ? w.setParameters({ tessedit_pageseg_mode: PSM_AUTO })
+          : Promise.resolve();
+        return Promise.resolve(sp).catch(function () { /* 参数设置失败不阻断识别 */ })
+          .then(function () {
+            self._worker = w;   /* 存真实 Worker，不再是 Promise */
+            return w;
+          });
+      }).catch(function (e) {
+        if (self._workerPromise === p) self._workerPromise = null;
+        if (!e || !e.message) {
+          /* Tesseract.js 加载语言包失败时 reject undefined，转成可分类错误 */
+          var err = new Error('识别引擎或语言包加载失败');
+          err.code = 'OCR_LOAD';
+          throw err;
+        }
+        if (!e.code) e.code = 'OCR_LOAD';
+        throw e;
       });
+
+      this._workerPromise = p;
+      return p;
     },
 
-    /* 大图先降采样，避免识别时内存爆炸 */
+    /* 长边 < MIN_EDGE 放大；> MAX_EDGE 降采样；区间内原样返回，避免无谓重编码 */
     prepare: function (blob) {
-      var self = this;
       if (this._prepareImpl) return this._prepareImpl(blob);
       if (!blob) return Promise.resolve(blob);
       if (typeof global.createImageBitmap !== 'function') return Promise.resolve(blob);
       return global.createImageBitmap(blob).then(function (bmp) {
         var w = bmp.width, h = bmp.height;
-        var max = Math.max(w, h);
-        if (max <= MAX_EDGE) { if (bmp.close) bmp.close(); return blob; }
-        var scale = MAX_EDGE / max;
+        var long = Math.max(w, h);
+        var scale = 1;
+        if (long < MIN_EDGE) scale = Math.min(MIN_EDGE / long, MAX_UPSCALE);
+        else if (long > MAX_EDGE) scale = MAX_EDGE / long;
+        if (scale === 1) { if (bmp.close) bmp.close(); return blob; }
+
+        var nw = Math.max(1, Math.round(w * scale));
+        var nh = Math.max(1, Math.round(h * scale));
         var cv = document.createElement('canvas');
-        cv.width = Math.max(1, Math.round(w * scale));
-        cv.height = Math.max(1, Math.round(h * scale));
-        cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+        cv.width = nw;
+        cv.height = nh;
+        cv.getContext('2d').drawImage(bmp, 0, 0, nw, nh);
         if (bmp.close) bmp.close();
         return new Promise(function (resolve) {
           cv.toBlob(function (b) { resolve(b || blob); }, 'image/jpeg', 0.9);
         });
       }).catch(function () { return blob; });
+    },
+
+    /* HEIC 检测：Tesseract 无法解码 HEIC，提前拦下给出可操作提示 */
+    isHeic: function (blob) {
+      if (!blob) return Promise.resolve(false);
+      if (/^image\/(heic|heif)$/i.test(blob.type || '')) return Promise.resolve(true);
+      if (typeof blob.slice !== 'function') return Promise.resolve(false);
+      return readHead(blob, 32).then(isHeicBuffer).catch(function () { return false; });
+    },
+
+    checkImage: function (blob) {
+      return this.isHeic(blob).then(function (heic) {
+        if (heic) {
+          var e = new Error('截图是 HEIC 格式，请改用 PNG 或 JPG 截图');
+          e.code = 'OCR_HEIC';
+          throw e;
+        }
+        return blob;
+      });
     },
 
     /* 底层识别：返回 { text, confidence } */
@@ -174,9 +306,8 @@
       });
     },
 
-    /* 打开系统选图 → 降采样 → 识别 */
-    pickAndRecognize: function () {
-      var self = this;
+    /* 只打开系统选图，拿到原图后立即 resolve；取消则 reject */
+    pickImage: function () {
       return new Promise(function (resolve, reject) {
         var input = document.createElement('input');
         input.type = 'file';
@@ -190,6 +321,14 @@
         };
         document.body.appendChild(input);
         input.click();
+      });
+    },
+
+    /* 选图 → 降采样 → 识别 */
+    pickAndRecognize: function () {
+      var self = this;
+      return this.pickImage().then(function (file) {
+        return self.checkImage(file);
       }).then(function (file) {
         return self.prepare(file);
       }).then(function (blob) {
@@ -248,17 +387,27 @@
       var cost = null;
       var cf = findLabeled(lines, LABELS.cost, RE.cost);
       if (cf) {
-        var cv = toNum(cf.match[1]);
+        var cv = parseMoney(cf.match[1]);
         var cc = base + 0.15 + (cf.sameLine ? 0.10 : 0.05);
         if (cv >= 0.5 && cv <= 500) cc += 0.10;
         else cc -= 0.30;
         cost = mk(cv, cc, '标签', (cv < 0.5 || cv > 500) ? '金额超出常见范围（0.5–500 元）' : '');
       } else {
-        var cm = raw.match(RE.cost);
-        if (cm) {
-          var cv2 = toNum(cm[1]);
-          cost = mk(cv2, base - 0.20 + ((cv2 >= 0.5 && cv2 <= 500) ? 0.10 : -0.30),
-            '', '未找到「实付 / 金额」标签，请核对');
+        /* 宽松兜底：标签被 OCR 插入空格 / ¥ 被读成 x 时，取标签后的数字 */
+        var loose = findLooseCost(lines);
+        if (loose) {
+          var lv = parseMoney(loose.raw);
+          var lc = base + 0.05 + (loose.sameLine ? 0.10 : 0.05);
+          if (lv >= 0.5 && lv <= 500) lc += 0.10;
+          else lc -= 0.30;
+          cost = mk(lv, lc, '标签', '金额由标签附近数字推断，请核对');
+        } else {
+          var cm = raw.match(RE.cost);
+          if (cm) {
+            var cv2 = parseMoney(cm[1]);
+            cost = mk(cv2, base - 0.20 + ((cv2 >= 0.5 && cv2 <= 500) ? 0.10 : -0.30),
+              '', '未找到「实付 / 金额」标签，请核对');
+          }
         }
       }
       if (cost) out.totalCost = cost;
@@ -361,10 +510,12 @@
 
     /* 释放 Worker（WASM 内存）；不写任何持久存储 */
     dispose: function () {
-      if (this._worker && this._worker.terminate) {
-        try { this._worker.terminate(); } catch (e) { /* 忽略 */ }
-      }
+      this._workerPromise = null;
+      var w = this._worker;
       this._worker = null;
+      if (w && typeof w.terminate === 'function') {
+        try { w.terminate(); } catch (e) { /* 忽略 */ }
+      }
     }
   };
 

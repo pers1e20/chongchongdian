@@ -1303,21 +1303,12 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
 
     syncTabs: function () {
       var tab = App.currentTab;
-      var active = null;
       document.querySelectorAll('.tabbar .tab-item').forEach(function (b) {
         var on = b.dataset.tab === tab;
         b.classList.toggle('active', on);
-        if (on) { b.setAttribute('aria-current', 'page'); active = b; }
+        if (on) b.setAttribute('aria-current', 'page');
         else b.removeAttribute('aria-current');
       });
-      var bar = document.querySelector('.tabbar');
-      var ind = bar ? bar.querySelector('.tab-indicator') : null;
-      if (ind && active) {
-        var w = 54;
-        var x = active.offsetLeft + (active.offsetWidth - w) / 2;
-        ind.style.width = w + 'px';
-        ind.style.transform = 'translateX(' + x.toFixed(1) + 'px)';
-      }
     },
 
     switchTab: function (tab) {
@@ -1424,15 +1415,13 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
     /* ============================================================
      * 记录页
      * ============================================================ */
-    recordsNav: function (vehicle) {
+    recordsNav: function () {
       var n = this.filterCount();
       return '<div class="nav">'
+        + '<span class="nav-heading">记录</span>'
         + '<span class="nav-fill"></span>'
-        + '<button class="nav-title-btn" onclick="App.openVehicleSheet()" aria-label="切换车辆">'
-        + '<span>' + esc(vehicle ? vehicle.name : '冲充电') + '</span>' + Icons.chevronDown + '</button>'
         + '<button class="nav-btn" onclick="App.openFilterSheet()" aria-label="筛选' + (n ? '，已选 ' + n + ' 项' : '') + '">'
         + Icons.filter + (n ? '<span class="dot"></span>' : '') + '</button>'
-        + '<button class="nav-btn" onclick="App.openSettings()" aria-label="设置">' + Icons.gear + '</button>'
         + '</div>';
     },
 
@@ -1635,10 +1624,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
      * 统计页
      * ============================================================ */
     statsNav: function () {
-      var vehicle = VehicleMgr.current();
-      return '<div class="nav"><span class="nav-fill"></span>'
-        + '<button class="nav-title-btn" onclick="App.openVehicleSheet()" aria-label="切换车辆">'
-        + '<span>' + esc(vehicle ? vehicle.name : '冲充电') + '</span>' + Icons.chevronDown + '</button>'
+      return '<div class="nav"><span class="nav-heading">统计</span><span class="nav-fill"></span>'
         + '<button class="nav-btn" onclick="App.openSettings()" aria-label="设置">' + Icons.gear + '</button></div>';
     },
 
@@ -1680,7 +1666,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
 
       html += '<div class="toolbar">'
         + '<button class="menu-btn" onclick="App.openYearSheet()">' + (yearFilter ? yearFilter + ' 年' : '全部年份') + Icons.chevronDown + '</button>'
-        + '<span class="toolbar-meta">' + scope.count + ' 条记录</span></div>';
+        + '<span class="toolbar-meta">' + scope.count + ' 条记录' + (vehicle ? ' · ' + esc(vehicle.name) : '') + '</span></div>';
 
       var spark = '';
       if (md.monthly && md.monthly.length > 1) {
@@ -1718,14 +1704,10 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         + this.buildChart(md.monthly, md.fmt)
         + '</div>';
 
-      /* 油车对比是关键结论，保留在一级；其余分析收进折叠区 */
+      /* 油车对比是关键结论，保留在一级 */
       html += this.fuelCardHTML(vid);
 
-      var moreOpen = !!this._analysisMoreOpen;
-      html += '<button class="more-bar' + (moreOpen ? ' open' : '') + '" id="analysisMoreBtn" onclick="App.toggleAnalysisMore()" aria-expanded="'
-        + (moreOpen ? 'true' : 'false') + '"><span>更多分析</span><span class="more-count">'
-        + (moreOpen ? '收起' : '4 项') + ' ⌄</span>' + Icons.chevronDown + '</button>';
-      html += '<div class="collapse' + (moreOpen ? ' open' : '') + '" id="analysisMore"><div class="more-body">';
+      /* 4 项分析直接平铺在一级：快慢充 / 电耗 / 电池 / 建议 */
 
       /* 快慢充 */
       var total = scope.fastCount + scope.slowCount;
@@ -1763,41 +1745,38 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
 
       /* 电耗 */
       html += '<div class="card">'
-        + '<div class="card-head"><span class="card-title">电耗</span></div>'
+        + '<div class="card-head"><span class="card-title">电耗</span>'
+        + '<button class="card-note" onclick="App.openAnalysisNote(\'eff\')" aria-label="电耗说明">' + Icons.info + '</button></div>'
         + '<div class="metrics">'
         + '<div class="metric"><b>' + (eff.enough ? Utils.fmt(eff.avg, 1) + '<em class="long">度/100km</em>' : '—') + '</b><span>百公里电耗</span></div>'
         + '<div class="metric"><b>' + (pkm.hasData ? '¥' + Utils.fmt(pkm.value, 2) : '—') + '</b><span>每公里成本</span></div>'
         + '<div class="metric"><b>' + eff.count + '<em>组</em></b><span>有效样本</span></div>'
-        + '</div>'
-        + '<div class="note-line">' + this.effNote(eff) + '</div>'
-        + '</div>';
+        + '</div></div>';
 
       /* 电池 */
       var cap = BatteryHealth.capacityHealth(vid);
       var habit = BatteryHealth.habitScore(vid);
       var hasHabit = habit.factors && habit.factors.length > 0;
       html += '<div class="card">'
-        + '<div class="card-head"><span class="card-title">电池</span>'
-        + '<button class="card-link" onclick="App.openBatterySheet()">明细' + Icons.chevronRight + '</button></div>'
+        + '<div class="card-head"><span class="card-title">电池</span><span style="display:inline-flex;align-items:center">'
+        + '<button class="card-link" onclick="App.openBatterySheet()">明细' + Icons.chevronRight + '</button>'
+        + '<button class="card-note" onclick="App.openAnalysisNote(\'cap\')" aria-label="电池说明">' + Icons.info + '</button></span></div>'
         + '<div class="metrics">'
         + '<div class="metric"><b>' + (cap.index === null ? '—' : cap.index + '<em>%</em>') + '</b><span>容量保持率</span></div>'
         + '<div class="metric"><b>' + (hasHabit ? habit.score : '—') + '</b><span>充电习惯</span></div>'
         + '<div class="metric"><b>' + (habit.socBeforeCount ? Math.round(habit.deepRatio * 100) + '<em>%</em>' : '—') + '</b><span>深放频率</span></div>'
-        + '</div>'
-        + '<div class="note-line">' + this.capNote(cap) + '</div>'
-        + '</div>';
+        + '</div></div>';
 
       /* 建议 */
       var rec = Recommender.generate(vid);
       var tips = rec.tips || [];
       html += '<div class="card">'
         + '<div class="card-head"><span class="card-title">建议</span>'
-        + (tips.length > 3 ? '<button class="card-link" onclick="App.openAdviceSheet()">全部 ' + tips.length + ' 条' + Icons.chevronRight + '</button>' : '')
+        + '<button class="card-link" onclick="App.openAdviceSheet()">全部 ' + tips.length + ' 条' + Icons.chevronRight + '</button>'
         + '</div>'
-        + '<div class="advice-list">' + tips.slice(0, 3).map(adviceHTML).join('') + '</div>'
+        + '<div class="advice-list">' + tips.slice(0, 3).map(adviceBriefHTML).join('') + '</div>'
         + '</div>';
 
-      html += '</div></div>';
       html += '<div style="height:24px"></div></div>';
       panel.innerHTML = html;
       if (this._heroAnim) {
@@ -1806,17 +1785,29 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       }
     },
 
-    toggleAnalysisMore: function () {
-      this._analysisMoreOpen = !this._analysisMoreOpen;
-      var body = document.getElementById('analysisMore');
-      var btn = document.getElementById('analysisMoreBtn');
-      if (body) body.classList.toggle('open', this._analysisMoreOpen);
-      if (btn) {
-        btn.classList.toggle('open', this._analysisMoreOpen);
-        btn.setAttribute('aria-expanded', this._analysisMoreOpen ? 'true' : 'false');
-        var count = btn.querySelector('.more-count');
-        if (count) count.textContent = this._analysisMoreOpen ? '收起 ⌄' : '4 项 ⌄';
+    /* 卡片说明统一收进弹层，一级页面只保留结论 */
+    openAnalysisNote: function (kind) {
+      var vid = this.currentVid();
+      var title = '说明', body = '';
+      if (kind === 'eff') {
+        var eff = Stats.avgEfficiency(vid);
+        title = '电耗说明';
+        body = '<p class="note-line" style="margin-top:0">' + esc(this.effNote(eff)) + '</p>'
+          + '<p class="note-line">电耗按两次充电之间的里程差与期间充入电量计算。</p>';
+      } else if (kind === 'cap') {
+        var cap = BatteryHealth.capacityHealth(vid);
+        title = '电池说明';
+        body = '<p class="note-line" style="margin-top:0">' + esc(this.capNote(cap)) + '</p>'
+          + '<p class="note-line">容量保持率依据充电前后 SOC 跨度 ≥30% 的有效样本估算。</p>';
+      } else {
+        var fc = FuelCar.get();
+        var cfg = (fc.model ? fc.model + ' · ' : '') + '油耗 ' + Utils.fmt(fc.consumption, 1)
+          + ' L/100km · 油价 ¥' + Utils.fmt(fc.price, 2) + '/L';
+        title = '油车对比说明';
+        body = '<p class="note-line" style="margin-top:0">按充电区间前后里程差核算每公里电费，再与油车油耗、油价折算成本对比。</p>'
+          + '<p class="note-line">参照：' + esc(cfg) + '</p>';
       }
+      this.openSheet({ title: title, body: body });
     },
 
     setStatsTrend: function (mode) {
@@ -1951,8 +1942,9 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
     /* 油车对比卡：未配置 → 只给入口；已配置无区间 → 提示补里程；有区间 → 三档节省 */
     fuelCardHTML: function (vid) {
       var fc = FuelCar.get();
-      var head = '<div class="card-head"><span class="card-title">油车对比</span>'
-        + '<button class="card-link" onclick="App.openSettings()">设置' + Icons.chevronRight + '</button></div>';
+      var head = '<div class="card-head"><span class="card-title">油车对比</span><span style="display:inline-flex;align-items:center">'
+        + '<button class="card-link" onclick="App.openSettings()">设置' + Icons.chevronRight + '</button>'
+        + '<button class="card-note" onclick="App.openAnalysisNote(\'fuel\')" aria-label="油车对比说明">' + Icons.info + '</button></span></div>';
       if (!FuelCar.isConfigured()) {
         return '<div class="card">' + head
           + '<div class="note-line" style="margin:0">填一组油车参数，就能看到每充一次电比油车省多少钱。</div></div>';
@@ -1966,7 +1958,6 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       var month = FuelCompare.scope(vid, 'month');
       var pk = FuelCompare.perKm(all);
       var money = function (n) { return Math.abs(n) >= 1000 ? Utils.fmt(n, 0) : Utils.fmtMoney(n); };
-      var cfg = (fc.model ? fc.model + ' · ' : '') + '油耗 ' + Utils.fmt(fc.consumption, 1) + ' L/100km · 油价 ¥' + Utils.fmt(fc.price, 2) + '/L';
       return '<div class="card">' + head
         + '<div class="metrics">'
         + '<div class="metric"><b>¥' + money(all.saving) + '</b><span>累计节省</span></div>'
@@ -1975,7 +1966,6 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         + '</div>'
         + '<div class="note-line">每百公里 电 ¥' + Utils.fmt(pk.electric, 2) + ' · 油 ¥' + Utils.fmt(pk.fuel, 2)
         + ' · 按 ' + all.count + ' 个充电区间估算' + (all.count < 3 ? '，样本较少仅供参考' : '') + '</div>'
-        + '<div class="note-line">参照：' + esc(cfg) + '</div>'
         + '</div>';
     },
 
@@ -2778,7 +2768,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       if (typeof OCR === 'undefined' || !OCR.setProgressHandler) return;
       var self = this;
       OCR.setProgressHandler(function (m) {
-        if (!m) return;
+        if (!m || self._ocrFailed) return;
         var bar = document.getElementById('ocrBar');
         var status = document.getElementById('ocrStatus');
         if (bar && typeof m.progress === 'number') {
@@ -2787,6 +2777,10 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         if (status && m.status) status.textContent = m.status;
       });
       window.addEventListener('beforeunload', function () {
+        if (typeof OCR !== 'undefined') OCR.dispose();
+      });
+      /* iOS Safari 不保证触发 beforeunload，pagehide 覆盖「页面真正离开」 */
+      window.addEventListener('pagehide', function () {
         if (typeof OCR !== 'undefined') OCR.dispose();
       });
     },
@@ -2819,10 +2813,27 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         return;
       }
       var self = this;
-      this.showOcrOverlay({ title: '识别中…', status: '正在加载本地识别引擎' });
-      OCR.pickAndRecognize().then(function (r) {
-        self._ocrBlob = r.blob || null;
-        return OCR.extractFields(r.text, r.confidence);
+      /* 先直接调起系统选图；用户取消时不进入识别界面 */
+      OCR.pickImage().then(function (file) {
+        self._ocrBlob = null;
+        self.showOcrOverlay({ title: '识别中…', status: '正在读取截图' });
+        return self.runOcr(file);
+      }).catch(function (err) {
+        if (err && /已取消选择/.test(err.message || '')) { self.hideOcrOverlay(); return; }
+        self.onOcrFailed(err);
+      });
+    },
+
+    /* 已选图：预处理 → 识别 → 预填；进度由 OCR.setProgressHandler 驱动 */
+    runOcr: function (file) {
+      var self = this;
+      return OCR.checkImage(file).then(function (f) {
+        return OCR.prepare(f);
+      }).then(function (blob) {
+        self._ocrBlob = blob;
+        return OCR.recognize(blob).then(function (r) {
+          return OCR.extractFields(r.text, r.confidence);
+        });
       }).then(function (fields) {
         self.applyOcrResult(fields);
       }).catch(function (err) {
@@ -2851,12 +2862,15 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
     showOcrOverlay: function (opts) {
       var layer = document.getElementById('ocrOverlay');
       if (!layer) return;
+      this._ocrFailed = false;
       var title = document.getElementById('ocrTitle');
       var status = document.getElementById('ocrStatus');
       var bar = document.getElementById('ocrBar');
       var actions = document.getElementById('ocrActions');
+      var spinner = document.getElementById('ocrSpinner');
       if (title) title.textContent = (opts && opts.title) || '识别中…';
       if (status) status.textContent = (opts && opts.status) || '';
+      if (spinner) spinner.hidden = false;
       if (bar) bar.style.width = '0';
       if (actions) actions.innerHTML = '';
       layer.classList.add('show');
@@ -2870,31 +2884,72 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       layer.setAttribute('aria-hidden', 'true');
     },
 
+    /* 把 OCR 异常分成用户可操作的类别（引擎下载 / 图片解码 / 格式 / 取消） */
+    ocrErrorInfo: function (err) {
+      var msg = (err && err.message) || '';
+      var code = (err && err.code) || '';
+      if (code === 'OCR_HEIC' || /HEIC|HEIF/i.test(msg)) {
+        return { kind: 'heic', title: '不支持的图片格式',
+          status: '这张截图是 HEIC 格式，请改用 PNG / JPG 截图后重试', retryable: false };
+      }
+      if (code === 'OCR_LOAD' || /下载失败|加载失败|traineddata|语言包|引擎/i.test(msg)) {
+        return { kind: 'load', title: '识别引擎下载失败',
+          status: '本地识别引擎或语言包下载失败，请检查网络后重试', retryable: true };
+      }
+      if (/decode|read image|无法解码|图片无法/i.test(msg)) {
+        return { kind: 'decode', title: '图片无法读取',
+          status: '这张图无法解码，请换一张截图', retryable: false };
+      }
+      if (/已取消选择/.test(msg)) return { kind: 'cancel', title: '', status: '', retryable: false };
+      if (!err || !msg) {
+        /* Tesseract.js 加载语言包失败时会 reject undefined，拿不到 message */
+        return { kind: 'load', title: '识别引擎下载失败',
+          status: '本地识别引擎或语言包加载失败，请重试', retryable: true };
+      }
+      return { kind: 'other', title: '识别失败', status: msg, retryable: true };
+    },
+
     /* 失败：不写库，提供重试与转手动 */
     onOcrFailed: function (err) {
       var layer = document.getElementById('ocrOverlay');
       if (!layer) { this.toast('识别失败，请手动填写', 'error'); return; }
+      /* 失败后冻结进度回调，避免「recognizing text」覆盖错误文案 */
+      this._ocrFailed = true;
+      if (!layer.classList.contains('show')) {
+        layer.classList.add('show');
+        layer.setAttribute('aria-hidden', 'false');
+      }
+      var spinner = document.getElementById('ocrSpinner');
+      if (spinner) spinner.hidden = true;
+      var info = this.ocrErrorInfo(err);
+      if (info.kind === 'cancel') { this.hideOcrOverlay(); return; }
+
       var title = document.getElementById('ocrTitle');
       var status = document.getElementById('ocrStatus');
       var bar = document.getElementById('ocrBar');
       var actions = document.getElementById('ocrActions');
-      if (title) title.textContent = '识别失败';
-      if (status) status.textContent = (err && err.message) || '没有识别到内容';
+      if (title) title.textContent = info.title;
+      if (status) status.textContent = info.status;
       if (bar) bar.style.width = '0';
 
       var self = this;
-      if (actions && !actions.childNodes.length) {
+      if (actions) {
         actions.innerHTML = '<button type="button" class="btn btn-secondary" id="ocrRetryBtn">重试</button>'
           + '<button type="button" class="btn btn-primary" id="ocrManualBtn">手动填写</button>';
         document.getElementById('ocrRetryBtn').onclick = function () {
           var blob = self._ocrBlob;
-          if (!blob) { self.hideOcrOverlay(); return; }
+          /* 失败发生在选图/解码之前：没有可重试的图，重新选图 */
+          if (!blob) { self.startOcr(); return; }
           self.showOcrOverlay({ title: '识别中…', status: '正在重新识别' });
           OCR.recognize(blob).then(function (r) {
             self.applyOcrResult(OCR.extractFields(r.text, r.confidence));
           }).catch(function (e2) { self.onOcrFailed(e2); });
         };
         document.getElementById('ocrManualBtn').onclick = function () { self.hideOcrOverlay(); };
+        if (info.retryable === false) {
+          var retryBtn = document.getElementById('ocrRetryBtn');
+          if (retryBtn) retryBtn.disabled = true;
+        }
       }
     },
 
@@ -3090,6 +3145,15 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
     return String(s === null || s === undefined ? '' : s).replace(/[&<>"]/g, function (ch) {
       return ch === '&' ? '&amp;' : ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : '&quot;';
     });
+  }
+
+  /* 一级页面只显示建议标题，解释文字收进「全部」弹层 */
+  function adviceBriefHTML(t) {
+    var kind = t.icon === 'alert' ? 'warn' : (t.icon === 'check' ? 'ok' : 'info');
+    var ic = t.icon === 'alert' ? Icons.alert : (t.icon === 'check' ? Icons.check : Icons.info);
+    return '<div class="advice-item ' + kind + '">'
+      + '<span class="advice-icon">' + ic + '</span>'
+      + '<div><div class="advice-title">' + esc(t.title) + '</div></div></div>';
   }
 
   function adviceHTML(t) {

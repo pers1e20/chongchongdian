@@ -192,6 +192,10 @@
     .nav-title-btn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .nav-title-btn .i { width: 15px; height: 15px; color: var(--c-text-3); }
     .nav-title-btn:active { background: var(--c-fill); }
+    .nav-heading {
+      margin-left: 4px; font-size: 20px; font-weight: 600;
+      letter-spacing: -.02em; line-height: 1; color: var(--c-text);
+    }
     .nav-btn {
       width: 44px; height: 44px; display: grid; place-items: center;
       border-radius: var(--r-ctrl); color: var(--c-text); flex-shrink: 0;
@@ -221,13 +225,6 @@
       align-items: center; justify-content: center; gap: 2px;
       color: var(--c-text-3); border-radius: 18px;
       transition: color var(--dur-2) var(--ease);
-    }
-    .tab-indicator {
-      position: absolute; top: 50%; left: 0; z-index: 0;
-      width: 54px; height: 40px; margin-top: -20px;
-      border-radius: 10px; background: var(--c-fill);
-      pointer-events: none;
-      transition: transform var(--dur-4) var(--ease-spring), width var(--dur-4) var(--ease-spring);
     }
     .tab-item .i { width: 23px; height: 23px; }
     .tab-label { font-size: var(--fs-11); font-weight: 500; }
@@ -298,9 +295,16 @@
       border-radius: 12px;
     }
     .card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); margin-bottom: var(--sp-3); }
-    .card-title { font-size: var(--fs-13); font-weight: 400; color: var(--c-text-3); }
+    .card-title { font-size: var(--fs-13); font-weight: 400; color: var(--c-text-3); flex-shrink: 0; white-space: nowrap; }
     .card-link { display: inline-flex; align-items: center; gap: 1px; font-size: var(--fs-13); color: var(--c-text-3); }
     .card-link .i { width: 14px; height: 14px; }
+    .card-note {
+      display: inline-grid; place-items: center; flex-shrink: 0;
+      width: 44px; height: 44px; margin: -10px 0;
+      color: var(--c-text-3); border-radius: var(--r-ctrl);
+    }
+    .card-note .i { width: 17px; height: 17px; }
+    .card-note:active { background: var(--c-fill); }
 
     .group {
       background: var(--c-fill);
@@ -777,8 +781,19 @@
     }
 
     /* ---------- 13. 截图识别（OCR） ---------- */
-    #cfOcrBtn { margin-bottom: var(--sp-3); }
     #cfOcrBtn[hidden] { display: none; }
+    .ocr-entry {
+      display: flex; align-items: center; gap: 12px; width: 100%;
+      min-height: 56px; margin-top: 12px; padding: 9px 16px;
+      background: var(--c-fill); border-radius: 12px; text-align: left;
+      color: var(--c-text);
+    }
+    .ocr-entry > .i:first-child { width: 22px; height: 22px; flex-shrink: 0; color: var(--c-text-2); }
+    .ocr-entry > .i:last-child { width: 16px; height: 16px; flex-shrink: 0; color: var(--c-text-3); }
+    .ocr-entry-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+    .ocr-entry-title { font-size: var(--fs-15); font-weight: 500; }
+    .ocr-entry-sub { font-size: var(--fs-12); color: var(--c-text-3); }
+    .ocr-entry:active { opacity: .75; }
 
     .tag-warn { color: var(--c-warn); box-shadow: inset 0 0 0 .5px var(--c-warn); }
 
@@ -793,11 +808,18 @@
       background: var(--c-surface); border: .5px solid var(--c-line);
       border-radius: var(--r-card);
     }
-    .ocr-title { font-size: var(--fs-17); font-weight: 600; }
+    .ocr-title { font-size: var(--fs-17); font-weight: 600; display: flex; align-items: center; }
+    .ocr-spinner {
+      display: inline-block; width: 14px; height: 14px; margin-right: 8px;
+      border: 2px solid var(--c-line); border-top-color: var(--c-text);
+      border-radius: 50%; animation: ocrSpin .8s linear infinite;
+    }
+    .ocr-spinner[hidden] { display: none; }
+    @keyframes ocrSpin { to { transform: rotate(360deg); } }
     .ocr-sub { margin-top: 4px; font-size: var(--fs-12); line-height: 1.5; color: var(--c-text-3); }
     .ocr-bar { height: 4px; margin-top: 14px; border-radius: 2px; background: var(--c-fill); overflow: hidden; }
     .ocr-bar > i { display: block; height: 100%; width: 0; background: var(--c-text); transition: width 160ms linear; }
-    .ocr-status { margin-top: 10px; font-size: var(--fs-12); color: var(--c-text-3); min-height: 16px; }
+    .ocr-status { margin-top: 10px; font-size: var(--fs-12); color: var(--c-text-3); min-height: 16px; overflow-wrap: anywhere; }
     .ocr-actions { display: flex; gap: 8px; margin-top: 16px; }
     .ocr-actions:empty { display: none; }
     .ocr-actions .btn { flex: 1; }
@@ -811,7 +833,6 @@
   </main>
 
   <nav class="tabbar" aria-label="主导航">
-    <span class="tab-indicator" aria-hidden="true"></span>
     <button class="tab-item active" data-tab="stats" aria-current="page">
       <svg class="i ico-off" aria-hidden="true"><use href="#i-tab-stats"/></svg>
       <svg class="i i-fill ico-on" aria-hidden="true"><use href="#i-tab-stats-fill"/></svg>
@@ -839,12 +860,6 @@
       <input type="hidden" id="cf_vehicleId">
       <input type="hidden" id="cf_chargeType" value="fast">
       <input type="hidden" id="cf_unitPrice">
-
-      <button type="button" class="btn btn-secondary btn-block" id="cfOcrBtn" onclick="App.startOcr()" hidden>
-        <svg class="i" aria-hidden="true"><use href="#i-doc"/></svg>
-        截图识别
-      </button>
-      <p class="note-line" id="cfOcrHint" hidden>从充电小程序 / 滴滴的支付完成页截图里识别度数、金额与日期，仅在本地识别、不会上传。</p>
 
       <div class="type-cards" id="cf_chargeTypeSegment" role="group" aria-label="充电类型">
         <button type="button" class="type-card" data-val="slow" aria-pressed="false">
@@ -916,6 +931,15 @@
           <textarea id="cf_note" placeholder="备注（可选）"></textarea>
         </div>
       </div>
+
+      <button type="button" class="ocr-entry" id="cfOcrBtn" onclick="App.startOcr()" hidden>
+        <svg class="i" aria-hidden="true"><use href="#i-doc"/></svg>
+        <span class="ocr-entry-text">
+          <span class="ocr-entry-title">截图识别</span>
+          <span class="ocr-entry-sub" id="cfOcrHint">选一张充电完成截图，自动填入</span>
+        </span>
+        <svg class="i" aria-hidden="true"><use href="#i-chevron-right"/></svg>
+      </button>
 
       <div class="action-bar">
         <button type="submit" class="btn btn-primary btn-block">
@@ -1037,8 +1061,8 @@
   <!-- 截图识别轻提示 -->
   <div class="ocr-overlay" id="ocrOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ocrTitle">
     <div class="ocr-box">
-      <div class="ocr-title" id="ocrTitle">识别中…</div>
-      <div class="ocr-sub" id="ocrSub">首次使用需下载本地识别引擎（约 20MB），之后可离线使用</div>
+      <div class="ocr-title"><span class="ocr-spinner" id="ocrSpinner" aria-hidden="true"></span><span id="ocrTitle">识别中…</span></div>
+      <div class="ocr-sub" id="ocrSub">首次使用需下载本地识别引擎（约 6MB），之后可离线使用</div>
       <div class="ocr-bar"><i id="ocrBar"></i></div>
       <div class="ocr-status" id="ocrStatus"></div>
       <div class="ocr-actions" id="ocrActions"></div>
