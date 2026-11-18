@@ -1,0 +1,29 @@
+OCR 引擎与语言包许可说明
+=========================
+
+本目录内的文件均来自开源项目，按各自许可证授权使用。
+
+1) tesseract.js（tesseract.min.js、worker.min.js）
+   项目：https://github.com/naptha/tesseract.js
+   版权：Copyright 2017-2024 naptha
+   许可证：Apache License 2.0
+    canonical 文本：https://www.apache.org/licenses/LICENSE-2.0
+
+2) tesseract.js-core（tesseract-core*.wasm.js）
+   项目：https://github.com/naptha/tesseract.js-core
+   版权：Copyright 2017-2024 naptha
+   许可证：Apache License 2.0
+   说明：为 Tesseract 官方 C++ 代码编译得到的 WebAssembly 产物。
+
+3) Tesseract OCR 引擎本体
+   项目：https://github.com/tesseract-ocr/tesseract
+   许可证：Apache License 2.0
+
+4) chi_sim.traineddata.gz（简体中文语言包）
+   来源：https://github.com/tesseract-ocr/tessdata_best （4.0.0_best）
+   许可证：Apache License 2.0
+
+Apache License 2.0 要点：允许自由使用、修改与再分发，前提是保留版权与许可声明、
+并说明所做的修改；不提供任何担保。完整条款见上述 canonical 链接。
+
+注：以上文件为上游发布的原始产物，本项目未做功能改动。

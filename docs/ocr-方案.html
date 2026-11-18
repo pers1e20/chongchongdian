@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>冲充电 · 截图识别方案</title>
+<style>
+  :root {
+    --bg: #F4F5F7; --surface: #FFFFFF; --fill: #EBEDF1; --surface-2: #E7E9ED;
+    --line: rgba(26,29,33,.10); --line-strong: rgba(26,29,33,.22);
+    --text: #1A1D21; --text-2: #555C65; --text-3: #858C95;
+    --ok: #1B7F4B; --ok-fill: rgba(27,127,75,.10);
+    --warn: #9A5B00; --warn-fill: rgba(154,91,0,.10);
+    --danger: #C7362F; --danger-fill: rgba(199,54,47,.10);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .page { max-width: 820px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 26px; font-weight: 600; letter-spacing: -.02em; }
+  .sub { margin-top: 6px; font-size: 14px; color: var(--text-3); }
+  h2 { margin: 34px 0 12px; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+  h2 .n { display: inline-block; width: 22px; height: 22px; margin-right: 8px; border-radius: 6px; background: var(--text); color: var(--bg); font-size: 12px; font-weight: 500; text-align: center; line-height: 22px; vertical-align: 1px; }
+  p { font-size: 14px; color: var(--text-2); margin: 8px 0; }
+  .verdict { margin-top: 18px; padding: 16px 18px; background: var(--surface); border: .5px solid var(--line); border-radius: 12px; }
+  .verdict .k { font-size: 12px; color: var(--text-3); letter-spacing: .04em; }
+  .verdict .v { margin-top: 4px; font-size: 17px; font-weight: 600; }
+  .verdict p { margin-top: 8px; font-size: 13px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+  .card { padding: 14px 16px; background: var(--surface); border: .5px solid var(--line); border-radius: 12px; }
+  .card .t { font-size: 14px; font-weight: 600; }
+  .card .d { margin-top: 4px; font-size: 13px; color: var(--text-2); }
+  .card.bad { background: var(--fill); }
+  .tag { display: inline-block; height: 20px; padding: 0 7px; border-radius: 5px; font-size: 11px; line-height: 20px; background: var(--fill); color: var(--text-2); }
+  .tag.ok { background: var(--ok-fill); color: var(--ok); }
+  .tag.warn { background: var(--warn-fill); color: var(--warn); }
+  .tag.danger { background: var(--danger-fill); color: var(--danger); }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; background: var(--surface); border: .5px solid var(--line); border-radius: 12px; overflow: hidden; font-size: 13px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: .5px solid var(--line); vertical-align: top; }
+  th { font-size: 11px; color: var(--text-3); font-weight: 500; background: var(--fill); }
+  tr:last-child td { border-bottom: 0; }
+  td code, p code, li code { font-family: var(--mono); font-size: 12px; background: var(--fill); padding: 1px 5px; border-radius: 4px; }
+  ul { margin: 8px 0 8px 20px; font-size: 13px; color: var(--text-2); }
+  li { margin: 5px 0; }
+  .flow { margin-top: 14px; }
+  .flow svg { width: 100%; height: auto; display: block; }
+  .rule td:first-child { width: 84px; font-weight: 600; }
+  .conf { font-family: var(--mono); font-size: 12px; color: var(--text-3); }
+  .road { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+  .road .step { padding: 14px; background: var(--surface); border: .5px solid var(--line); border-radius: 12px; }
+  .road .step .h { font-size: 13px; font-weight: 600; }
+  .road .step .h span { font-family: var(--mono); font-size: 11px; color: var(--text-3); margin-left: 6px; }
+  .road .step p { margin-top: 6px; font-size: 12px; }
+  .foot { margin-top: 36px; padding-top: 16px; border-top: .5px solid var(--line); font-size: 12px; color: var(--text-3); text-align: center; }
+  @media (max-width: 640px) { .grid2, .road { grid-template-columns: 1fr; } .page { padding: 24px 14px 48px; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>充电截图识别 · 方案思考</h1>
+  <div class="sub">目标：把充电小程序 / 滴滴的支付完成页截图，快速变成「冲充电」里的一条记录。只做方案，不实施。</div>
+
+  <div class="verdict">
+    <div class="k">结论</div>
+    <div class="v">纯前端 OCR（Tesseract.js 本地运行）+ 字段级抽取 + 人工确认</div>
+    <p>理由：不离开现有 PWA、截图不出设备、无需后端。SOC / 里程不指望截图，走「待补充」机制单独闭环。OCR 只负责"候选值"，绝不自动保存。</p>
+  </div>
+
+  <h2><span class="n">1</span>问题拆解</h2>
+  <div class="grid2">
+    <div class="card">
+      <div class="t">数据源 A · 支付完成页截图</div>
+      <div class="d">充电度数、金额、充电时间/时长、站点。这是 OCR 的目标，但不同 App 的版式、字体、字段名差异极大。</div>
+    </div>
+    <div class="card">
+      <div class="t">数据源 B · 车辆 App</div>
+      <div class="d">充电前 / 后 SOC、里程表读数。截图里通常没有，需要手动补录，或未来用系统能力桥接。</div>
+    </div>
+  </div>
+  <p>三个硬约束：① 字段识别必须"宁缺毋错"，错了比没有更糟；② 截图含金额、位置、时间等敏感信息，优先本地处理；③ 现有项目是纯前端、无构建、资源全本地，方案不能依赖后端。</p>
+
+  <h2><span class="n">2</span>方案对比</h2>
+  <table>
+    <tr><th>方案</th><th>识别质量</th><th>隐私</th><th>落地成本</th><th>结论</th></tr>
+    <tr>
+      <td><b>A. 纯前端 OCR</b><br>Tesseract.js + WASM</td>
+      <td>中上，依赖版式与预处理</td>
+      <td><span class="tag ok">最佳</span> 截图不出设备</td>
+      <td>低，不改架构；需内置引擎与语言包</td>
+      <td><span class="tag ok">推荐 v1</span></td>
+    </tr>
+    <tr>
+      <td><b>B. 系统原生 OCR</b><br>iOS Vision / Android ML Kit</td>
+      <td>高，速度快</td>
+      <td><span class="tag ok">最佳</span></td>
+      <td>高，必须套原生壳（Capacitor/Tauri）或做快捷指令</td>
+      <td><span class="tag warn">中期可选</span></td>
+    </tr>
+    <tr>
+      <td><b>C. 后端 OCR 服务</b></td>
+      <td>高，可用商业 API</td>
+      <td><span class="tag danger">差</span> 截图上传第三方</td>
+      <td>中，需后端与密钥</td>
+      <td><span class="tag danger">不推荐</span></td>
+    </tr>
+    <tr>
+      <td><b>D. 手动 + 智能默认</b></td>
+      <td>靠人</td>
+      <td><span class="tag ok">最佳</span></td>
+      <td>极低</td>
+      <td><span class="tag">兜底</span> 所有方案的最后一环</td>
+    </tr>
+  </table>
+  <p>推荐 A 的原因：现有 PWA 不加壳就能上线，识别在浏览器内完成；配合 D 的人工确认，准确率问题被"用户核对"兜住。B 留作以后做 App 壳时的升级路径。</p>
+
+  <h2><span class="n">3</span>处理管线</h2>
+  <div class="flow">
+    <svg viewBox="0 0 760 250" role="img" aria-label="截图识别处理管线：选择截图、预处理、本地OCR、字段抽取、人工确认、写入草稿">
+      <defs>
+        <marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0 0 L8 4 L0 8 z" fill="#858C95"></path>
+        </marker>
+      </defs>
+      <g font-family="-apple-system, PingFang SC, sans-serif">
+        <rect x="10" y="60" width="104" height="56" rx="10" fill="#EBEDF1"></rect>
+        <text x="62" y="84" text-anchor="middle" font-size="13" font-weight="500" fill="#1A1D21">选择截图</text>
+        <text x="62" y="102" text-anchor="middle" font-size="11" fill="#858C95">相册 / 文件</text>
+
+        <rect x="150" y="60" width="104" height="56" rx="10" fill="#EBEDF1"></rect>
+        <text x="202" y="84" text-anchor="middle" font-size="13" font-weight="500" fill="#1A1D21">预处理</text>
+        <text x="202" y="102" text-anchor="middle" font-size="11" fill="#858C95">缩放 / 纠偏</text>
+
+        <rect x="290" y="60" width="104" height="56" rx="10" fill="#FFFFFF" stroke="rgba(26,29,33,.22)"></rect>
+        <text x="342" y="84" text-anchor="middle" font-size="13" font-weight="500" fill="#1A1D21">本地 OCR</text>
+        <text x="342" y="102" text-anchor="middle" font-size="11" fill="#858C95">Tesseract.js</text>
+
+        <rect x="430" y="60" width="104" height="56" rx="10" fill="#FFFFFF" stroke="rgba(26,29,33,.22)"></rect>
+        <text x="482" y="84" text-anchor="middle" font-size="13" font-weight="500" fill="#1A1D21">字段抽取</text>
+        <text x="482" y="102" text-anchor="middle" font-size="11" fill="#858C95">正则 + 上下文</text>
+
+        <rect x="570" y="60" width="104" height="56" rx="10" fill="#FFFFFF" stroke="rgba(26,29,33,.22)"></rect>
+        <text x="622" y="84" text-anchor="middle" font-size="13" font-weight="500" fill="#1A1D21">人工确认</text>
+        <text x="622" y="102" text-anchor="middle" font-size="11" fill="#858C95">低置信标红</text>
+
+        <rect x="570" y="168" width="104" height="56" rx="10" fill="#1A1D21"></rect>
+        <text x="622" y="192" text-anchor="middle" font-size="13" font-weight="500" fill="#F4F5F7">写入记录</text>
+        <text x="622" y="210" text-anchor="middle" font-size="11" fill="#A6ACB4">标记待补充</text>
+
+        <line x1="114" y1="88" x2="146" y2="88" stroke="#858C95" stroke-width="1.2" marker-end="url(#ar)"></line>
+        <line x1="254" y1="88" x2="286" y2="88" stroke="#858C95" stroke-width="1.2" marker-end="url(#ar)"></line>
+        <line x1="394" y1="88" x2="426" y2="88" stroke="#858C95" stroke-width="1.2" marker-end="url(#ar)"></line>
+        <line x1="534" y1="88" x2="566" y2="88" stroke="#858C95" stroke-width="1.2" marker-end="url(#ar)"></line>
+        <path d="M622 116 L622 164" stroke="#858C95" stroke-width="1.2" fill="none" marker-end="url(#ar)"></path>
+        <path d="M570 196 L196 196 L196 120" stroke="#C7362F" stroke-width="1.2" fill="none" stroke-dasharray="4 3" marker-end="url(#ar)"></path>
+        <text x="383" y="188" text-anchor="middle" font-size="11" fill="#C7362F">识别失败 / 字段缺失 → 手动填写</text>
+      </g>
+    </svg>
+  </div>
+  <p>关键点：OCR 引擎<strong>懒加载</strong>（点"截图识别"才下载，约 10–20MB），识别过程在 Worker 中跑，不阻塞页面；识别结果只作为表单预填，<strong>不自动保存</strong>。</p>
+
+  <h2><span class="n">4</span>字段抽取规则</h2>
+  <table class="rule">
+    <tr><th>字段</th><th>抽取策略</th><th>置信度与校验</th></tr>
+    <tr>
+      <td>充入电量</td>
+      <td><code>(\d+(?:\.\d+)?)\s*(?:度|kWh|千瓦时)</code>，并优先取"充电量 / 充电度数"标签附近的数字</td>
+      <td>范围 1–200 度；与金额互算单价 0.5–3.0 元/度，异常则标红</td>
+    </tr>
+    <tr>
+      <td>金额</td>
+      <td><code>(?:¥|￥|实付|金额|费用)\s*[:：]?\s*(\d+(?:\.\d+)?)</code>，取"实付"优先，避免把度数当金额</td>
+      <td>范围 0.5–500 元；与电量互算单价</td>
+    </tr>
+    <tr>
+      <td>日期</td>
+      <td><code>(\d{4})\s*[-/年.]\s*(\d{1,2})\s*[-/月.]\s*(\d{1,2})</code>；只有时分时默认取今天</td>
+      <td>缺失不报错，UI 标注"默认今天"，允许改</td>
+    </tr>
+    <tr>
+      <td>时长 / 站点</td>
+      <td><code>(\d+)\s*(?:分钟|min|小时|h)</code>、运营商关键词</td>
+      <td>可选字段，不参与核心校验</td>
+    </tr>
+    <tr>
+      <td>SOC 前后</td>
+      <td><strong>默认不识别</strong>。若截图恰好含 <code>(\d{1,3})\s*%\s*(?:→|至|-)\s*(\d{1,3})\s*%</code> 可作为候选，但标记"需核对"</td>
+      <td>来源应为车辆 App，截图识别只作参考</td>
+    </tr>
+  </table>
+  <p>核心原则：<strong>上下文优先于数字</strong>。同一屏有 6 个数字时，靠"标签词 + 位置"决定哪个是度数、哪个是金额；抽不准就不填，让用户手输。</p>
+
+  <h2><span class="n">5</span>交互流程</h2>
+  <ul>
+    <li><b>入口</b>：记一笔页顶部加「截图识别」按钮；设置页可开关。支持一次多选，进入批量补录模式。</li>
+    <li><b>识别中</b>：全屏轻提示"识别中…"，显示进度；失败可重试或手动填写。</li>
+    <li><b>确认页</b>：识别结果预填进现有表单（<code>cf_kWh</code> / <code>cf_totalCost</code> / <code>cf_date</code>），低置信字段描红并聚焦第一个；用户逐项核对。</li>
+    <li><b>保存</b>：用户点保存才写入；SOC / 里程为空时写入 <code>pendingExtra: true</code>，列表显示「待补充」角标。</li>
+  </ul>
+
+  <h2><span class="n">6</span>补充信息（SOC / 里程）闭环</h2>
+  <div class="grid2">
+    <div class="card">
+      <div class="t">本次先做</div>
+      <div class="d">「待补充」标记 + 详情页一键「补充 SOC / 里程」→ 直接打开已有编辑态。表单里 SOC / 里程保持可见，但文案提示"可在车辆 App 查看后补录"。</div>
+    </div>
+    <div class="card">
+      <div class="t">以后可做</div>
+      <div class="d">① 设置页「批量补录」入口，按时间列出待补充记录；② iOS 快捷指令 / 原生壳桥接车辆 App 数据（方案 B）。</div>
+    </div>
+  </div>
+
+  <h2><span class="n">7</span>隐私与边界</h2>
+  <ul>
+    <li>截图全程在浏览器本地处理，<strong>不上传、不存储原图</strong>；识别完成即从内存释放。</li>
+    <li>若将来改为后端 OCR，必须单独征得同意，并明确截图留存策略。</li>
+    <li>引擎与语言包需要内置到 <code>app/vendor/</code>（项目当前无 CDN 依赖，需保持一致）；首次加载体积是主要代价。</li>
+    <li>不支持 OCR 的环境（老设备 / 隐私模式限制）直接隐藏入口，保留手动填写。</li>
+  </ul>
+
+  <h2><span class="n">8</span>风险与对策</h2>
+  <table>
+    <tr><th>风险</th><th>影响</th><th>对策</th></tr>
+    <tr><td>识别错误（度数 / 金额混淆）</td><td>数据污染，且难发现</td><td>人工确认强制化 + 单价合理性校验 + 低置信标红</td></tr>
+    <tr><td>各 App 版式差异大</td><td>识别率不稳定</td><td>按"度数 / 金额 / 日期"做模式库；持续收集样本优化规则</td></tr>
+    <tr><td>中文模型体积大</td><td>首屏变慢</td><td>懒加载 + Worker + 本地缓存；识别时才下载</td></tr>
+    <tr><td>截图含敏感信息</td><td>隐私顾虑</td><td>纯前端处理，明确告知"不上传"</td></tr>
+    <tr><td>SOC / 里程缺失</td><td>电耗 / 电池分析不完整</td><td>待补充标记 + 补录入口，不阻塞记账</td></tr>
+  </table>
+
+  <h2><span class="n">9</span>落地路线</h2>
+  <div class="road">
+    <div class="step">
+      <div class="h">v1 单图识别<span>纯前端 · 已实施</span></div>
+      <p>内置 Tesseract.js + chi_sim；字段抽取 + 人工确认 + 待补充标记。不改架构，可独立上线。</p>
+    </div>
+    <div class="step">
+      <div class="h">v2 批量补录<span>效率</span></div>
+      <p>多选截图逐张识别、逐条确认；待补充记录聚合页；识别样本积累。</p>
+    </div>
+    <div class="step">
+      <div class="h">v3 原生桥接<span>体验</span></div>
+      <p>若做原生壳，用系统 OCR 替代 Tesseract，并尝试车辆 App 数据快捷指令。</p>
+    </div>
+  </div>
+
+  <div class="foot">冲充电 · 截图识别方案思考 · v2.8 冷墨分区 · v1 已实施并上线</div>
+</div>
+</body>
+</html>

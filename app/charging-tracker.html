@@ -775,6 +775,32 @@
       :root { --gutter: 16px; }
       .field label { width: 76px; }
     }
+
+    /* ---------- 13. 截图识别（OCR） ---------- */
+    #cfOcrBtn { margin-bottom: var(--sp-3); }
+    #cfOcrBtn[hidden] { display: none; }
+
+    .tag-warn { color: var(--c-warn); box-shadow: inset 0 0 0 .5px var(--c-warn); }
+
+    /* 识别中轻提示：层级介于弹层(200) 与确认框(250) 之上、Toast(300) 之下 */
+    .ocr-overlay {
+      position: fixed; inset: 0; z-index: 260; display: none;
+      place-items: center; background: var(--scrim);
+    }
+    .ocr-overlay.show { display: grid; }
+    .ocr-box {
+      width: min(320px, 86%); padding: 20px 18px 18px;
+      background: var(--c-surface); border: .5px solid var(--c-line);
+      border-radius: var(--r-card);
+    }
+    .ocr-title { font-size: var(--fs-17); font-weight: 600; }
+    .ocr-sub { margin-top: 4px; font-size: var(--fs-12); line-height: 1.5; color: var(--c-text-3); }
+    .ocr-bar { height: 4px; margin-top: 14px; border-radius: 2px; background: var(--c-fill); overflow: hidden; }
+    .ocr-bar > i { display: block; height: 100%; width: 0; background: var(--c-text); transition: width 160ms linear; }
+    .ocr-status { margin-top: 10px; font-size: var(--fs-12); color: var(--c-text-3); min-height: 16px; }
+    .ocr-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .ocr-actions:empty { display: none; }
+    .ocr-actions .btn { flex: 1; }
   </style>
 </head>
 <body>
@@ -813,6 +839,12 @@
       <input type="hidden" id="cf_vehicleId">
       <input type="hidden" id="cf_chargeType" value="fast">
       <input type="hidden" id="cf_unitPrice">
+
+      <button type="button" class="btn btn-secondary btn-block" id="cfOcrBtn" onclick="App.startOcr()" hidden>
+        <svg class="i" aria-hidden="true"><use href="#i-doc"/></svg>
+        截图识别
+      </button>
+      <p class="note-line" id="cfOcrHint" hidden>从充电小程序 / 滴滴的支付完成页截图里识别度数、金额与日期，仅在本地识别、不会上传。</p>
 
       <div class="type-cards" id="cf_chargeTypeSegment" role="group" aria-label="充电类型">
         <button type="button" class="type-card" data-val="slow" aria-pressed="false">
@@ -1002,6 +1034,17 @@
     </div>
   </div>
 
+  <!-- 截图识别轻提示 -->
+  <div class="ocr-overlay" id="ocrOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ocrTitle">
+    <div class="ocr-box">
+      <div class="ocr-title" id="ocrTitle">识别中…</div>
+      <div class="ocr-sub" id="ocrSub">首次使用需下载本地识别引擎（约 20MB），之后可离线使用</div>
+      <div class="ocr-bar"><i id="ocrBar"></i></div>
+      <div class="ocr-status" id="ocrStatus"></div>
+      <div class="ocr-actions" id="ocrActions"></div>
+    </div>
+  </div>
+
   <!-- 图标精灵 -->
   <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
     <defs>
@@ -1042,6 +1085,7 @@
   </svg>
 
   <script src="seed-data.js"></script>
+  <script src="ocr.js"></script>
   <script src="charging-tracker.js"></script>
   <script>
     if ('serviceWorker' in navigator) {

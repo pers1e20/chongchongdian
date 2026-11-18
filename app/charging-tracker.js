@@ -718,7 +718,8 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         odometer: parseFloat(c.odometer) || 0, chargeType: c.chargeType || CHARGE_TYPE.SLOW,
         kWh: parseFloat(c.kWh) || 0, unitPrice: parseFloat(c.unitPrice) || 0,
         totalCost: parseFloat(c.totalCost) || 0, socBefore: parseFloat(c.socBefore) || 0,
-        socAfter: parseFloat(c.socAfter) || 0, note: c.note || '', createdAt: Date.now()
+        socAfter: parseFloat(c.socAfter) || 0, note: c.note || '', createdAt: Date.now(),
+        pendingExtra: c.pendingExtra === true
       };
       if (!charge.totalCost && charge.kWh && charge.unitPrice) charge.totalCost = charge.kWh * charge.unitPrice;
       Store.data.charges.push(charge);
@@ -728,10 +729,11 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
     update: function (id, c) {
       var charge = Store.data.charges.find(function (x) { return x.id === id; });
       if (!charge) return null;
-      ['vehicleId', 'date', 'odometer', 'chargeType', 'kWh', 'unitPrice', 'totalCost', 'socBefore', 'socAfter', 'note']
+      ['vehicleId', 'date', 'odometer', 'chargeType', 'kWh', 'unitPrice', 'totalCost', 'socBefore', 'socAfter', 'note', 'pendingExtra']
         .forEach(function (k) { if (c[k] !== undefined) charge[k] = c[k]; });
       ['odometer', 'kWh', 'unitPrice', 'totalCost', 'socBefore', 'socAfter']
         .forEach(function (k) { charge[k] = parseFloat(charge[k]) || 0; });
+      charge.pendingExtra = !!charge.pendingExtra;
       Store.save();
       return charge;
     },
@@ -1206,6 +1208,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       Theme.init();
       this.bindEvents();
       this._heroAnim = true;
+      this.initOcr();
       this.renderAll();
       this.syncTabs();
       var self = this;
@@ -1536,7 +1539,9 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         + '<span class="rec-day"><b>' + (day < 10 ? '0' + day : day) + '</b><span>' + week + '</span></span>'
         + '<span class="rec-main">'
         + '<span class="rec-top"><span class="rec-kwh">' + Utils.fmt(c.kWh, 1) + '</span>'
-        + '<span class="rec-unit">度</span><span class="tag">' + (isFast ? '快充' : '慢充') + '</span></span>'
+        + '<span class="rec-unit">度</span><span class="tag">' + (isFast ? '快充' : '慢充') + '</span>'
+        + (c.pendingExtra ? '<span class="tag tag-warn">待补充</span>' : '')
+        + '</span>'
         + '</span>'
         + '<span class="rec-amount">¥' + Utils.fmtMoney(c.totalCost) + '</span></button>';
     },
@@ -2028,6 +2033,8 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       html += '</div>';
 
       html += '<div class="group-title">数据</div><div class="group">';
+      html += '<label class="row"><span class="row-label">截图识别</span><input type="checkbox" class="switch" id="ocrEnabled"' + (this.ocrEnabled() ? ' checked' : '') + '></label>';
+      html += '<label class="row"><span class="row-label">待补充仅标记识别记录</span><input type="checkbox" class="switch" id="ocrPendingOnly"' + (this.ocrPendingOnly() ? ' checked' : '') + '></label>';
       html += '<button class="row" onclick="App.exportData()"><span class="row-label">导出数据</span><span class="row-value">JSON</span>' + Icons.chevronRight + '</button>';
       html += '<label class="row"><span class="row-label">导入数据</span><span class="row-value">JSON</span>' + Icons.chevronRight
         + '<input type="file" id="importInput" accept=".json" style="display:none"></label>';
@@ -2040,6 +2047,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         html += '<button class="row" onclick="App.restoreImportSnapshot()"><span class="row-label">恢复导入前的数据</span><span class="row-value">' + snap.label + '</span>' + Icons.chevronRight + '</button>';
       }
       html += '</div>';
+      html += '<p class="note-line">截图识别在本地完成，截图不会上传；识别结果只作预填，需核对后保存。</p>';
 
       var sc = Sync.cfg || Sync.load();
       html += '<div class="group-title">云同步</div><div class="group">';
@@ -2103,6 +2111,18 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       if (syncSw) syncSw.addEventListener('change', function () { self.syncToggle(syncSw.checked); });
       var syncToken = document.getElementById('syncToken');
       if (syncToken) syncToken.addEventListener('change', function () { self.syncSaveToken(); });
+
+      /* 截图识别：开关与「待补充」标记范围 */
+      var ocrSw = document.getElementById('ocrEnabled');
+      if (ocrSw) ocrSw.addEventListener('change', function () {
+        try { localStorage.setItem('ev_ocr_enabled_v1', ocrSw.checked ? '1' : '0'); } catch (e) {}
+        self.syncOcrEntry(!self.editingChargeId);
+        self.toast(ocrSw.checked ? '已开启截图识别' : '已关闭截图识别', 'success');
+      });
+      var ocrPend = document.getElementById('ocrPendingOnly');
+      if (ocrPend) ocrPend.addEventListener('change', function () {
+        try { localStorage.setItem('ev_ocr_pending_only_v1', ocrPend.checked ? '1' : '0'); } catch (e) {}
+      });
     },
 
     setTheme: function (pref) {
@@ -2534,6 +2554,10 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       if (Number(c.odometer) > 0) body += '<div class="ds-cell"><div class="k">里程读数</div><div class="v">' + c.odometer + '<em>km</em></div></div>';
       if (Number(c.socBefore) > 0 && Number(c.socAfter) > 0) body += '<div class="ds-cell"><div class="k">SOC 变化</div><div class="v">' + c.socBefore + '% → ' + c.socAfter + '%</div></div>';
       body += '</div>';
+      if (c.pendingExtra) {
+        body += '<div class="ds-note"><b>待补充</b> · 这条记录缺少 SOC / 里程，可在车辆 App 查看后补录。</div>'
+          + '<button class="btn btn-secondary btn-block" style="margin-top:12px" onclick="App.editChargeFromSheet(\'' + id + '\')">补充 SOC / 里程</button>';
+      }
       var cmp = this.chargeComparison(c.id);
       if (cmp) body += '<div class="ds-hero"><div class="k">对比油车 · 本次节省</div>'
         + '<div class="v">¥' + Utils.fmtMoney(cmp.saving) + '</div>'
@@ -2573,6 +2597,8 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       if (!vehicle) { this.toast('请先添加车辆', 'warn'); this.openSettings(); return; }
       this.editingChargeId = id || null;
       this.previousTab = this.currentTab;
+      this._ocrDraft = false;
+      this._ocrBlob = null;
 
       var form = document.getElementById('chargeFormPage-form');
       form.reset();
@@ -2609,6 +2635,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         document.getElementById('chargeFormPageTitle').textContent = '记一笔';
       }
 
+      this.syncOcrEntry(!id);
       this.updatePriceHint();
 
       var page = document.getElementById('chargeFormPage');
@@ -2623,6 +2650,8 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
     closeChargePage: function (silent) {
       var page = document.getElementById('chargeFormPage');
       if (!page.classList.contains('show')) return;
+      this.hideOcrOverlay();
+      this._ocrDraft = false;
       this._closeOverlay(!!silent);
     },
 
@@ -2740,6 +2769,135 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       if (msg) msg.textContent = '';
     },
 
+    /* ============================================================
+     * 截图识别（OCR）
+     * 入口在记一笔页顶部；识别结果只作预填，保存始终由用户点击。
+     * ============================================================ */
+    /* 进度回调 + 页面卸载时释放 WASM 内存 */
+    initOcr: function () {
+      if (typeof OCR === 'undefined' || !OCR.setProgressHandler) return;
+      var self = this;
+      OCR.setProgressHandler(function (m) {
+        if (!m) return;
+        var bar = document.getElementById('ocrBar');
+        var status = document.getElementById('ocrStatus');
+        if (bar && typeof m.progress === 'number') {
+          bar.style.width = Math.max(0, Math.min(100, Math.round(m.progress * 100))) + '%';
+        }
+        if (status && m.status) status.textContent = m.status;
+      });
+      window.addEventListener('beforeunload', function () {
+        if (typeof OCR !== 'undefined') OCR.dispose();
+      });
+    },
+
+    ocrEnabled: function () {
+      try { return localStorage.getItem('ev_ocr_enabled_v1') !== '0'; } catch (e) { return false; }
+    },
+
+    /* 收敛开关：打开后只有「截图识别来源」的保存才写 pendingExtra */
+    ocrPendingOnly: function () {
+      try { return localStorage.getItem('ev_ocr_pending_only_v1') === '1'; } catch (e) { return false; }
+    },
+
+    ocrAvailable: function () {
+      return this.ocrEnabled() && typeof OCR !== 'undefined' && OCR.supported();
+    },
+
+    /* 入口显隐：编辑态不显示；开关关闭或环境不支持时隐藏 */
+    syncOcrEntry: function (show) {
+      var btn = document.getElementById('cfOcrBtn');
+      var hint = document.getElementById('cfOcrHint');
+      var on = !!show && this.ocrAvailable();
+      if (btn) btn.hidden = !on;
+      if (hint) hint.hidden = !on;
+    },
+
+    startOcr: function () {
+      if (!this.ocrAvailable()) {
+        this.toast('当前环境不支持截图识别，已保留手动填写', 'warn');
+        return;
+      }
+      var self = this;
+      this.showOcrOverlay({ title: '识别中…', status: '正在加载本地识别引擎' });
+      OCR.pickAndRecognize().then(function (r) {
+        self._ocrBlob = r.blob || null;
+        return OCR.extractFields(r.text, r.confidence);
+      }).then(function (fields) {
+        self.applyOcrResult(fields);
+      }).catch(function (err) {
+        self.onOcrFailed(err);
+      });
+    },
+
+    /* 识别结果 → 预填表单；低置信只描红不填值 */
+    applyOcrResult: function (fields) {
+      this.hideOcrOverlay();
+      this._ocrDraft = true;
+      if (!fields || (!fields.kWh && !fields.totalCost && !fields.date)) {
+        this.toast('没有识别到可用信息，请手动填写', 'warn');
+        return;
+      }
+      var res = OCR.annotateDom(fields);
+      var msgs = [];
+      if (res.warned && res.warned.length) msgs.push('请核对：' + res.warned.join('、'));
+      if (fields.date && fields.date.warn) msgs.push(fields.date.warn);
+      var msg = document.getElementById('cfFormMsg');
+      if (msg && msgs.length) msg.textContent = msgs.join('；');
+      this.updatePriceHint();
+      this.toast('已识别并预填，请核对后保存', 'success');
+    },
+
+    showOcrOverlay: function (opts) {
+      var layer = document.getElementById('ocrOverlay');
+      if (!layer) return;
+      var title = document.getElementById('ocrTitle');
+      var status = document.getElementById('ocrStatus');
+      var bar = document.getElementById('ocrBar');
+      var actions = document.getElementById('ocrActions');
+      if (title) title.textContent = (opts && opts.title) || '识别中…';
+      if (status) status.textContent = (opts && opts.status) || '';
+      if (bar) bar.style.width = '0';
+      if (actions) actions.innerHTML = '';
+      layer.classList.add('show');
+      layer.setAttribute('aria-hidden', 'false');
+    },
+
+    hideOcrOverlay: function () {
+      var layer = document.getElementById('ocrOverlay');
+      if (!layer) return;
+      layer.classList.remove('show');
+      layer.setAttribute('aria-hidden', 'true');
+    },
+
+    /* 失败：不写库，提供重试与转手动 */
+    onOcrFailed: function (err) {
+      var layer = document.getElementById('ocrOverlay');
+      if (!layer) { this.toast('识别失败，请手动填写', 'error'); return; }
+      var title = document.getElementById('ocrTitle');
+      var status = document.getElementById('ocrStatus');
+      var bar = document.getElementById('ocrBar');
+      var actions = document.getElementById('ocrActions');
+      if (title) title.textContent = '识别失败';
+      if (status) status.textContent = (err && err.message) || '没有识别到内容';
+      if (bar) bar.style.width = '0';
+
+      var self = this;
+      if (actions && !actions.childNodes.length) {
+        actions.innerHTML = '<button type="button" class="btn btn-secondary" id="ocrRetryBtn">重试</button>'
+          + '<button type="button" class="btn btn-primary" id="ocrManualBtn">手动填写</button>';
+        document.getElementById('ocrRetryBtn').onclick = function () {
+          var blob = self._ocrBlob;
+          if (!blob) { self.hideOcrOverlay(); return; }
+          self.showOcrOverlay({ title: '识别中…', status: '正在重新识别' });
+          OCR.recognize(blob).then(function (r) {
+            self.applyOcrResult(OCR.extractFields(r.text, r.confidence));
+          }).catch(function (e2) { self.onOcrFailed(e2); });
+        };
+        document.getElementById('ocrManualBtn').onclick = function () { self.hideOcrOverlay(); };
+      }
+    },
+
     saveCharge: function () {
       var kWhEl = document.getElementById('cf_kWh');
       var costEl = document.getElementById('cf_totalCost');
@@ -2772,6 +2930,14 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         socAfter: document.getElementById('cf_socAfter').value,
         note: document.getElementById('cf_note').value
       };
+
+      /* SOC / 里程缺失时打「待补充」标记；收敛开关打开后只标记截图识别来源 */
+      var socMissing = !(parseFloat(data.socBefore) > 0) || !(parseFloat(data.socAfter) > 0);
+      var odoMissing = !(parseFloat(data.odometer) > 0);
+      var pending = socMissing || odoMissing;
+      if (pending && this.ocrPendingOnly() && !this._ocrDraft) pending = false;
+      data.pendingExtra = pending;
+      this._ocrDraft = false;
 
       if (this.editingChargeId) {
         ChargeMgr.update(this.editingChargeId, data);

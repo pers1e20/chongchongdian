@@ -163,6 +163,7 @@ python3 -m http.server 8000
 - ⏳ **仍未推送**：commit `a346894` 在本地 `main` 上尚未 push 到 `origin/main`。原因：本机 git 无 GitHub 凭据（无 PAT、无 `gh` CLI、keychain 无条目），且 GitHub 插件连接器的 MCP server 需在**新开的会话**中才会加载（授权时提示「Start a new conversation before retrying this service」）。
 - 🔑 部署路径任选其一：(1) 新开一个会话，用已授权的 GitHub 插件推送；(2) 提供一枚带 `repo`/Contents:Write 权限的 GitHub PAT，配置 git 凭据后立即推送。
 - 💣 安全提醒：过往令牌已明文出现在对话中，建议去 GitHub 后台撤销并轮换；同步用令牌应只给 `gist` 最小权限并定期更换；部署令牌与同步令牌分开管理。
+- ✅ **截图识别（OCR）v1 已落地**（2026-11-18）：`app/ocr.js` + `app/vendor/tesseract/`（Tesseract.js 5.1.1 + chi_sim，本地内置、懒加载）；记一笔页「截图识别」入口 → 预填 + 低置信描红 → 人工确认保存；SOC/里程缺失写 `pendingExtra`，列表角标 + 详情页补录。校验 `docs/ocr-check.mjs` 31 项，form/flow/sync/mobile 四套回归全过。
 
 ---
 
