@@ -207,39 +207,39 @@
     .nav-fill { flex: 1; }
 
     .tabbar {
-      position: fixed; left: 50%; bottom: 0;
+      position: fixed; left: 50%;
+      bottom: calc(14px + env(safe-area-inset-bottom));
       transform: translateX(-50%);
-      width: 100%; max-width: var(--page-max); height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+      width: calc(100% - 40px); max-width: 460px; height: var(--tabbar-h);
       display: flex; align-items: center; justify-content: space-around;
-      padding: 0 6px env(safe-area-inset-bottom); z-index: 50;
+      padding: 0 6px; z-index: 50;
       background: var(--c-surface);
-      border-top: .5px solid var(--c-line);
+      border: .5px solid var(--c-line);
+      border-radius: var(--r-capsule);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, .14);
     }
-    .tab-item {
-      position: relative; z-index: 1;
-      flex: 1; height: 52px; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 2px;
-      color: var(--c-text-3); border-radius: 18px;
+    .tab-item, .tab-add, .tab-setting {
+      flex: 1; height: 50px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 3px;
+      color: var(--c-text-3); border-radius: 16px;
       transition: color var(--dur-2) var(--ease);
     }
-    .tab-item .i { width: 23px; height: 23px; }
-    .tab-label { font-size: var(--fs-11); font-weight: 500; }
+    .tab-item .i, .tab-setting .i { width: 22px; height: 22px; }
+    .tab-label { font-size: var(--fs-11); font-weight: 500; line-height: 1; }
     .tab-item.active { color: var(--c-text); }
     .tab-item.active .tab-label { font-weight: 600; }
     .tab-item .ico-on { display: none; }
     .tab-item.active .ico-on { display: block; }
     .tab-item.active .ico-off { display: none; }
-    .tab-add {
-      position: relative; z-index: 2;
-      width: 48px; height: 48px; flex-shrink: 0; margin: 0 8px;
-      display: grid; place-items: center; border-radius: 50%;
-      background: var(--c-text); color: var(--c-bg);
+    /* 记一笔：胶囊内普通一项，浅圆底加号，不再凸起打断栏体 */
+    .tab-add-icon {
+      display: grid; place-items: center;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--c-fill); color: var(--c-text);
       transition: transform var(--dur-1) var(--ease);
     }
-    .tab-add:active { transform: scale(.94); }
-    .tab-add .i { width: 24px; height: 24px; }
-    .tab-setting { color: var(--c-text-3); }
-    .tab-setting .i { width: 22px; height: 22px; }
+    .tab-add:active .tab-add-icon { transform: scale(.9); }
+    .tab-add .i { width: 17px; height: 17px; }
 
     .action-bar {
       position: fixed; left: 50%; transform: translateX(-50%); bottom: 0;
@@ -802,7 +802,6 @@
 
     /* ---------- 12. 响应式 ---------- */
     @media (min-width: 600px) {
-      .tabbar { width: 560px; }
       .sheet { border-radius: var(--r-sheet) var(--r-sheet) 0 0; }
     }
     @media (max-width: 359px) {
@@ -935,9 +934,10 @@
       <span class="tab-label">记录</span>
     </button>
     <button class="tab-add" onclick="App.openChargePage()" aria-label="记一笔">
-      <svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>
+      <span class="tab-add-icon"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg></span>
+      <span class="tab-label">记一笔</span>
     </button>
-    <button class="tab-item tab-setting" onclick="App.openSettings()" aria-label="设置">
+    <button class="tab-setting" onclick="App.openSettings()" aria-label="设置">
       <svg class="i" aria-hidden="true"><use href="#i-gear"/></svg>
       <span class="tab-label">设置</span>
     </button>

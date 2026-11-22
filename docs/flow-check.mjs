@@ -108,7 +108,9 @@ await reload();
 section('1. 首屏与空态');
 check('默认落在统计', (await ev("App.currentTab")) === 'stats');
 check('底栏含统计/记录/记一笔/设置四项',
-  (await ev("(function(){var t=document.querySelectorAll('.tabbar .tab-item').length;return t===3&&!!document.querySelector('.tab-add')&&!!document.querySelector('.tab-setting');})()")));
+  (await ev("(function(){var t=document.querySelectorAll('.tabbar .tab-item').length;return t===2&&!!document.querySelector('.tab-add .tab-label')&&!!document.querySelector('.tab-setting .tab-label');})()")));
+check('底栏为悬浮胶囊（离底+圆角）', await ev("(function(){var s=getComputedStyle(document.querySelector('.tabbar'));return parseFloat(s.bottom)>4&&parseFloat(s.borderTopLeftRadius)>20;})()"));
+check('记一笔不凸起（栏内等高普通项）', await ev("(function(){var a=document.querySelector('.tab-add'),b=document.querySelector('.tab-item');return Math.abs(parseFloat(getComputedStyle(a).height)-parseFloat(getComputedStyle(b).height))<=2&&parseFloat(getComputedStyle(a).borderRadius)<30;})()"));
 check('底栏已去掉背景块', !(await ev("!!document.querySelector('.tab-indicator')")));
 check('统计页选中态用实心图标', await ev("(function(){var e=document.querySelector('.tab-item.active .ico-on');return !!e&&getComputedStyle(e).display!=='none';})()"));
 check('顶部已沉浸：无页面标题', !(await ev("!!document.querySelector('#panel-stats .nav-heading,#panel-records .nav-heading,.tab-panel .nav')")));
