@@ -118,8 +118,10 @@ await wait(200);
 ok('空度数报错', (await ev("document.getElementById('cfFormMsg').textContent")) === '请输入充电度数');
 await ev("document.getElementById('cf_date').value='" + y + "';document.getElementById('cf_kWh').value='40';document.getElementById('cf_totalCost').value='30';App.saveCharge()");
 await wait(400);
-ok('保存后表单保留（连续记账）', await ev("document.getElementById('chargeFormPage').classList.contains('show')"));
+ok('保存后表单已关闭', !(await ev("document.getElementById('chargeFormPage').classList.contains('show')")));
+ok('保存后跳转到记录页', (await ev("App.currentTab")) === 'records');
 ok('保存后表单已清空', (await ev("document.getElementById('cf_kWh').value")) === '');
+ok('保存 toast 文案', (await ev("(function(){var t=document.querySelector('.toast');return t?t.textContent:'';})()")).includes('充电数据已保存'));
 
 console.log('7. 车辆页 / 设置页');
 await ev("App.openVehicleModal()");

@@ -82,21 +82,33 @@ console.log('3. 真引擎识别（375px）');
 const b64 = readFileSync(SHOT).toString('base64');
 await ev(`window.__shotB64='${b64}';'ok'`);
 await ev("window.__shotBlob=new Blob([Uint8Array.from(atob(window.__shotB64),function(c){return c.charCodeAt(0);})],{type:'image/jpeg'});'ok'");
-/* 走真实链路：点击入口 → 选图 → 显示识别层 → 识别 */
+/* 走真实链路：点击入口 → 选图 → 展示原图+扫描动效 → 识别 → 确认页 */
 await ev("OCR.pickImage=function(){return Promise.resolve(window.__shotBlob);};App.startOcr();'started'");
 const mid = await ev("({show:document.getElementById('ocrOverlay').classList.contains('show'),"
-  + "spin:!document.getElementById('ocrSpinner').hidden})");
+  + "scan:document.getElementById('ocrScanView').classList.contains('active'),"
+  + "shot:!!document.getElementById('ocrShot').getAttribute('src'),"
+  + "line:!!document.querySelector('.ocr-scanline')})");
 ok('选图后显示识别层', mid.show === true, JSON.stringify(mid));
-ok('识别中显示旋转动画', mid.spin === true, JSON.stringify(mid));
-let filled = false;
-for (let i = 0; i < 40 && !filled; i++) {
-  if ((await ev("document.getElementById('cf_totalCost').value")) === '24.07') filled = true;
+ok('识别中显示扫描视图', mid.scan === true, JSON.stringify(mid));
+ok('识别中展示所选原图', mid.shot === true, JSON.stringify(mid));
+ok('识别中有扫描动效', mid.line === true, JSON.stringify(mid));
+/* 等确认页出现 */
+let confirmed = false;
+for (let i = 0; i < 40 && !confirmed; i++) {
+  if (await ev("document.getElementById('ocrResultView').classList.contains('active')")) confirmed = true;
   else await wait(200);
 }
-ok('真引擎识别完成预填', filled === true);
+ok('真引擎识别后进入确认页', confirmed === true);
+ok('确认页展示原图', await ev("!!document.getElementById('ocrPreview').getAttribute('src')"));
+ok('确认页电量可编辑且为 35.698', (await ev("document.getElementById('ocrF_kWh').value")) === '35.698');
+ok('确认页金额可编辑且为 24.07', (await ev("document.getElementById('ocrF_totalCost').value")) === '24.07');
+/* 点填入表单 */
+await ev("document.getElementById('ocrCommitBtn').click()");
+await wait(250);
+ok('真引擎识别完成预填', (await ev("document.getElementById('cf_totalCost').value")) === '24.07');
 ok('充电量 35.698 已预填', (await ev("document.getElementById('cf_kWh').value")) === '35.698');
 ok('金额 24.07 已预填', (await ev("document.getElementById('cf_totalCost').value")) === '24.07');
-ok('识别层已关闭', !(await ev("document.getElementById('ocrOverlay').classList.contains('show')")));
+ok('填入后识别层已关闭', !(await ev("document.getElementById('ocrOverlay').classList.contains('show')")));
 ok('识别不自动保存', (await ev("(function(){try{return (JSON.parse(localStorage.getItem('ev_charging_data_v1')||'{}').charges||[]).length;}catch(e){return 0;}})()")) === beforeCount);
 
 console.log('4. 小图放大兜底');
@@ -108,6 +120,14 @@ await ev("window.__smallBlob=createImageBitmap(window.__shotBlob).then(function(
   + "window.__smallBlob.then(function(b){window.__run2=App.runOcr(b);});'started'");
 const r4 = await ev("(window.__run2||Promise.resolve()).then(function(){return 'done';},function(e){return 'err:'+((e&&e.message)||e);})");
 ok('小图识别未抛错', r4 === 'done', String(r4));
+let smallOk = false;
+for (let i = 0; i < 30 && !smallOk; i++) {
+  if (await ev("document.getElementById('ocrResultView').classList.contains('active')")) smallOk = true;
+  else await wait(200);
+}
+ok('小图进入确认页', smallOk === true);
+ok('小图确认页金额仍为 24.07', (await ev("document.getElementById('ocrF_totalCost').value")) === '24.07');
+await ev("document.getElementById('ocrCommitBtn').click()");
 await wait(200);
 ok('小图金额仍为 24.07', (await ev("document.getElementById('cf_totalCost').value")) === '24.07');
 

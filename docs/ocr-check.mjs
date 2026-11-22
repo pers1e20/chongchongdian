@@ -87,7 +87,7 @@ await wait(300);
 ok('识别入口在表单底部、保存按钮上方', await ev("(function(){var b=document.getElementById('cfOcrBtn');return !!b&&b.previousElementSibling&&b.previousElementSibling.classList.contains('fcard')&&b.nextElementSibling&&b.nextElementSibling.classList.contains('action-bar');})()"));
 ok('识别入口高度不低于 56px', await ev("document.getElementById('cfOcrBtn').getBoundingClientRect().height>=56"));
 
-console.log('3. 识别预填（mock，不自动保存）');
+console.log('3. 识别确认页 → 预填（mock，不自动保存）');
 const before = await ev("window.__charges().length");
 /* 先验证「点了就选图、未选中不弹识别层」 */
 await ev("window.__pickCalled=false;OCR.pickImage=function(){window.__pickCalled=true;return new Promise(function(){});};App.startOcr()");
@@ -98,11 +98,30 @@ await ev("OCR.pickImage=function(){return Promise.resolve(new Blob(['x'],{type:'
   + "OCR._prepareImpl=function(f){return Promise.resolve(f);};"
   + "OCR._recognizeImpl=function(){return Promise.resolve({text:'充电量 42.5 度\\n实付 ¥30.00\\n2026-11-18 12:30',confidence:92});};");
 await ev("App.startOcr()");
-await wait(400);
+await wait(450);
+/* 识别成功后先进确认页，不直接填表 */
+ok('识别后显示确认页', await ev("document.getElementById('ocrResultView').classList.contains('active')"));
+ok('确认页展示原图', await ev("!!document.getElementById('ocrPreview').getAttribute('src')"));
+ok('确认页列出可编辑电量字段', await ev("!!document.getElementById('ocrF_kWh')&&document.getElementById('ocrF_kWh').value==='42.5'"));
+ok('确认页列出可编辑金额字段', await ev("!!document.getElementById('ocrF_totalCost')"));
+ok('确认页有「填入表单」按钮', await ev("!!document.getElementById('ocrCommitBtn')"));
+ok('确认页有「重新识别」按钮', await ev("!!document.getElementById('ocrRescanBtn')"));
+ok('确认页有「手动填写」按钮', await ev("!!document.getElementById('ocrManualBtn2')"));
+/* 点原图可放大核验 */
+await ev("App.openOcrLightbox()");
+await wait(120);
+ok('点原图打开大图核验', await ev("document.getElementById('ocrLightbox').classList.contains('show')&&!!document.getElementById('ocrLightboxImg').getAttribute('src')"));
+await ev("App.closeOcrLightbox()");
+await wait(120);
+ok('关闭大图核验层', !(await ev("document.getElementById('ocrLightbox').classList.contains('show')")));
+ok('确认前未预填表单', (await ev("document.getElementById('cf_kWh').value")) === '');
+/* 点「填入表单」后才预填 */
+await ev("document.getElementById('ocrCommitBtn').click()");
+await wait(250);
 ok('度数已预填', (await ev("document.getElementById('cf_kWh').value")) === '42.5');
 ok('金额已预填', (await ev("document.getElementById('cf_totalCost').value")) === '30');
 ok('日期已预填', (await ev("document.getElementById('cf_date').value")) === '2026-11-18');
-ok('识别层已关闭', !(await ev("document.getElementById('ocrOverlay').classList.contains('show')")));
+ok('填入后识别层已关闭', !(await ev("document.getElementById('ocrOverlay').classList.contains('show')")));
 ok('预填不自动保存', (await ev("window.__charges().length")) === before);
 await ev("OCR._prepareImpl=null;OCR._recognizeImpl=null;");
 
@@ -245,7 +264,39 @@ await wait(400);
 const cancelShown = await ev("document.getElementById('ocrOverlay').classList.contains('show')");
 ok('取消选择不显示失败层', cancelShown === false);
 
-console.log('13. 控制台错误');
+console.log('13. 确认页交互与长文本清洗');
+/* 值清洗：长串/单位/多小数点 → 提取首个合法数字 */
+ok('清洗：带单位长串', (await ev("App.cleanOcrValue('kWh','35.698度度度充电完成')")) === '35.698');
+ok('清洗：千分位金额', (await ev("App.cleanOcrValue('totalCost','¥1,234.56元')")) === '1');
+ok('清洗：合法数字原样', (await ev("App.cleanOcrValue('totalCost','24.07')")) === '24.07');
+ok('清洗：日期格式校验', (await ev("App.cleanOcrValue('date','2026-11-18 12:30')")) === '');
+ok('清洗：合法日期保留', (await ev("App.cleanOcrValue('date','2026-11-18')")) === '2026-11-18');
+/* 端到端：确认页填长串 → 填入表单 → 输入框拿到合法值 */
+await ev("App.hideOcrOverlay();App.openChargePage();");
+await wait(250);
+await ev("App.showOcrResult({kWh:{value:'35.698度度',confidence:0.9,level:'high'},"
+  + "totalCost:{value:'24.07元',confidence:0.9,level:'high'},"
+  + "date:{value:'2026-11-18',confidence:0.9,level:'high'}},new Blob(['x'],{type:'image/png'}))");
+await wait(150);
+ok('确认页可编辑框已清洗长串', (await ev("document.getElementById('ocrF_kWh').value")) === '35.698');
+ok('确认页金额框已清洗单位', (await ev("document.getElementById('ocrF_totalCost').value")) === '24.07');
+/* number 输入框天然拒绝长串：塞入非法值后 value 为空，提交不会污染表单 */
+await ev("document.getElementById('ocrF_kWh').value='35.698度度'");
+ok('number 框拒绝长串', (await ev("document.getElementById('ocrF_kWh').value")) === '');
+await ev("document.getElementById('ocrCommitBtn').click()");
+await wait(200);
+ok('表单未被长串污染', (await ev("document.getElementById('cf_kWh').value")) === '');
+ok('表单输入框无 badInput', (await ev("document.getElementById('cf_kWh').validity.badInput")) === false);
+await ev("App.closeChargePage()");
+await wait(200);
+/* 手动填写按钮 */
+await ev("App.showOcrResult({kWh:{value:'40',confidence:0.9,level:'high'}},new Blob(['x'],{type:'image/png'}))");
+await wait(150);
+await ev("document.getElementById('ocrManualBtn2').click()");
+await wait(150);
+ok('确认页「手动」关闭识别层', !(await ev("document.getElementById('ocrOverlay').classList.contains('show')")));
+
+console.log('14. 控制台错误');
 const errs = await ev("(window.__errs||[]).join(' | ')");
 ok('无未捕获错误' + (errs ? '：' + errs : ''), !errs);
 

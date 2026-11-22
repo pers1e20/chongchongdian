@@ -107,11 +107,11 @@ await reload();
 
 section('1. 首屏与空态');
 check('默认落在统计', (await ev("App.currentTab")) === 'stats');
-check('底栏顺序 统计 → 记录',
-  (await ev("[...document.querySelectorAll('.tab-item')].map(b=>b.dataset.tab).join(',')")) === 'stats,records');
+check('底栏含统计/记录/记一笔/设置四项',
+  (await ev("(function(){var t=document.querySelectorAll('.tabbar .tab-item').length;return t===3&&!!document.querySelector('.tab-add')&&!!document.querySelector('.tab-setting');})()")));
 check('底栏已去掉背景块', !(await ev("!!document.querySelector('.tab-indicator')")));
 check('统计页选中态用实心图标', await ev("(function(){var e=document.querySelector('.tab-item.active .ico-on');return !!e&&getComputedStyle(e).display!=='none';})()"));
-check('统计页标题为「统计」', (await ev("document.querySelector('#panel-stats .nav-heading').textContent")) === '统计');
+check('顶部已沉浸：无页面标题', !(await ev("!!document.querySelector('#panel-stats .nav-heading,#panel-records .nav-heading,.tab-panel .nav')")));
 await click("App.switchTab('records')", 450);
 check('记录页显示「还没有车辆」', (await ev("document.getElementById('panel-records').innerText")).includes('还没有车辆'));
 check('记录列表为空', (await ev("document.querySelectorAll('.record-row').length")) === 0);
@@ -137,7 +137,7 @@ check('currentVehicleId 指向新车', s1 && s1.settings.currentVehicleId === s1
 check('车辆表单已关闭', !(await ev("document.getElementById('vehicleFormPage').classList.contains('show')")));
 check('设置页出现该车', (await ev("document.getElementById('settingsBody').innerText")).includes('验收车'));
 await click("App.closeSettings()", 400);
-check('记录页标题为「记录」', (await ev("document.querySelector('#panel-records .nav-heading').textContent")) === '记录');
+check('记录页有筛选工具行', await ev("!!document.querySelector('#panel-records .rec-filter-btn')"));
 await click("App.switchTab('stats')", 400);
 check('统计页工具栏显示车名', (await ev("document.querySelector('#panel-stats .toolbar-meta').textContent")).includes('验收车'));
 await click("App.switchTab('records')", 400);
@@ -149,9 +149,10 @@ await ev("document.getElementById('cf_kWh').value='40';document.getElementById('
 await click("document.querySelector('#chargeFormPage .nav-btn[type=submit]').click()", 450);
 let s2 = await storage();
 check('记录已写入', s2 && s2.charges.length === 1, JSON.stringify(s2 && s2.charges.length));
-check('保存后表单保留（连续记账）', await ev("document.getElementById('chargeFormPage').classList.contains('show')"));
+check('保存后表单已关闭', !(await ev("document.getElementById('chargeFormPage').classList.contains('show')")));
+check('保存后跳转到记录页', (await ev("App.currentTab")) === 'records');
 check('列表已刷新为 1 条', (await ev("document.querySelectorAll('.record-row').length")) === 1);
-await click("App.closeChargePage()", 350);
+check('新记录带闪烁定位标记', await ev("!!document.querySelector('.record-row.flash, .record-row[data-id]')"));
 await click("document.querySelector('.record-row').click()", 350);
 check('详情弹层打开', await ev("document.getElementById('sheetLayer').classList.contains('show')"));
 await click("document.querySelector('#sheetActions .icon-btn').click()", 400);
@@ -233,7 +234,8 @@ await click("App.openYearSheet()", 300);
 check('年份弹层含 全部 + 2026',
   (await ev("document.querySelectorAll('#sheetBody .row').length")) === 2);
 await click("App.setStatsYear('2026')", 400);
-check('2026 年 Hero', (await ev("document.querySelector('.hero-label').textContent")).includes('2026 年'));
+check('年份切到 2026', (await ev("document.querySelector('#panel-stats .menu-btn').textContent")).includes('2026'));
+check('Hero 不再显示同比与摘要小字', await ev("(function(){var h=document.querySelector('.hero');return !h.querySelector('.delta')&&!h.querySelector('.hero-meta')&&!h.querySelector('.hero-label');})()"));
 await click("App.setStatsTrend('kwh')", 350);
 check('度数趋势可切换', (await ev("document.querySelector('.card-title').textContent")) === '月度充入度数');
 

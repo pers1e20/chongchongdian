@@ -164,7 +164,7 @@
       margin: 0 auto;
       padding-bottom: calc(96px + env(safe-area-inset-bottom));
     }
-    .tab-panel { display: none; }
+    .tab-panel { display: none; padding-top: env(safe-area-inset-top); }
     .tab-panel.active { display: block; animation: panelIn 220ms var(--ease-out); }
     .body { padding: 0 var(--gutter); }
 
@@ -192,10 +192,6 @@
     .nav-title-btn span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .nav-title-btn .i { width: 15px; height: 15px; color: var(--c-text-3); }
     .nav-title-btn:active { background: var(--c-fill); }
-    .nav-heading {
-      margin-left: 4px; font-size: 20px; font-weight: 600;
-      letter-spacing: -.02em; line-height: 1; color: var(--c-text);
-    }
     .nav-btn {
       width: 44px; height: 44px; display: grid; place-items: center;
       border-radius: var(--r-ctrl); color: var(--c-text); flex-shrink: 0;
@@ -242,6 +238,8 @@
     }
     .tab-add:active { transform: scale(.94); }
     .tab-add .i { width: 24px; height: 24px; }
+    .tab-setting { color: var(--c-text-3); }
+    .tab-setting .i { width: 22px; height: 22px; }
 
     .action-bar {
       position: fixed; left: 50%; transform: translateX(-50%); bottom: 0;
@@ -360,6 +358,21 @@
     .note-line { margin-top: var(--sp-2); padding: 0 2px; font-size: var(--fs-12); line-height: 1.5; color: var(--c-text-3); }
 
     /* ---------- 6. 记录页 ---------- */
+    .rec-tools {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 12px; padding: var(--sp-3) 0 2px; min-height: 40px;
+    }
+    .rec-filter-btn {
+      display: inline-flex; align-items: center; gap: 4px; height: 32px;
+      padding: 0 10px; border-radius: 9px; background: var(--c-fill);
+      font-size: var(--fs-13); color: var(--c-text-2); position: relative;
+    }
+    .rec-filter-btn .i { width: 15px; height: 15px; }
+    .rec-filter-btn .dot {
+      position: absolute; top: 7px; right: 7px; width: 5px; height: 5px;
+      border-radius: 50%; background: var(--c-text);
+    }
+
     .summary {
       display: flex; align-items: center; gap: 10px;
       width: 100%; margin: var(--sp-3) 0 0; padding: 10px 14px; min-height: 56px;
@@ -394,6 +407,12 @@
     .stagger .record-row {
       animation: rowIn var(--dur-4) var(--ease-out) both;
       animation-delay: calc(var(--i, 0) * 22ms);
+    }
+    .record-row.flash { animation: rowFlash 1.4s var(--ease-out) both; }
+    @keyframes rowFlash {
+      0%, 100% { background: transparent; }
+      12%, 45% { background: var(--c-surface-2); }
+      28%, 60% { background: transparent; }
     }
     .rec-icon {
       width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
@@ -530,8 +549,19 @@
     .field input[type="date"] { min-height: 44px; }
     .field .suffix { font-size: var(--fs-13); color: var(--c-text-3); flex-shrink: 0; }
     .field.invalid { box-shadow: inset 0 0 0 1.5px var(--c-danger); border-radius: var(--r-ctrl); }
-    .field.invalid label, .field.invalid input { color: var(--c-danger); }
-    .form-msg { margin: 8px 2px 0; font-size: var(--fs-12); color: var(--c-danger); }
+    .form-msg {
+      display: flex; align-items: center; gap: 7px;
+      margin: 14px 0 2px; padding: 10px 12px;
+      background: var(--c-fill); border-radius: 10px;
+      font-size: var(--fs-13); color: var(--c-danger);
+    }
+    .form-msg::before {
+      content: '!'; flex-shrink: 0;
+      width: 16px; height: 16px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: var(--c-danger); color: var(--c-surface);
+      font-size: 11px; font-weight: 700;
+    }
     .form-msg:empty { display: none; }
 
     .collapse { display: none; }
@@ -797,18 +827,74 @@
 
     .tag-warn { color: var(--c-warn); box-shadow: inset 0 0 0 .5px var(--c-warn); }
 
-    /* 识别中轻提示：层级介于弹层(200) 与确认框(250) 之上、Toast(300) 之下 */
+    /* 截图识别：层级介于弹层(200) 与确认框(250) 之上、Toast(300) 之下 */
     .ocr-overlay {
       position: fixed; inset: 0; z-index: 260; display: none;
-      place-items: center; background: var(--scrim);
+      place-items: center; background: var(--scrim); padding: 20px;
     }
     .ocr-overlay.show { display: grid; }
     .ocr-box {
-      width: min(320px, 86%); padding: 20px 18px 18px;
-      background: var(--c-surface); border: .5px solid var(--c-line);
-      border-radius: var(--r-card);
+      width: min(360px, 100%); max-height: 88vh; overflow-y: auto;
+      padding: 18px; background: var(--c-surface);
+      border: .5px solid var(--c-line); border-radius: var(--r-card);
     }
-    .ocr-title { font-size: var(--fs-17); font-weight: 600; display: flex; align-items: center; }
+    .ocr-view { display: none; }
+    .ocr-view.active { display: block; }
+
+    /* 扫描动效视图 */
+    .ocr-scan-frame {
+      position: relative; width: 100%; max-height: 46vh; overflow: hidden;
+      border-radius: 12px; background: var(--c-fill);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ocr-scan-img { display: block; width: 100%; max-height: 46vh; object-fit: contain; }
+    .ocr-scanline {
+      position: absolute; left: 0; right: 0; top: 0; height: 3px;
+      background: linear-gradient(90deg, transparent, var(--c-text) 18%, var(--c-text) 82%, transparent);
+      box-shadow: 0 0 12px 2px var(--c-text);
+      opacity: .85; animation: ocrScan 1.8s var(--ease-in-out) infinite;
+      pointer-events: none;
+    }
+    @keyframes ocrScan { 0% { top: 2%; } 50% { top: 96%; } 100% { top: 2%; } }
+    .ocr-scan-caption {
+      margin-top: 14px; text-align: center; font-size: var(--fs-15);
+      font-weight: 500; color: var(--c-text-2);
+    }
+    .ocr-scan-caption .ocr-dots::after { content: ''; animation: ocrDots 1.2s steps(4, end) infinite; }
+    @keyframes ocrDots { 0% { content: ''; } 25% { content: '·'; } 50% { content: '··'; } 75% { content: '···'; } }
+    .ocr-progress { height: 3px; margin-top: 12px; border-radius: 2px; background: var(--c-fill); overflow: hidden; }
+    .ocr-progress > i { display: block; height: 100%; width: 0; background: var(--c-text); transition: width 160ms linear; }
+
+    /* 结果确认视图 */
+    .ocr-result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .ocr-title { font-size: var(--fs-17); font-weight: 600; }
+    .ocr-preview {
+      width: 100%; max-height: 26vh; object-fit: contain; display: block;
+      margin-top: 12px; border-radius: 10px; background: var(--c-fill); cursor: zoom-in;
+    }
+    .ocr-preview-hint { margin-top: 5px; font-size: var(--fs-12); color: var(--c-text-3); text-align: center; }
+    .ocr-fields { margin-top: 16px; }
+    .ocr-field-row { display: flex; align-items: center; gap: 10px; min-height: 50px; }
+    .ocr-field-row + .ocr-field-row { border-top: .5px solid var(--c-line); }
+    .ocr-field-row label { width: 72px; flex-shrink: 0; font-size: var(--fs-15); color: var(--c-text-2); }
+    .ocr-field-row input {
+      flex: 1; min-width: 0; height: 40px; padding: 0 10px; text-align: right;
+      border: 0; border-radius: 8px; background: var(--c-fill); outline: 0;
+      font-size: var(--fs-16); color: var(--c-text); font-variant-numeric: tabular-nums;
+    }
+    .ocr-field-row input:focus { box-shadow: inset 0 0 0 1.5px var(--c-text); }
+    .ocr-field-row input.low { box-shadow: inset 0 0 0 1.5px var(--c-warn); }
+    .ocr-field-row .suffix { width: 20px; flex-shrink: 0; font-size: var(--fs-12); color: var(--c-text-3); }
+    .ocr-field-flag { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .ocr-field-flag.high { background: var(--c-ok); }
+    .ocr-field-flag.medium { background: var(--c-warn); }
+    .ocr-field-flag.low { background: var(--c-danger); }
+    .ocr-result-note { margin-top: 12px; font-size: var(--fs-12); line-height: 1.5; color: var(--c-text-3); }
+    .ocr-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .ocr-actions:empty { display: none; }
+    .ocr-actions .btn { flex: 1; }
+
+    /* 失败态（沿用原 ID 供校验脚本定位） */
     .ocr-spinner {
       display: inline-block; width: 14px; height: 14px; margin-right: 8px;
       border: 2px solid var(--c-line); border-top-color: var(--c-text);
@@ -820,9 +906,14 @@
     .ocr-bar { height: 4px; margin-top: 14px; border-radius: 2px; background: var(--c-fill); overflow: hidden; }
     .ocr-bar > i { display: block; height: 100%; width: 0; background: var(--c-text); transition: width 160ms linear; }
     .ocr-status { margin-top: 10px; font-size: var(--fs-12); color: var(--c-text-3); min-height: 16px; overflow-wrap: anywhere; }
-    .ocr-actions { display: flex; gap: 8px; margin-top: 16px; }
-    .ocr-actions:empty { display: none; }
-    .ocr-actions .btn { flex: 1; }
+
+    /* 原图放大查看 */
+    .ocr-lightbox {
+      position: fixed; inset: 0; z-index: 270; display: none;
+      place-items: center; background: var(--scrim); padding: 20px;
+    }
+    .ocr-lightbox.show { display: grid; }
+    .ocr-lightbox img { max-width: 100%; max-height: 92vh; object-fit: contain; }
   </style>
 </head>
 <body>
@@ -838,13 +929,17 @@
       <svg class="i i-fill ico-on" aria-hidden="true"><use href="#i-tab-stats-fill"/></svg>
       <span class="tab-label">统计</span>
     </button>
-    <button class="tab-add" onclick="App.openChargePage()" aria-label="记一笔">
-      <svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>
-    </button>
     <button class="tab-item" data-tab="records">
       <svg class="i ico-off" aria-hidden="true"><use href="#i-tab-records"/></svg>
       <svg class="i i-fill ico-on" aria-hidden="true"><use href="#i-tab-records-fill"/></svg>
       <span class="tab-label">记录</span>
+    </button>
+    <button class="tab-add" onclick="App.openChargePage()" aria-label="记一笔">
+      <svg class="i" aria-hidden="true"><use href="#i-plus"/></svg>
+    </button>
+    <button class="tab-item tab-setting" onclick="App.openSettings()" aria-label="设置">
+      <svg class="i" aria-hidden="true"><use href="#i-gear"/></svg>
+      <span class="tab-label">设置</span>
     </button>
   </nav>
 
@@ -1058,15 +1153,45 @@
     </div>
   </div>
 
-  <!-- 截图识别轻提示 -->
+  <!-- 截图识别 -->
   <div class="ocr-overlay" id="ocrOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="ocrTitle">
     <div class="ocr-box">
-      <div class="ocr-title"><span class="ocr-spinner" id="ocrSpinner" aria-hidden="true"></span><span id="ocrTitle">识别中…</span></div>
-      <div class="ocr-sub" id="ocrSub">首次使用需下载本地识别引擎（约 6MB），之后可离线使用</div>
-      <div class="ocr-bar"><i id="ocrBar"></i></div>
-      <div class="ocr-status" id="ocrStatus"></div>
-      <div class="ocr-actions" id="ocrActions"></div>
+      <!-- 视图 1：扫描中 -->
+      <div class="ocr-view active" id="ocrScanView">
+        <div class="ocr-scan-frame">
+          <img class="ocr-scan-img" id="ocrShot" alt="待识别截图">
+          <span class="ocr-scanline" aria-hidden="true"></span>
+        </div>
+        <div class="ocr-scan-caption">正在识别截图<span class="ocr-dots" aria-hidden="true"></span></div>
+        <div class="ocr-progress"><i id="ocrBar"></i></div>
+      </div>
+
+      <!-- 视图 2：结果确认 -->
+      <div class="ocr-view" id="ocrResultView">
+        <div class="ocr-result-head">
+          <div class="ocr-title">识别结果</div>
+        </div>
+        <img class="ocr-preview" id="ocrPreview" alt="识别的原图，点击查看大图" onclick="App.openOcrLightbox()">
+        <div class="ocr-preview-hint">点击图片查看大图核对</div>
+        <div class="ocr-fields" id="ocrFields"></div>
+        <div class="ocr-result-note">请核对以上信息，确认无误后填入表单。</div>
+        <div class="ocr-actions" id="ocrResultActions"></div>
+      </div>
+
+      <!-- 视图 3：失败 -->
+      <div class="ocr-view" id="ocrFailView">
+        <div class="ocr-title"><span class="ocr-spinner" id="ocrSpinner" aria-hidden="true"></span><span id="ocrTitle">识别中…</span></div>
+        <div class="ocr-sub" id="ocrSub"></div>
+        <div class="ocr-bar"><i id="ocrFailBar"></i></div>
+        <div class="ocr-status" id="ocrStatus"></div>
+        <div class="ocr-actions" id="ocrActions"></div>
+      </div>
     </div>
+  </div>
+
+  <!-- 识别原图放大查看 -->
+  <div class="ocr-lightbox" id="ocrLightbox" aria-hidden="true" onclick="App.closeOcrLightbox()">
+    <img id="ocrLightboxImg" alt="识别原图大图">
   </div>
 
   <!-- 图标精灵 -->

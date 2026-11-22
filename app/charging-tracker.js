@@ -1288,6 +1288,8 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
 
       document.addEventListener('keydown', function (e) {
         if (e.key !== 'Escape') return;
+        if (document.getElementById('ocrLightbox') && document.getElementById('ocrLightbox').classList.contains('show')) { self.closeOcrLightbox(); return; }
+        if (document.getElementById('ocrOverlay') && document.getElementById('ocrOverlay').classList.contains('show')) { self.hideOcrOverlay(); return; }
         if (document.getElementById('confirmModal').classList.contains('show')) { self.closeConfirm(); return; }
         if (self._sheetOpen) { self.closeSheet(); return; }
         if (document.getElementById('chargeFormPage').classList.contains('show')) { self.closeChargePage(); return; }
@@ -1416,12 +1418,15 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
      * 记录页
      * ============================================================ */
     recordsNav: function () {
+      /* 顶部彻底沉浸：不渲染 nav；筛选下移到记录页工具行 */
+      return '';
+    },
+
+    recordsToolsHTML: function () {
       var n = this.filterCount();
-      return '<div class="nav">'
-        + '<span class="nav-heading">记录</span>'
-        + '<span class="nav-fill"></span>'
-        + '<button class="nav-btn" onclick="App.openFilterSheet()" aria-label="筛选' + (n ? '，已选 ' + n + ' 项' : '') + '">'
-        + Icons.filter + (n ? '<span class="dot"></span>' : '') + '</button>'
+      return '<div class="rec-tools">'
+        + '<button class="rec-filter-btn" onclick="App.openFilterSheet()" aria-label="筛选' + (n ? '，已选 ' + n + ' 项' : '') + '">'
+        + Icons.filter + (n ? '<span class="dot"></span>' : '') + '<span>' + (n ? '已筛选' : '筛选') + '</span></button>'
         + '</div>';
     },
 
@@ -1465,6 +1470,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       if (moF) charges = charges.filter(function (c) { return (c.date || '').slice(0, 7) === moF; });
 
       html += '<div class="body">';
+      html += this.recordsToolsHTML();
       html += this.summaryHTML(vid);
 
       if (!charges.length) {
@@ -1524,7 +1530,8 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         week = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dt.getDay()];
       }
       var isFast = c.chargeType === 'fast';
-      return '<button class="record-row" style="--i:' + Math.min(idx || 0, 14) + '" onclick="App.showChargeDetail(\'' + c.id + '\')">'
+      var flash = (this._flashChargeId && this._flashChargeId === c.id) ? ' flash' : '';
+      return '<button class="record-row' + flash + '" data-id="' + c.id + '" style="--i:' + Math.min(idx || 0, 14) + '" onclick="App.showChargeDetail(\'' + c.id + '\')">'
         + '<span class="rec-day"><b>' + (day < 10 ? '0' + day : day) + '</b><span>' + week + '</span></span>'
         + '<span class="rec-main">'
         + '<span class="rec-top"><span class="rec-kwh">' + Utils.fmt(c.kWh, 1) + '</span>'
@@ -1624,8 +1631,8 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
      * 统计页
      * ============================================================ */
     statsNav: function () {
-      return '<div class="nav"><span class="nav-heading">统计</span><span class="nav-fill"></span>'
-        + '<button class="nav-btn" onclick="App.openSettings()" aria-label="设置">' + Icons.gear + '</button></div>';
+      /* 顶部彻底沉浸：不渲染 nav；设置入口在底栏 */
+      return '';
     },
 
     analysisScopeByYear: function (yearFilter) {
@@ -1658,7 +1665,6 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       var scope = this.analysisScopeByYear(yearFilter);
       var months = yearFilter ? Utils.yearMonths(parseInt(yearFilter, 10)) : Utils.chartRange(vid, 12);
       var metric = this.statsTrend || 'cost';
-      var heroLabel = yearFilter ? (yearFilter + ' 年') : '累计';
       var md = this.statsMetricData(metric, vid, months);
       var eff = Stats.avgEfficiency(vid, yearFilter);
       var pkm = Stats.pricePerKm(vid, yearFilter);
@@ -1681,11 +1687,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       }
 
       html += '<div class="hero"><div class="hero-top"><div>'
-        + '<div class="hero-label"><span>' + heroLabel + '充电总费用</span>' + this.periodDeltaHTML(yearFilter, scope) + '</div>'
         + '<div class="hero-value">¥<span class="hero-num" data-to="' + scope.cost + '">' + Utils.fmtMoney(scope.cost) + '</span></div>'
-        + '<div class="hero-meta">' + (scope.count > 0
-          ? (scope.count + ' 次 · 均价 ¥' + Utils.fmtMoney(scope.avgPrice) + '/度 · 充入 ' + Utils.fmt(scope.kWh, 1) + ' 度')
-          : '还没有充电记录') + '</div>'
         + '</div>' + spark + '</div></div>';
 
       html += '<div class="tiles">'
@@ -2769,12 +2771,11 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       var self = this;
       OCR.setProgressHandler(function (m) {
         if (!m || self._ocrFailed) return;
+        /* 过程信息降级为动效：只驱动扫描进度条，不再写英文状态文字 */
         var bar = document.getElementById('ocrBar');
-        var status = document.getElementById('ocrStatus');
         if (bar && typeof m.progress === 'number') {
-          bar.style.width = Math.max(0, Math.min(100, Math.round(m.progress * 100))) + '%';
+          bar.style.width = Math.max(3, Math.min(100, Math.round(m.progress * 100))) + '%';
         }
-        if (status && m.status) status.textContent = m.status;
       });
       window.addEventListener('beforeunload', function () {
         if (typeof OCR !== 'undefined') OCR.dispose();
@@ -2807,6 +2808,21 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       if (hint) hint.hidden = !on;
     },
 
+    /* OCR 视图切换：scan（扫描中）/ result（确认）/ fail（失败） */
+    _ocrView: function (name) {
+      ['ocrScanView', 'ocrResultView', 'ocrFailView'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.toggle('active', id === 'ocr' + name.charAt(0).toUpperCase() + name.slice(1) + 'View');
+      });
+    },
+
+    _releaseOcrShotUrl: function () {
+      if (this._ocrShotUrl) {
+        try { URL.revokeObjectURL(this._ocrShotUrl); } catch (e) {}
+        this._ocrShotUrl = null;
+      }
+    },
+
     startOcr: function () {
       if (!this.ocrAvailable()) {
         this.toast('当前环境不支持截图识别，已保留手动填写', 'warn');
@@ -2816,7 +2832,9 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       /* 先直接调起系统选图；用户取消时不进入识别界面 */
       OCR.pickImage().then(function (file) {
         self._ocrBlob = null;
-        self.showOcrOverlay({ title: '识别中…', status: '正在读取截图' });
+        self._ocrFailed = false;
+        /* 选中即刻展示原图 + 扫描动效，再开始识别 */
+        self.showOcrScan(file);
         return self.runOcr(file);
       }).catch(function (err) {
         if (err && /已取消选择/.test(err.message || '')) { self.hideOcrOverlay(); return; }
@@ -2824,7 +2842,20 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       });
     },
 
-    /* 已选图：预处理 → 识别 → 预填；进度由 OCR.setProgressHandler 驱动 */
+    /* 扫描中：把选中的原图贴出来 + 扫描线动效，进度由 setProgressHandler 驱动 */
+    showOcrScan: function (file) {
+      this._releaseOcrShotUrl();
+      this._ocrShotUrl = (typeof URL !== 'undefined' && URL.createObjectURL) ? URL.createObjectURL(file) : '';
+      var shot = document.getElementById('ocrShot');
+      if (shot) shot.src = this._ocrShotUrl;
+      var bar = document.getElementById('ocrBar');
+      if (bar) bar.style.width = '0';
+      this._ocrView('scan');
+      var layer = document.getElementById('ocrOverlay');
+      if (layer) { layer.classList.add('show'); layer.setAttribute('aria-hidden', 'false'); }
+    },
+
+    /* 已选图：预处理 → 识别 → 结果确认页；进度由 OCR.setProgressHandler 驱动 */
     runOcr: function (file) {
       var self = this;
       return OCR.checkImage(file).then(function (f) {
@@ -2835,13 +2866,93 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
           return OCR.extractFields(r.text, r.confidence);
         });
       }).then(function (fields) {
-        self.applyOcrResult(fields);
+        self.showOcrResult(fields, file);
       }).catch(function (err) {
         self.onOcrFailed(err);
       });
     },
 
-    /* 识别结果 → 预填表单；低置信只描红不填值 */
+    /* 结果确认页：原图可放大核对 + 可编辑字段，确认后才填表单 */
+    showOcrResult: function (fields, file) {
+      this._ocrFields = fields || {};
+      /* 确保识别层可见（重试等路径可能未走 showOcrScan） */
+      var layer = document.getElementById('ocrOverlay');
+      if (layer && !layer.classList.contains('show')) {
+        layer.classList.add('show'); layer.setAttribute('aria-hidden', 'false');
+      }
+      var preview = document.getElementById('ocrPreview');
+      if (preview) preview.src = this._ocrShotUrl || '';
+      var host = document.getElementById('ocrFields');
+      if (host) {
+        var defs = [
+          ['kWh', '充电量', 'ocrF_kWh', 'number', '0.1', '度'],
+          ['totalCost', '金额', 'ocrF_totalCost', 'number', '0.01', '元'],
+          ['date', '日期', 'ocrF_date', 'date', '', ''],
+          ['socBefore', '充电前', 'ocrF_socBefore', 'number', '1', '%'],
+          ['socAfter', '充电后', 'ocrF_socAfter', 'number', '1', '%']
+        ];
+        var self = this;
+        var html = '';
+        defs.forEach(function (d) {
+          var f = self._ocrFields[d[0]];
+          if (!f || f.value === null || f.value === undefined || f.value === '') return;
+          var level = f.level || 'medium';
+          /* 清洗后的合法字面量填进可编辑框，杜绝长文本/多小数点 */
+          var val = self.cleanOcrValue(d[0], f.value);
+          if (val === '') return;
+          html += '<div class="ocr-field-row">'
+            + '<span class="ocr-field-flag ' + level + '" aria-hidden="true"></span>'
+            + '<label for="' + d[2] + '">' + d[1] + '</label>'
+            + '<input id="' + d[2] + '" type="' + d[3] + '"' + (d[4] ? ' step="' + d[4] + '"' : '')
+            + ' value="' + esc(val) + '"' + (level === 'low' || f.warn ? ' class="low"' : '') + '>'
+            + '<span class="suffix">' + d[5] + '</span></div>';
+        });
+        host.innerHTML = html || '<div class="ocr-result-note">未识别到可填写的字段，请手动填写。</div>';
+      }
+      var actions = document.getElementById('ocrResultActions');
+      if (actions) {
+        actions.innerHTML = '<button type="button" class="btn btn-secondary" id="ocrRescanBtn">重新识别</button>'
+          + '<button type="button" class="btn btn-primary" id="ocrCommitBtn">填入表单</button>'
+          + '<button type="button" class="btn btn-secondary" id="ocrManualBtn2" style="flex:0 0 auto;padding:0 14px">手动</button>';
+        document.getElementById('ocrRescanBtn').onclick = function () { self.startOcr(); };
+        document.getElementById('ocrCommitBtn').onclick = function () { self.commitOcrResult(); };
+        document.getElementById('ocrManualBtn2').onclick = function () { self.hideOcrOverlay(); };
+      }
+      this._ocrView('result');
+    },
+
+    /* 字段值清洗：只保留表单 input 能接受的合法字面量，根治长文本报错 */
+    cleanOcrValue: function (key, raw) {
+      if (raw === null || raw === undefined) return '';
+      var s = String(raw).trim();
+      if (!s) return '';
+      if (key === 'date') return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : '';
+      /* 已是干净数字字面量：原样返回（保留 30 / 42.5 等原值） */
+      if (/^-?\d+(?:\.\d+)?$/.test(s) && isFinite(Number(s))) return s;
+      /* 含单位、中文、千分位等噪声：提取首个数字 */
+      var m = s.match(/-?\d+(?:\.\d+)?/);
+      return m ? m[0] : '';
+    },
+
+    /* 确认页「填入表单」：读可编辑字段 → 保留置信标记 → 走统一填表逻辑 */
+    commitOcrResult: function () {
+      var self = this;
+      var defs = [['kWh', 'ocrF_kWh'], ['totalCost', 'ocrF_totalCost'], ['date', 'ocrF_date'],
+        ['socBefore', 'ocrF_socBefore'], ['socAfter', 'ocrF_socAfter']];
+      var fields = {};
+      defs.forEach(function (d) {
+        var el = document.getElementById(d[1]);
+        var orig = self._ocrFields && self._ocrFields[d[0]];
+        if (!el || !el.value) return;
+        fields[d[0]] = {
+          value: el.value, confidence: orig ? orig.confidence : 0.9,
+          level: orig ? orig.level : 'high', source: orig ? orig.source : '', warn: ''
+        };
+      });
+      this.applyOcrResult(fields);
+    },
+
+    /* 结果 → 预填表单；低置信只描红不填值。值先清洗，保证表单拿到合法字面量 */
     applyOcrResult: function (fields) {
       this.hideOcrOverlay();
       this._ocrDraft = true;
@@ -2849,14 +2960,36 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         this.toast('没有识别到可用信息，请手动填写', 'warn');
         return;
       }
-      var res = OCR.annotateDom(fields);
+      var clean = {};
+      for (var k in fields) {
+        if (!Object.prototype.hasOwnProperty.call(fields, k)) continue;
+        var f = fields[k];
+        if (!f) continue;
+        var cf = {};
+        for (var p in f) if (Object.prototype.hasOwnProperty.call(f, p)) cf[p] = f[p];
+        cf.value = this.cleanOcrValue(k, f.value);
+        clean[k] = cf;
+      }
+      var res = OCR.annotateDom(clean);
       var msgs = [];
       if (res.warned && res.warned.length) msgs.push('请核对：' + res.warned.join('、'));
-      if (fields.date && fields.date.warn) msgs.push(fields.date.warn);
+      if (clean.date && clean.date.warn) msgs.push(clean.date.warn);
       var msg = document.getElementById('cfFormMsg');
       if (msg && msgs.length) msg.textContent = msgs.join('；');
       this.updatePriceHint();
       this.toast('已识别并预填，请核对后保存', 'success');
+    },
+
+    openOcrLightbox: function () {
+      var img = document.getElementById('ocrLightboxImg');
+      if (img && this._ocrShotUrl) img.src = this._ocrShotUrl;
+      var box = document.getElementById('ocrLightbox');
+      if (box) { box.classList.add('show'); box.setAttribute('aria-hidden', 'false'); }
+    },
+
+    closeOcrLightbox: function () {
+      var box = document.getElementById('ocrLightbox');
+      if (box) { box.classList.remove('show'); box.setAttribute('aria-hidden', 'true'); }
     },
 
     showOcrOverlay: function (opts) {
@@ -2870,9 +3003,10 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       var spinner = document.getElementById('ocrSpinner');
       if (title) title.textContent = (opts && opts.title) || '识别中…';
       if (status) status.textContent = (opts && opts.status) || '';
-      if (spinner) spinner.hidden = false;
+      if (spinner) spinner.hidden = true;
       if (bar) bar.style.width = '0';
       if (actions) actions.innerHTML = '';
+      this._ocrView('fail');
       layer.classList.add('show');
       layer.setAttribute('aria-hidden', 'false');
     },
@@ -2882,6 +3016,12 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       if (!layer) return;
       layer.classList.remove('show');
       layer.setAttribute('aria-hidden', 'true');
+      this.closeOcrLightbox();
+      this._releaseOcrShotUrl();
+      var shot = document.getElementById('ocrShot');
+      if (shot) shot.removeAttribute('src');
+      /* 复位到扫描视图，供下次识别 */
+      this._ocrView('scan');
     },
 
     /* 把 OCR 异常分成用户可操作的类别（引擎下载 / 图片解码 / 格式 / 取消） */
@@ -2909,21 +3049,22 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       return { kind: 'other', title: '识别失败', status: msg, retryable: true };
     },
 
-    /* 失败：不写库，提供重试与转手动 */
+    /* 失败：不写库，切到失败视图，提供重试与转手动 */
     onOcrFailed: function (err) {
       var layer = document.getElementById('ocrOverlay');
       if (!layer) { this.toast('识别失败，请手动填写', 'error'); return; }
-      /* 失败后冻结进度回调，避免「recognizing text」覆盖错误文案 */
+      /* 失败后冻结进度回调，避免覆盖错误文案 */
       this._ocrFailed = true;
+      var info = this.ocrErrorInfo(err);
+      if (info.kind === 'cancel') { this.hideOcrOverlay(); return; }
+
+      this._ocrView('fail');
       if (!layer.classList.contains('show')) {
         layer.classList.add('show');
         layer.setAttribute('aria-hidden', 'false');
       }
       var spinner = document.getElementById('ocrSpinner');
       if (spinner) spinner.hidden = true;
-      var info = this.ocrErrorInfo(err);
-      if (info.kind === 'cancel') { this.hideOcrOverlay(); return; }
-
       var title = document.getElementById('ocrTitle');
       var status = document.getElementById('ocrStatus');
       var bar = document.getElementById('ocrBar');
@@ -2937,12 +3078,12 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         actions.innerHTML = '<button type="button" class="btn btn-secondary" id="ocrRetryBtn">重试</button>'
           + '<button type="button" class="btn btn-primary" id="ocrManualBtn">手动填写</button>';
         document.getElementById('ocrRetryBtn').onclick = function () {
-          var blob = self._ocrBlob;
-          /* 失败发生在选图/解码之前：没有可重试的图，重新选图 */
-          if (!blob) { self.startOcr(); return; }
-          self.showOcrOverlay({ title: '识别中…', status: '正在重新识别' });
-          OCR.recognize(blob).then(function (r) {
-            self.applyOcrResult(OCR.extractFields(r.text, r.confidence));
+          /* 没有已预处理的图：重新选图；否则复用原图重跑整条识别链 */
+          if (!self._ocrBlob) { self.hideOcrOverlay(); self.startOcr(); return; }
+          self._ocrFailed = false;
+          self._ocrView('scan');
+          OCR.recognize(self._ocrBlob).then(function (r) {
+            self.showOcrResult(OCR.extractFields(r.text, r.confidence), self._ocrBlob);
           }).catch(function (e2) { self.onOcrFailed(e2); });
         };
         document.getElementById('ocrManualBtn').onclick = function () { self.hideOcrOverlay(); };
@@ -3002,8 +3143,7 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
         return;
       }
 
-      ChargeMgr.add(data);
-      this.renderAll();
+      var saved = ChargeMgr.add(data);
 
       kWhEl.value = '';
       costEl.value = '';
@@ -3015,7 +3155,39 @@ records: '<svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-widt
       document.getElementById('chargeFormPage-form').dataset.priceMode = '';
       this.syncDateChips();
       this.updatePriceHint();
-      this.toast('已记一笔', 'success');
+
+      /* 关表单 → 跳记录页 → 滚动定位并闪烁刚保存的那条 */
+      var self = this;
+      this.closeChargePage(true);
+      setTimeout(function () {
+        self._flashChargeId = saved.id;
+        if (self.currentTab === 'records') self.renderRecords();
+        else self.switchTab('records');
+        self.toast('充电数据已保存', 'success');
+        self.flashRecord(saved.id);
+      }, 260);
+    },
+
+    /* 定位并闪烁高亮某条记录 */
+    flashRecord: function (id) {
+      var self = this;
+      var tryFind = function () {
+        var row = document.querySelector('.record-row[data-id="' + id + '"]');
+        if (!row) return false;
+        /* 延后一帧，避开 switchTab 内部的 scrollTo 复位 */
+        requestAnimationFrame(function () {
+          if (row.scrollIntoView) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        });
+        row.classList.add('flash');
+        setTimeout(function () { row.classList.remove('flash'); self._flashChargeId = null; }, 1400);
+        return true;
+      };
+      if (tryFind()) return;
+      /* 记录页可能尚未渲染完，重试几次 */
+      var tries = 0;
+      var timer = setInterval(function () {
+        if (tryFind() || ++tries > 10) clearInterval(timer);
+      }, 100);
     },
 
     /* ============================================================
